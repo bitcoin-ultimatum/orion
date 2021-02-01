@@ -213,9 +213,13 @@ public:
         nBlockV7StartHeight = nBlockTimeProtocolV2;
 
         // Leasing
-        nLeasingRewardMaturity = 30; // 30 blocks
-        nLeasingRewardPeriod = 7 * 24 * 60; // 1 weak
-        nMaxLeasingRewards = 100;
+        //nLeasingRewardMaturity = 30; // 30 blocks
+        //nLeasingRewardPeriod = 7 * 24 * 60; // 1 weak
+        //nMaxLeasingRewards = 100;
+       // Leasing
+       nLeasingRewardMaturity = 3; // 3 blocks
+       nLeasingRewardPeriod = 10; // 10 minutes
+       nMaxLeasingRewards = 10;
 
         // Fake Serial Attack
         nFakeSerialBlockheightEnd = 0;

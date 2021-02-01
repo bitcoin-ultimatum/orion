@@ -29,8 +29,7 @@ private:
     // critical section to protect the inner data structures
     mutable CCriticalSection cs;
 
-    /// Ping Masternode
-    bool SendMasternodePing(std::string& errorMessage);
+
 
     /// Create Masternode broadcast, needs to be relayed manually after that
     bool CreateBroadcast(
@@ -77,6 +76,9 @@ public:
 
     /// Enable cold wallet mode (run a Masternode with no funds)
     bool EnableHotColdMasterNode(CTxIn& vin, CService& addr);
+
+    /// Ping Masternode
+    bool SendMasternodePing(std::string& errorMessage);
 };
 
 #endif

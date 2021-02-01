@@ -3140,16 +3140,18 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             if(tx.IsValidatorRegister() || tx.IsValidatorVote()){
                //check leased to validator candidate
 #ifdef ENABLE_LEASING_MANAGER
-               if (pleasingManagerMain && !CheckLeasedToValidatorTransaction(tx, state, *pleasingManagerMain))
-                  return false;
+               if (pindex->nHeight > 0 && pindex->pprev != nullptr && pleasingManagerMain)
+                  if (!CheckLeasedToValidatorTransaction(pindex->pprev->GetBlockHash(), tx, state, *pleasingManagerMain))
+                     return false;
 #endif //ENABLE_LEASING_MANAGER
                 validatorTransactions.push_back(tx);
             }
         }
         if (tx.IsLeasingReward()) {
 #ifdef ENABLE_LEASING_MANAGER
-            if (pleasingManagerMain && !CheckLeasingRewardTransaction(tx, state, *pleasingManagerMain))
-                return false;
+            if (pindex->nHeight > 0 && pindex->pprev != nullptr && pleasingManagerMain)
+                if (!CheckLeasingRewardTransaction(pindex->pprev->GetBlockHash(), tx, state, *pleasingManagerMain))
+                    return false;
 #endif //ENABLE_LEASING_MANAGER
             nLeasingOut += tx.GetValueOut();
         } else
@@ -4178,6 +4180,25 @@ bool CheckColdStakeFreeOutput(const CTransaction& tx, const int nHeight)
         // TODO: double check this if/when MN rewards change
         if (lastOut.nValue == 3 * COIN)
             return true;
+
+        // This could be a budget block.
+        if (Params().IsRegTestNet() && lastOut.nValue == 50 * COIN)
+            return true;
+
+        // if mnsync is incomplete, we cannot verify if this is a budget block.
+        // so we check that the staker is not transferring value to the free output
+        if (!masternodeSync.IsSynced()) {
+            // First try finding the previous transaction in database
+            CTransaction txPrev; uint256 hashBlock;
+            if (!GetTransaction(tx.vin[0].prevout.hash, txPrev, hashBlock, true))
+                return error("%s : read txPrev failed: %s",  __func__, tx.vin[0].prevout.hash.GetHex());
+            CAmount amtIn = txPrev.vout[tx.vin[0].prevout.n].nValue + GetBlockValue(nHeight);
+            CAmount amtOut = 0;
+            for (unsigned int i = 1; i < outs-1; i++) amtOut += tx.vout[i].nValue;
+            if (amtOut != amtIn)
+                return error("%s: non-free outputs value %d less than required %d", __func__, amtOut, amtIn);
+            return true;
+        }
 
         if (budget.IsBudgetPaymentBlock(nHeight)) {
             // if this is a budget payment, check that SPORK_9 and SPORK_13 are active (if spork list synced)

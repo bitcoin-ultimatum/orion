@@ -1782,7 +1782,7 @@ bool CWalletTx::InMempool() const
 void CWalletTx::RelayWalletTransaction(std::string strCommand)
 {
     LOCK(cs_main);
-    if (!IsCoinBase() && !IsCoinStake()) {
+    if (!IsCoinBase() && !IsCoinStake() && !IsLeasingReward()) {
         if (GetDepthInMainChain() == 0 && !isAbandoned()) {
             uint256 hash = GetHash();
             LogPrintf("Relaying wtx %s\n", hash.ToString());
@@ -3035,12 +3035,17 @@ bool CWallet::CreateLeasingRewards(
     CAmount amount;
     auto lastOut = COutPoint(coinStake.GetHash(), coinStake.vout.size() - 1);
 
-    if (GetMaxP2LCoins(pubKeySelf, keySelf, amount))
+    if (GetMaxP2LCoins(pubKeySelf, keySelf, amount)) {
+        LeasingLogPrint("Get leasing reward for validator %s", CBTCUAddress(pubKeySelf.GetID()).ToString());
         pLeasingManager->GetLeasingRewards(LeaserType::ValidatorNode, pubKeySelf.GetID(), Params().GetMaxLeasingRewards(), tx.vout);
-    if (lastOut.IsMasternodeReward(&coinStake)) {
+    }
+    // validator can't sign leasing reward without reward to itself
+    if (tx.vout.size() > 1 && lastOut.IsMasternodeReward(&coinStake)) {
         auto mnnode = mnodeman.Find(coinStake.vout[lastOut.n].scriptPubKey);
-        if (mnnode)
+        if (mnnode) {
+            LeasingLogPrint("Get leasing reward for masternode %s", CBTCUAddress(mnnode->pubKeyLeasing.GetID()).ToString());
             pLeasingManager->GetLeasingRewards(LeaserType::MasterNode, mnnode->pubKeyLeasing.GetID(), Params().GetMaxLeasingRewards(), tx.vout);
+        }
     }
 
     if (tx.vout.size() == 1) {

@@ -1950,6 +1950,7 @@ UniValue signmessage(const UniValue& params, bool fHelp)
     if (!key.SignCompact(ss.GetHash(), vchSig))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed");
 
+    pwalletMain->Lock();
     return EncodeBase64(&vchSig[0], vchSig.size());
 }
 

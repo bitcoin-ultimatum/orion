@@ -71,22 +71,22 @@ struct byLeasingReward;
 struct byOwner;
 
 using CLeasingOutputMap = bmi::multi_index_container<
-CLeasingOutput,
-bmi::indexed_by<
-bmi::ordered_unique<
-bmi::tag<byTrxHash>,
-bmi::composite_key<
-CLeasingOutput,
-bmi::member<CLeasingOutput, uint256,  &CLeasingOutput::nTrxHash>,
-bmi::member<CLeasingOutput, uint32_t, &CLeasingOutput::nPosition>>>,
-bmi::ordered_non_unique<
-bmi::tag<byLeasingReward>,
-bmi::composite_key<
-CLeasingOutput,
-bmi::member<CLeasingOutput, CKeyID, &CLeasingOutput::kLeaserID>,
-bmi::member<CLeasingOutput, int, &CLeasingOutput::nNextRewardHeight>>>,
-bmi::ordered_non_unique<bmi::tag<byOwner>, bmi::member<CLeasingOutput, CKeyID, &CLeasingOutput::kOwnerID>>
->>;
+    CLeasingOutput,
+    bmi::indexed_by<
+        bmi::ordered_unique<
+            bmi::tag<byTrxHash>,
+            bmi::composite_key<
+                CLeasingOutput,
+                    bmi::member<CLeasingOutput, uint256,  &CLeasingOutput::nTrxHash>,
+                    bmi::member<CLeasingOutput, uint32_t, &CLeasingOutput::nPosition>>>,
+        bmi::ordered_non_unique<
+            bmi::tag<byLeasingReward>,
+            bmi::composite_key<
+                CLeasingOutput,
+                bmi::member<CLeasingOutput, CKeyID, &CLeasingOutput::kLeaserID>,
+                bmi::member<CLeasingOutput, int, &CLeasingOutput::nNextRewardHeight>>>,
+                bmi::ordered_non_unique<bmi::tag<byOwner>, bmi::member<CLeasingOutput, CKeyID, &CLeasingOutput::kOwnerID>>
+    >>;
 
 
 
@@ -148,7 +148,7 @@ class CLeasingDB : public CLevelDBWrapper {
 
 public:
    CLeasingDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false):
-   CLevelDBWrapper(GetDataDir() / "leasing", nCacheSize, fMemory, fWipe)
+      CLevelDBWrapper(GetDataDir() / "leasing", nCacheSize, fMemory, fWipe)
    { }
 
    bool WriteLeasingOutput(const CLeasingOutput& leasingOut) {
@@ -228,10 +228,13 @@ public:
       leasingOutput.nTrxHash = tx.GetHash();
       leasingOutput.nPosition = n;
       leasingOutput.nValue = txOut.nValue;
-      leasingOutput.nInitHeight = nHeight;
+      leasingOutput.nInitHeight = nBlockHeight;
       leasingOutput.scriptPubKey = txOut.scriptPubKey;
       leasingOutput.nNextRewardHeight = CalcNextRewardHeight() + add;
-      leasingOutput.nLastRewardHeight = nHeight + add;
+      leasingOutput.nLastRewardHeight = nBlockHeight + add;
+
+      LeasingLogPrint("new next reward height %d for %s:%d",
+        leasingOutput.nNextRewardHeight, leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
 
       std::vector<valtype> vSolutions;
       txnouttype whichType;
@@ -241,15 +244,17 @@ public:
       }
 
       if (leasingOutput.kOwnerID.IsNull()) {
-         return error("%s : fail to get the owner address from the leasing script", __func__);
+         return LeasingError("fail to get the owner address from the leasing script from %s:%d",
+            txOut.GetHash().ToString(), n);
       }
 
       if (leasingOutput.kLeaserID.IsNull()) {
-         return error("%s : fail to get the leaser address from the leasing script", __func__);
+         return LeasingError("%s : fail to get the leaser address from the leasing script from %s:%d",
+            txOut.GetHash().ToString(), n);
       }
 
       if (!mapOutputs.insert(leasingOutput).second) {
-         return error("%s : duplicate of leasing", __func__);
+         return LeasingError("duplicate of leasing %s:%d", txOut.GetHash().ToString(), n);
       }
 
       leasingDB.WriteLeasingOutput(leasingOutput);
@@ -295,7 +300,7 @@ public:
       leasingDB.WriteLeasingSpend(leasingSpend);
 
       idxTrxHash.modify(itr, [&](CLeasingOutput& v) {
-         v.nSpendingHeight = nHeight;
+         v.nSpendingHeight = nBlockHeight;
 
          DecLeasingSupply(v.kLeaserID, v.nValue);
          CalcLeasingSupplyPct();
@@ -322,13 +327,14 @@ public:
       leasingOutput.nPosition = leasingSpend.nLeasingPosition;
 
       if (!leasingDB.ReadLeasingOutput(leasingOutput)) {
-         return error("%s : fail to read leasing from DB", __func__);
+         return LeasingError("fail to read leasing from DB for %s:%d",
+            leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
       }
 
       leasingOutput.nSpendingHeight = _nonRewardHeight;
 
       if (!mapOutputs.insert(leasingOutput).second) {
-         return error("%s : duplicate leasing on reading from DB", __func__);
+         return LeasingError("duplicate leasing on reading from DB for %s:%d", leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
       }
 
       IncLeasingSupply(leasingOutput.kLeaserID, leasingOutput.nValue);
@@ -346,7 +352,7 @@ public:
       }
 
       if (!ExtractLeasingPoint(txout, point)) {
-         return error("%s : can't extract leasing reward point ", __func__);
+         return LeasingError("can't extract leasing reward point from %s:%d", txout.GetHash().ToString(), n);
       }
 
       ModifyLeasingOutput(point.hash, point.n, [&](CLeasingOutput& v){
@@ -360,8 +366,11 @@ public:
 
          leasingDB.WriteLeasingReward(leasingReward);
 
-         v.nLastRewardHeight = this->nHeight;
+         v.nLastRewardHeight = this->nBlockHeight;
          v.nNextRewardHeight = CalcNextRewardHeight();
+
+         LeasingLogPrint("set next reward height %d for %s:%d",
+            v.nNextRewardHeight, v.nTrxHash.ToString(), v.nPosition);
 
          leasingDB.WriteLeasingOutput(v);
       });
@@ -374,7 +383,7 @@ public:
       COutPoint point;
 
       if (!ExtractLeasingPoint(txout, point)) {
-         return error("%s : can't extract leasing reward point ", __func__);
+         return LeasingError("can't extract leasing reward point for %s:%d", txout.GetHash().ToString(), n);
       }
 
       CLeasingReward leasingReward;
@@ -382,7 +391,7 @@ public:
       leasingReward.nPosition = n;
 
       if (!leasingDB.ReadLeasingReward(leasingReward)) {
-         return error("%s : can't read leasing reward from DB ", __func__);
+         return LeasingError("can't read leasing reward from DB for %s:%d", tx.GetHash().ToString(), n);
       }
       leasingDB.EraseLeasingReward(leasingReward);
 
@@ -390,15 +399,19 @@ public:
          v.nNextRewardHeight = leasingReward.nNextRewardHeight;
          v.nLastRewardHeight = leasingReward.nLastRewardHeight;
 
+         LeasingLogPrint("restore next reward height %d for %s:%d",
+            v.nNextRewardHeight, v.nTrxHash.ToString(), v.nPosition);
+
          leasingDB.WriteLeasingOutput(v);
       });
       return true;
    }
 
-   void SetHeight(const int value) {
+   void SetBlock(const int height, const uint256& hash) {
       LOCK(cs_leasing);
 
-      nHeight = value;
+      nBlockHeight = height;
+      nBlockHash = hash;
       CalcLeasingHeightPct();
       leasingDB.Flush();
    }
@@ -414,10 +427,10 @@ public:
    }
 
    bool GetLeasingRewards(
-   const LeaserType type,
-   const CKeyID& leaserID,
-   const size_t nLimit,
-   std::vector<CTxOut>& vRewards
+       const LeaserType type,
+       const CKeyID& leaserID,
+       const size_t nLimit,
+       std::vector<CTxOut>& vRewards
    ) {
       LOCK(cs_leasing);
 
@@ -426,7 +439,7 @@ public:
       size_t i = 0;
 
       vRewards.reserve(vRewards.size() + nLimit + 1);
-      for (; itr != idxRewards.end() && itr->kLeaserID == leaserID && itr->nNextRewardHeight <= nHeight; ++itr) {
+      for (; itr != idxRewards.end() && itr->kLeaserID == leaserID && itr->nNextRewardHeight <= nBlockHeight; ++itr) {
          auto txOut = CalcLeasingReward(*itr);
          if (!txOut.IsEmpty()) {
             vRewards.emplace_back(std::move(txOut));
@@ -451,8 +464,12 @@ public:
       return nHeightLeasingPct * nSupplyLeasingPct / _100pct;
    }
 
-   int GetHeight() const {
-      return nHeight;
+   int GetBlockHeight() const {
+      return nBlockHeight;
+   }
+
+   const uint256& GetBlockHash() const {
+      return nBlockHash;
    }
 
    CTxOut CalcLeasingReward(const COutPoint& point, const CKeyID& keyID) const {
@@ -509,7 +526,8 @@ private:
                   ssKey >> leasingOutput.nPosition;
                   if (leasingOutput.nSpendingHeight != _nonRewardHeight) {
                      if (!mapOutputs.insert(leasingOutput).second) {
-                        error("%s : duplicate of leasing", __func__);
+                        LeasingError("duplicate of leasing for %s:%d",
+                           leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
                      } else {
                         nLeasingSupply += leasingOutput.nValue;
                         auto itr = mapBalance.emplace(leasingOutput.kLeaserID, 0).first;
@@ -526,7 +544,7 @@ private:
             }
             pCursor->Next();
          } catch (const std::exception& e) {
-            error("%s : deserialize or I/O error - %s", __func__, e.what());
+            LeasingError("deserialize or I/O error - %s", e.what());
             break;
          }
       }
@@ -567,39 +585,39 @@ private:
    }
 
    int CalcNextRewardHeight() const {
-      return nHeight + Params().GetLeasingRewardPeriod();
+      return nBlockHeight + Params().GetLeasingRewardPeriod();
    }
 
    void CalcLeasingHeightPct() {
       nHeightLeasingPct = 15;
 
-      if (nHeight < 500000)
+      if (nBlockHeight < 500000)
          nHeightLeasingPct = 15;
-      else if (nHeight < 1000000)
+      else if (nBlockHeight < 1000000)
          nHeightLeasingPct = 14;
-      else if (nHeight < 1500000)
+      else if (nBlockHeight < 1500000)
          nHeightLeasingPct = 13;
-      else if (nHeight < 2000000)
+      else if (nBlockHeight < 2000000)
          nHeightLeasingPct = 12;
-      else if (nHeight < 2500000)
+      else if (nBlockHeight < 2500000)
          nHeightLeasingPct = 11;
-      else if (nHeight < 3000000)
+      else if (nBlockHeight < 3000000)
          nHeightLeasingPct = 10;
-      else if (nHeight < 3500000)
+      else if (nBlockHeight < 3500000)
          nHeightLeasingPct = 9;
-      else if (nHeight < 4000000)
+      else if (nBlockHeight < 4000000)
          nHeightLeasingPct = 8;
-      else if (nHeight < 4500000)
+      else if (nBlockHeight < 4500000)
          nHeightLeasingPct = 7;
-      else if (nHeight < 5000000)
+      else if (nBlockHeight < 5000000)
          nHeightLeasingPct = 6;
-      else if (nHeight < 5500000)
+      else if (nBlockHeight < 5500000)
          nHeightLeasingPct = 5;
-      else if (nHeight < 6000000)
+      else if (nBlockHeight < 6000000)
          nHeightLeasingPct = 4;
-      else if (nHeight < 6500000)
+      else if (nBlockHeight < 6500000)
          nHeightLeasingPct = 3;
-      else if (nHeight < 7000000)
+      else if (nBlockHeight < 7000000)
          nHeightLeasingPct = 2;
       else
          nHeightLeasingPct = 1;
@@ -667,7 +685,7 @@ private:
          nAmountPct = 50;
       nAmountPct *= _1pct;
 
-      int64_t nAge = GetHeight() - leasingOut.nInitHeight;
+      int64_t nAge = GetBlockHeight() - leasingOut.nInitHeight;
       int64_t nAgePct = 100;
       if (nAge < 30000)
          nAgePct = 100;
@@ -695,16 +713,16 @@ private:
 
       int64_t nPct = nAmountPct * nAgePct * GetLeasingPct() / _100pct / _100pct;
       int64_t aResAmount = leasingOut.nValue * nPct / _100pct;
-      int64_t nRewardAge = (GetHeight() - leasingOut.nLastRewardHeight);
+      int64_t nRewardAge = (GetBlockHeight() - leasingOut.nLastRewardHeight);
 
       aResAmount = aResAmount * nRewardAge / (365 * 24 * 60); // 1 year
 
       auto outPoint = COutPoint(leasingOut.nTrxHash, leasingOut.nPosition);
       auto outScript = GetScriptForLeasingReward(outPoint, leasingOut.kOwnerID);
 
-      LogPrint("leasing", "(%d)%s: nPct=%d, aResAmount=%d, nRewardAge=%d\n", __LINE__, __func__, nPct, aResAmount, nRewardAge);
-      LogPrint("leasing", "(%d)%s: outPoint=%s\n", __LINE__, __func__, outPoint.ToString());
-      LogPrint("leasing", "(%d)%s: outScript=%s\n", __LINE__, __func__, outScript.ToString());
+      LeasingLogPrint("nPct=%d, aResAmount=%d, nRewardAge=%d", nPct, aResAmount, nRewardAge);
+      LeasingLogPrint("outPoint=%s", outPoint.ToString());
+      LeasingLogPrint("outScript=%s", outScript.ToString());
 
       return CTxOut(aResAmount, outScript);
    }
@@ -722,7 +740,7 @@ private:
       auto outPoint = COutPoint(trxHash, static_cast<int>(type));
       auto outScript = GetScriptForLeasingReward(outPoint, leaserID);
 
-      LogPrint("leasing", "(%d)%s: CTxOut(aAmount(%d) * nPct(%d) / _100pct(%d), outScript(%s)\n", __LINE__, __func__, aAmount, nPct, _100pct, outScript.ToString());
+      LeasingLogPrint("CTxOut(aAmount(%d) * nPct(%d) / _100pct(%d), outScript(%s)", aAmount, nPct, _100pct, outScript.ToString());
 
       return CTxOut(aAmount * nPct / _100pct, outScript);
    }
@@ -798,7 +816,8 @@ private:
    CLeasingDB leasingDB;
    CLeasingOutputMap mapOutputs;
    std::map<CKeyID, CAmount> mapBalance;
-   int nHeight = 0;
+   int nBlockHeight = 0;
+   uint256 nBlockHash;
    CAmount nLeasingSupply = 0;
    int64_t nHeightLeasingPct = 15 * _1pct;
    int64_t nSupplyLeasingPct = _100pct;
@@ -807,14 +826,14 @@ private:
 
 
 CLeasingManager::CLeasingManager():
-pImpl(new CLeasingManager::CImpl()) {
+    pImpl(new CLeasingManager::CImpl()) {
 }
 
 CLeasingManager::~CLeasingManager() {
 }
 
 void CLeasingManager::UpdatedBlockTip(const CBlockIndex* pIndex) {
-   pImpl->SetHeight(pIndex->nHeight);
+   pImpl->SetBlock(pIndex->nHeight, pIndex->GetBlockHash());
 }
 
 void CLeasingManager::SyncTransaction(const CTransaction& tx, const CBlock* pBlock) {
@@ -862,10 +881,10 @@ void CLeasingManager::SyncTransaction(const CTransaction& tx, const CBlock* pBlo
 }
 
 bool CLeasingManager::GetLeasingRewards(
-const LeaserType type,
-const CKeyID& leaserID,
-const size_t nLimit,
-std::vector<CTxOut>& vRewards
+    const LeaserType type,
+    const CKeyID& leaserID,
+    const size_t nLimit,
+    std::vector<CTxOut>& vRewards
 ) const {
    return pImpl->GetLeasingRewards(type, leaserID, nLimit, vRewards);
 }
@@ -876,6 +895,10 @@ CTxOut CLeasingManager::CalcLeasingReward(const COutPoint& point, const CKeyID& 
 
 void CLeasingManager::GetAllAmountsLeasedTo(CPubKey &pubKey, CAmount &amount) const {
    pImpl->GetAllAmountsLeasedTo(pubKey, amount);
+}
+
+const uint256& CLeasingManager::GetBlockHash() const {
+    return pImpl->GetBlockHash();
 }
 
 #endif // ENABLE_LEASING_MANAGER
