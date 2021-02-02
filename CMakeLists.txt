@@ -58,7 +58,7 @@ find_package(Snappy CONFIG REQUIRED)
 
 find_library(ROCKSDB_LIBRARY rocksdb)
 
-    set(BDB_VER "18.1.40")
+    set(BDB_VER "18.1.32")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/contrib/cmake")
 set(CMAKE_CXX_STANDARD 11)
 include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
