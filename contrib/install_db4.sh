@@ -18,9 +18,10 @@ expand_path() {
 }
 
 BDB_PREFIX="$(expand_path ${1})/db18"; shift;
-BDB_VERSION='db-18.1.40'
-BDB_HASH='0cecb2ef0c67b166de93732769abdeba0555086d51de1090df325e18ee8da9c8'
-BDB_URL="https://download.oracle.com/berkeley-db/${BDB_VERSION}.tar.gz"
+BDB_VERSION='db-18.1.32'
+BDB_HASH='fa1fe7de9ba91ad472c25d026f931802597c29f28ae951960685cde487c8d654'
+# As of 5th March 2020 this mirror is identical to Oracle's login-protected tarball for db 18.1.32
+BDB_URL="https://bintray.com/homebrew/mirror/download_file?file_path=berkeley-${BDB_VERSION}.tar.gz"
 
 check_exists() {
   which "$1" >/dev/null 2>&1
@@ -98,4 +99,4 @@ echo
 echo 'When compiling btcud, run `./configure` in the following way:'
 echo
 echo "  export BDB_PREFIX='${BDB_PREFIX}'"
-echo '  ./configure BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-4.8" BDB_CFLAGS="-I${BDB_PREFIX}/include" ...'
+echo '  ./configure BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-18.1" BDB_CFLAGS="-I${BDB_PREFIX}/include" ...'
