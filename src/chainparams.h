@@ -177,7 +177,7 @@ public:
     int MPoSRewardRecipients() const { return nMPoSRewardRecipients; }
 
     std::string EVMGenesisInfo(dev::eth::Network network) const;
-
+    
     //Chainstate patching addresses
     const std::vector<std::string>& ExcludedBTCAddresses() const { return vExcludedAddresses; }
     const std::string& RechargedBTCAddress() const { return rechargedAddress; }
@@ -281,10 +281,8 @@ protected:
     //////////qtum
     int nMPoSRewardRecipients;
 
-
     std::vector<std::string> vExcludedAddresses;
     std::string rechargedAddress;
-
 };
 void ReplaceInt(const int64_t& number, const std::string& key, std::string& str);
 std::string toHexString(int64_t intValue);
