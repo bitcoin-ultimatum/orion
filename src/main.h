@@ -17,7 +17,6 @@
 #endif
 
 #define BOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT
-#define BOOST_LOG_DYN_LINK 1
 
 #include "amount.h"
 #include "chain.h"
