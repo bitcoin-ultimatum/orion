@@ -38,17 +38,17 @@ TopBar::TopBar(BTCUGUI* _mainWindow, QWidget *parent) :
     // Set parent stylesheet
     this->setStyleSheet(_mainWindow->styleSheet());
     /* Containers */
-   this->setContentsMargins(2, 0, 2, 3);
-   //setShadow(this);
+    this->setContentsMargins(2, 0, 2, 3);
+    //setShadow(this);
 #ifdef Q_OS_MAC
-    ui->containerTop->load("://bg-dashboard-banner");
-    setCssProperty(ui->containerTop,"container-topbar-no-image");
+    //ui->containerTop->load("://bg-dashboard-banner");
+    //setCssProperty(ui->containerTop,"container-topbar-no-image");
 #else
     //ui->containerTop->setProperty("cssClass", "container-border-topbar");
 
     //this->setProperty("cssClass", "container-border");
-   //ui->containerTop->setVisible(false);
-   ui->top_container_2->setProperty("cssClass", "container-top");
+    //ui->containerTop->setVisible(false);
+    ui->top_container_2->setProperty("cssClass", "container-top");
 #endif
 
     std::initializer_list<QWidget*> lblTitles = {ui->labelTitle1,  ui->labelTitle3, ui->labelTitle4, ui->labelTitle5, ui->labelTitle6,
@@ -453,6 +453,8 @@ void TopBar::setNumConnections(int count) {
 }
 
 void TopBar::setNumBlocks(int count) {
+// TODO: Disabling macOS App Nap on initial sync, disk and reindex operations.
+
     if (!clientModel)
         return;
 
