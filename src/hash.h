@@ -193,7 +193,7 @@ inline int HashChainstate(std::string &strHash)
    //Iterate files in directory
    for(auto & p : vPathes)
    {
-      FILE *file = fopen(p.c_str(), "rb");
+      FILE* file = fopen(p.string().c_str(), "rb");
       if(!file) return -534;
       while((bytesRead = fread(buffer, 1, bufSize, file)))
       {
