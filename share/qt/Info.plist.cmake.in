@@ -3,7 +3,7 @@
 <plist version="0.9">
 <dict>
   <key>LSMinimumSystemVersion</key>
-  <string>10.10.0</string>
+  <string>10.12.0</string>
 
   <key>LSArchitecturePriority</key>
   <array>
@@ -11,34 +11,34 @@
   </array>
 
   <key>CFBundleIconFile</key>
-  <string>bitcoin.icns</string>
+  <string>${MACOSX_BUNDLE_ICON_FILE}</string>
 
   <key>CFBundlePackageType</key>
   <string>APPL</string>
 
   <key>CFBundleGetInfoString</key>
-  <string>@CLIENT_VERSION_MAJOR@.@CLIENT_VERSION_MINOR@.@CLIENT_VERSION_REVISION@.@CLIENT_VERSION_BUILD@, Copyright © 2009-@COPYRIGHT_YEAR@ The Bitcoin Core developers, 2014-@COPYRIGHT_YEAR@ The Dash Core developers, 2015-@COPYRIGHT_YEAR@ The BTCU Core developers</string>
+  <string>${MACOSX_BUNDLE_INFO_STRING}</string>
 
   <key>CFBundleShortVersionString</key>
-  <string>@CLIENT_VERSION_MAJOR@.@CLIENT_VERSION_MINOR@.@CLIENT_VERSION_REVISION@</string>
+  <string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
 
   <key>CFBundleVersion</key>
-  <string>@CLIENT_VERSION_MAJOR@.@CLIENT_VERSION_MINOR@.@CLIENT_VERSION_REVISION@</string>
+  <string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
 
   <key>CFBundleSignature</key>
   <string>????</string>
 
   <key>CFBundleExecutable</key>
-  <string>BTCU-Qt</string>
+  <string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
 
   <key>CFBundleName</key>
-  <string>BTCU-Qt</string>
+  <string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
 
   <key>LSHasLocalizedDisplayName</key>
   <true/>
 
   <key>CFBundleIdentifier</key>
-  <string>io.btcu.Btcu-Qt</string>
+  <string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
 
   <key>CFBundleURLTypes</key>
   <array>
