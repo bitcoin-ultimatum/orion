@@ -75,7 +75,6 @@ QT_FORMS_UI = \
   qt/btcu/forms/welcomecontentwidget.ui \
   qt/btcu/forms/splash.ui
 
-
 QT_MOC_CPP = \
   qt/moc_addressbookpage.cpp \
   qt/moc_addresstablemodel.cpp \
