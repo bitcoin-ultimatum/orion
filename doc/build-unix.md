@@ -60,7 +60,14 @@ Dependency Build Instructions: Ubuntu & Debian
 Build requirements:
 
 ```bash
-    sudo apt-get install git build-essential libtool bsdmainutils autotools-dev autoconf pkg-config automake python3 libzmq3-dev libevent-dev libjsonrpccpp-dev libsnappy-dev libbenchmark-dev libgtest-dev 
+    sudo apt-get install git build-essential libtool bsdmainutils autotools-dev autoconf pkg-config automake python3 libzmq3-dev libevent-dev libjsonrpccpp-dev libsnappy-dev libbenchmark-dev
+```
+
+Installing GTest:
+```bash
+    sudo apt-get install libgtest-dev
+    cd /usr/src/googletest
+    sudo cmake . && sudo cmake --build . --target install && cd -
 ```
 
 ## Linux Distribution Specific Instructions
@@ -72,9 +79,10 @@ Build requirements:
 You can build the BTCU project from scratch by using a special bash script:
 
 ```bash
-    wget https://raw.githubusercontent.com/bitcoin-ultimatum/btcu/master/install_ubuntu.sh
-    sudo bash install_ubuntu.sh
+    mkdir btcu
     cd btcu
+    wget https://raw.githubusercontent.com/bitcoin-ultimatum/orion/master/install_ubuntu.sh
+    sudo bash install_ubuntu.sh
 ```
 
 #### Dependency Build Instructions (manual)
@@ -122,8 +130,16 @@ Then update the package list and install `cmake`:
     sudo apt install cmake
 ```
 
-Now, you can either build from self-compiled [depends](/depends/README.md) or
-install the required dependencies with the following instructions.
+Also you can build cmake by yourself:
+```bash
+    version=3.14
+    build=1
+    wget https://cmake.org/files/v$version/cmake-$version.$build.tar.gz
+    tar -xzvf cmake-$version.$build.tar.gz
+    cd cmake-$version.$build
+    ./bootstrap --prefix=/usr && make -j$(nproc) && sudo make install
+    cd -
+```
 
 Options when installing required Boost library files:
 
@@ -139,6 +155,19 @@ If that doesn't work, you can install all boost development packages with:
 
 ```bash
         sudo apt-get install libboost-all-dev
+```
+
+Please make sure you have installed Boost 1.71.0.
+
+Alternativetely you can build Boost from a source code:
+```bash
+        wget https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz
+        tar -xf boost_1_71_0.tar.gz
+
+        cd boost_1_71_0
+        ./bootstrap.sh --prefix=/usr --with-python=python3 &&
+        sudo ./b2 stage -j$(nproc) threading=multi link=shared --with-regex --with-test --with-filesystem --with-date_time --with-random --with-system --with-thread --with-program_options --with-chrono --with-fiber --with-log --with-context --with-math && sudo ./b2 install --prefix=/usr
+        cd -
 ```
 
 3. For Ethereum VM smart contracts:
@@ -179,7 +208,7 @@ See the section "Disable-wallet mode" to build BTCU without wallet.
 6. Minipupnc dependencies (can be disabled by passing `-DWITH_MINIUNPC=OFF` on the cmake command line):
 
 ```bash
-    sudo apt-get install libminiupnpc-dev
+    sudo apt-get install libminiupnpc-dev miniupnpd
 ```
 
 7. ZMQ dependencies (provides ZMQ API, can be disabled by passing `-DENABLE_ZMQ=OFF` on the cmake command line):
