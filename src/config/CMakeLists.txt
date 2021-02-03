@@ -628,6 +628,7 @@ endif()
 # Check if std::system or ::wsystem is available
 check_cxx_symbol_exists(std::system "cstdlib" _HAVE_STD_SYSTEM)
 check_cxx_symbol_exists(::wsystem "" _HAVE_WSYSTEM)
+
 if(_HAVE_STD_SYSTEM OR _HAVE_WSYSTEM)
 	set(HAVE_SYSTEM 1)
 endif()
@@ -637,4 +638,4 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif()
 
 # Generate the config
-configure_file(btcu-config.h.cmake.in btcu-config.h ESCAPE_QUOTES)
+configure_file(btcu-config.h.cmake.in ${PROJECT_SOURCE_DIR}/src/config/btcu-config.h ESCAPE_QUOTES)
