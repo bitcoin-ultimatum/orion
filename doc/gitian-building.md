@@ -112,7 +112,7 @@ gpg --output ${VERSION}-win-unsigned/$NAME/btcu-win-${VERSION%\.*}-build.assert.
 Uploading Signatures
 --------------------
 Make a Pull Request (both the `.assert` and `.assert.sig` files) to the
-[gitian.sigs](https://github.com/btcu-project/gitian.sigs/) repository:
+[gitian.sigs](https://github.com/bitcoin-ultimatum/gitian.sigs/) repository:
 
 ```bash
 git checkout -b ${VERSION}-not-codesigned
