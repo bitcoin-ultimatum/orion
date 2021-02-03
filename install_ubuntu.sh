@@ -380,7 +380,7 @@ else
     echo  ""
     echo  "[50%] Downloading latest version of the BTCU... "
     git clone https://github.com/bitcoin-ultimatum/orion
-    mv orion/* .
+    cd orion
     echo  ""
     echo  "[50%] Downloading latest version of the BTCU... Done!"
     echo  ""
