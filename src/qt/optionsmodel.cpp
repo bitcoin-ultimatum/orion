@@ -394,7 +394,7 @@ bool OptionsModel::setData(const QModelIndex& index, const QVariant& value, int 
         case Language:
             if (settings.value("language") != value) {
                 settings.setValue("language", value);
-               language = value.toString();
+                language = value.toString();
                 setRestartRequired(true);
             }
             break;

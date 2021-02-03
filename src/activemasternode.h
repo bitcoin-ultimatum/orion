@@ -29,8 +29,6 @@ private:
     // critical section to protect the inner data structures
     mutable CCriticalSection cs;
 
-
-
     /// Create Masternode broadcast, needs to be relayed manually after that
     bool CreateBroadcast(
         CTxIn vin, CService service,

@@ -22,6 +22,10 @@
 #include <boost/multi_index/tag.hpp>
 #include <boost/multi_index/composite_key.hpp>
 
+#ifdef  _WIN32
+#include <thread/interruption.hpp>
+#endif // _WIN32
+
 
 
 namespace bmi = boost::multi_index;
@@ -591,33 +595,33 @@ private:
    void CalcLeasingHeightPct() {
       nHeightLeasingPct = 15;
 
-      if (nBlockHeight < 500000)
+      if (nBlockHeight  < 500000)
          nHeightLeasingPct = 15;
-      else if (nBlockHeight < 1000000)
+      else if (nBlockHeight  < 1000000)
          nHeightLeasingPct = 14;
-      else if (nBlockHeight < 1500000)
+      else if (nBlockHeight  < 1500000)
          nHeightLeasingPct = 13;
-      else if (nBlockHeight < 2000000)
+      else if (nBlockHeight  < 2000000)
          nHeightLeasingPct = 12;
-      else if (nBlockHeight < 2500000)
+      else if (nBlockHeight  < 2500000)
          nHeightLeasingPct = 11;
-      else if (nBlockHeight < 3000000)
+      else if (nBlockHeight  < 3000000)
          nHeightLeasingPct = 10;
-      else if (nBlockHeight < 3500000)
+      else if (nBlockHeight  < 3500000)
          nHeightLeasingPct = 9;
-      else if (nBlockHeight < 4000000)
+      else if (nBlockHeight  < 4000000)
          nHeightLeasingPct = 8;
-      else if (nBlockHeight < 4500000)
+      else if (nBlockHeight  < 4500000)
          nHeightLeasingPct = 7;
-      else if (nBlockHeight < 5000000)
+      else if (nBlockHeight  < 5000000)
          nHeightLeasingPct = 6;
-      else if (nBlockHeight < 5500000)
+      else if (nBlockHeight  < 5500000)
          nHeightLeasingPct = 5;
-      else if (nBlockHeight < 6000000)
+      else if (nBlockHeight  < 6000000)
          nHeightLeasingPct = 4;
-      else if (nBlockHeight < 6500000)
+      else if (nBlockHeight  < 6500000)
          nHeightLeasingPct = 3;
-      else if (nBlockHeight < 7000000)
+      else if (nBlockHeight  < 7000000)
          nHeightLeasingPct = 2;
       else
          nHeightLeasingPct = 1;

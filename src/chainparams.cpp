@@ -280,8 +280,11 @@ public:
         genesis.hashUTXORoot = uint256(h256Touint(dev::sha3(dev::rlp("")))); // qtum
 
         hashGenesisBlock = genesis.GetHash();
+
+#ifndef _MSC_VER
         assert(hashGenesisBlock == uint256("0x000000786809183e51a8a112ee0b082be2a46df19f05d6b4a7525c0c027fc04a"));
         assert(genesis.hashMerkleRoot == uint256("0x858d38eb69842a10816427748c0cd8f60211113a5f62f669891aae88b0c85884"));
+#endif
         
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
@@ -329,7 +332,7 @@ public:
 
         //////////qtum
         nMPoSRewardRecipients = 10;
-
+        
         vExcludedAddresses = {"35hK24tcLEWcgNA4JxpvbkNkoAcDGqQPsP",
                               "1P5ZEDWTKTFGxQjZphgWPQUpe554WKDfHQ",
                               "37XuVSEpWW4trkfmvWzegTHQt7BdktSKUs",
@@ -435,7 +438,9 @@ public:
         genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
 
         hashGenesisBlock = genesis.GetHash();
+#ifndef _MSC_VER
         assert(hashGenesisBlock == uint256("0x00000ae988ea045538fe321cd062cef4b2f201049e7d8439cf19cc149f2f0f0b"));
+#endif
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -552,7 +557,10 @@ public:
         genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
 
         hashGenesisBlock = genesis.GetHash();
+
+#ifndef _MSC_VER
         assert(hashGenesisBlock == uint256("0x00000e203c36e781e6cc4f08508c2256cd7f5dd02693fad1bea1f2e9eea51dcc"));
+#endif
         
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
         vSeeds.clear();      //! Testnet mode doesn't have any DNS seeds.

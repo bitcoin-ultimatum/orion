@@ -27,7 +27,6 @@ bool ExtractLeasingPoint(const CTxOut& txOut, COutPoint& point, CKeyID& keyID) {
     return false;
 }
 
-
 bool CheckLeasingRewardTransaction(const uint256& blockHash, const CTransaction& tx, CValidationState& state, const CLeasingManager& leasingManager) {
     if (blockHash != leasingManager.GetBlockHash()) {
         LeasingLogPrint("not enough information to verify leasing reward in trx %s (%s != %s)",
@@ -36,7 +35,6 @@ bool CheckLeasingRewardTransaction(const uint256& blockHash, const CTransaction&
     }
 
     LeasingLogPrint("validate leasing reward for %s", tx.GetHash().ToString());
-
     for (auto& txOut: tx.vout) {
         if (!txOut.IsLeasingReward())
             continue;
@@ -57,31 +55,31 @@ bool CheckLeasingRewardTransaction(const uint256& blockHash, const CTransaction&
 }
 
 bool CheckLeasedToValidatorTransaction(const uint256& blockHash, const CTransaction& tx, CValidationState& state, const CLeasingManager& leasingManager) {
-   if (!tx.IsValidatorRegister())
-       return true;
+    if (!tx.IsValidatorRegister())
+        return true;
 
-   if (blockHash != leasingManager.GetBlockHash()) {
-       LeasingLogPrint("not enough information to verify leasing balance of the validator in trx %s (%s != %s)",
-          tx.GetHash().ToString(), blockHash.ToString(), leasingManager.GetBlockHash().ToString());
-       return true;
-   }
+    if (blockHash != leasingManager.GetBlockHash()) {
+        LeasingLogPrint("not enough information to verify leasing balance of the validator in trx %s (%s != %s)",
+            tx.GetHash().ToString(), blockHash.ToString(), leasingManager.GetBlockHash().ToString());
+        return true;
+    }
 
-   LeasingLogPrint("validate validator leasing limit for %s", tx.GetHash().ToString());
+    LeasingLogPrint("validate validator leasing limit for %s", tx.GetHash().ToString());
 
-   for(auto v: tx.validatorRegister) {
-     CAmount amount;
-     leasingManager.GetAllAmountsLeasedTo(v.pubKey, amount);
-     if(amount < LEASED_TO_VALIDATOR_MIN_AMOUNT)
-        return state.DoS(10, error("%s: not enough leased to validator candidate coins, min=%d, current=%d, validator pubkey %s, tx %s",
-                                   __func__,
-                                   LEASED_TO_VALIDATOR_MIN_AMOUNT,
-                                   amount,
-                                   HexStr(v.pubKey),
-                                   tx.GetHash().GetHex()),
-                         REJECT_INVALID,
-                         "bad-txns-not-enought-leased-to-validator");
-   }
-   return true;
+    for(auto v: tx.validatorRegister) {
+        CAmount amount;
+        leasingManager.GetAllAmountsLeasedTo(v.pubKey, amount);
+        if(amount < LEASED_TO_VALIDATOR_MIN_AMOUNT)
+            return state.DoS(10, error("%s: not enough leased to validator candidate coins, min=%d, current=%d, validator pubkey %s, tx %s",
+                                    __func__,
+                                    LEASED_TO_VALIDATOR_MIN_AMOUNT,
+                                    amount,
+                                    HexStr(v.pubKey),
+                                    tx.GetHash().GetHex()),
+                            REJECT_INVALID,
+                            "bad-txns-not-enought-leased-to-validator");
+    }
+    return true;
 }
 
 

@@ -20,10 +20,10 @@ TooltipMenu::TooltipMenu(BTCUGUI *_window, QWidget *parent) :
     ui->btnEdit->setVisible(false);
     ui->btnLast->setVisible(false);
 
-   ui->label->setVisible(false);
-   ui->label_2->setVisible(false);
-   ui->label_3->setVisible(false);
-   this->setGraphicsEffect(0);
+    ui->label->setVisible(false);
+    ui->label_2->setVisible(false);
+    ui->label_3->setVisible(false);
+    this->setGraphicsEffect(0);
     setCssProperty(ui->container, "container-list-menu");
     setCssProperty({ui->btnCopy, ui->btnDelete, ui->btnEdit, ui->btnLast}, "btn-list-menu");
     setCssProperty({ui->label, ui->label_2, ui->label_3}, "line-list-menu");
@@ -34,33 +34,33 @@ TooltipMenu::TooltipMenu(BTCUGUI *_window, QWidget *parent) :
     connect(ui->btnLast, SIGNAL(clicked()), this, SLOT(lastClicked()));
 }
 void TooltipMenu::setCopyBtnText(QString btnText){
-   ui->btnCopy->setText(btnText);
-   ui->btnCopy->setVisible(true);
+    ui->btnCopy->setText(btnText);
+    ui->btnCopy->setVisible(true);
 }
 
 void TooltipMenu::setEditBtnText(QString btnText){
     ui->btnEdit->setText(btnText);
-   ui->btnEdit->setVisible(true);
-   ui->label->setVisible(true);
-   /*setCssProperty(ui->btnCopy,"btn-list-menu-border");
-   updateStyle(ui->btnCopy);*/
+    ui->btnEdit->setVisible(true);
+    ui->label->setVisible(true);
+    /*setCssProperty(ui->btnCopy,"btn-list-menu-border");
+    updateStyle(ui->btnCopy);*/
 }
 
 void TooltipMenu::setDeleteBtnText(QString btnText){
     ui->btnDelete->setText(btnText);
-   ui->btnDelete->setVisible(true);
-   ui->label_2->setVisible(true);
-   /*setCssProperty(ui->btnEdit,"btn-list-menu-border");
-   updateStyle(ui->btnEdit);*/
+    ui->btnDelete->setVisible(true);
+    ui->label_2->setVisible(true);
+    /*setCssProperty(ui->btnEdit,"btn-list-menu-border");
+    updateStyle(ui->btnEdit);*/
 }
 
 void TooltipMenu::setLastBtnText(QString btnText, int minHeight){
     ui->btnLast->setText(btnText);
     ui->btnLast->setMinimumHeight(minHeight);
     ui->btnLast->setVisible(true);
-   ui->label_3->setVisible(true);
-    /*setCssProperty(ui->btnDelete,"btn-list-menu-border");
-   updateStyle(ui->btnDelete);*/
+    ui->label_3->setVisible(true);
+        /*setCssProperty(ui->btnDelete,"btn-list-menu-border");
+    updateStyle(ui->btnDelete);*/
 }
 
 void TooltipMenu::setCopyBtnVisible(bool visible){
