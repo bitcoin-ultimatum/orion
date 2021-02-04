@@ -288,8 +288,8 @@ def run_tests(test_list, src_dir, build_dir, exeext, tmpdir, jobs=1, enable_cove
 
     #Set env vars
     if "BITCOIND" not in os.environ:
-        os.environ["BITCOIND"] = build_dir + '/cmake-build-debug/btcud' + exeext
-        os.environ["BITCOINCLI"] = build_dir + '/cmake-build-debug/btcu-cli' + exeext
+        os.environ["BITCOIND"] = build_dir + '/btcud' + exeext
+        os.environ["BITCOINCLI"] = build_dir + '/btcu-cli' + exeext
 
     tests_dir = src_dir + '/test/functional/'
 
