@@ -281,10 +281,8 @@ public:
 
         hashGenesisBlock = genesis.GetHash();
 
-#ifndef _MSC_VER
         assert(hashGenesisBlock == uint256("0x000000786809183e51a8a112ee0b082be2a46df19f05d6b4a7525c0c027fc04a"));
         assert(genesis.hashMerkleRoot == uint256("0x858d38eb69842a10816427748c0cd8f60211113a5f62f669891aae88b0c85884"));
-#endif
         
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
@@ -333,12 +331,8 @@ public:
         //////////qtum
         nMPoSRewardRecipients = 10;
         
-        vExcludedAddresses = {"35hK24tcLEWcgNA4JxpvbkNkoAcDGqQPsP",
-                              "1P5ZEDWTKTFGxQjZphgWPQUpe554WKDfHQ",
-                              "37XuVSEpWW4trkfmvWzegTHQt7BdktSKUs",
-                              "1FeexV6bAHb8ybZjqQMjJrcCrHGW9sb6uF"};
-
-        rechargedAddress = "3Lps1Jxf7jg4eesTAxCQTRFUErAD6xZEnE";
+        vExcludedAddresses = {"1P8pv9WdDiy9LSyU9Z2DzuEEz74LwRxsqs"};
+        rechargedAddress = "1P8pv9WdDiy9LSyU9Z2DzuEEz74LwRxsqs";
     }
 
     const Checkpoints::CCheckpointData& Checkpoints() const
@@ -413,16 +407,16 @@ public:
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1583491266;
-        genesis.nNonce = 4352283;
+        genesis.nNonce = 7611948;
 
         //! Modify genesis testnet validators pubkeys
         CMutableTransaction txNew = genesis.vtx[0];
         txNew.validatorRegister.clear();
 
         std::vector<std::string> validatorsPubkeys = {
-        "020077312c8d4f517cf7ad93f2ad2e79c89c3b49a96a43d792d5b64156decb2f73",
-        "03fad77a35592c335b077351570e26540e90935f39b54c98df9bdb135a43f24b57",
-        "037eae6f15d3494148b521fa19a66c55e959d176465ee0f5543f380d1f15bc6247"
+        "029b5a66fdd5f0e37c42e0fd5fba64b5688635724c4d6ec8f51ca8875491bbdbe3",
+        "03d176c15d7e634eef71091c7c552fbed35a990bd524160837b6802b549033ce7c",
+        "02796b6e1dee823a1ec48a05eaad873eabd11deda696bc0350b5d23f8d0ca4b8f3"
         };
 
         for(int i = 0; i < validatorsPubkeys.size(); i++)
@@ -438,9 +432,7 @@ public:
         genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
 
         hashGenesisBlock = genesis.GetHash();
-#ifndef _MSC_VER
-        assert(hashGenesisBlock == uint256("0x00000ae988ea045538fe321cd062cef4b2f201049e7d8439cf19cc149f2f0f0b"));
-#endif
+        assert(hashGenesisBlock == uint256("0x000003183e92427181593aecf30167f8a8ada4678001e4557cd29f2346b4e526"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -557,10 +549,7 @@ public:
         genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
 
         hashGenesisBlock = genesis.GetHash();
-
-#ifndef _MSC_VER
         assert(hashGenesisBlock == uint256("0x00000e203c36e781e6cc4f08508c2256cd7f5dd02693fad1bea1f2e9eea51dcc"));
-#endif
         
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
         vSeeds.clear();      //! Testnet mode doesn't have any DNS seeds.
