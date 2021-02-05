@@ -1603,6 +1603,7 @@ add_subdirectory(src/qt)
 if(ENABLE_TESTS)
     add_subdirectory(test)
     set(BTCU_TEST_SOURCES
+            ./src/script/bitcoinconsensus.cpp
             ./src/test/test_btcu.cpp
             ./src/test/zerocoin_denomination_tests.cpp
             ./src/test/zerocoin_transactions_tests.cpp
