@@ -23,7 +23,7 @@
 #include <boost/multi_index/composite_key.hpp>
 
 #ifdef  _WIN32
-#include <thread/interruption.hpp>
+#include <boost/thread/interruption.hpp>
 #endif // _WIN32
 
 
