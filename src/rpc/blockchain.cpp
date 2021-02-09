@@ -149,6 +149,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     //////////
     ////////// Coin stake data ////////////////
     /////////
+   /*
     if (block.IsProofOfStake()) {
         // First grab it
         uint256 hashProofOfStakeRet;
@@ -182,6 +183,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
         result.push_back(Pair("stakeModifier", stakeModifier));
         result.push_back(Pair("hashProofOfStake", hashProofOfStakeRet.GetHex()));
     }
+*/
 
     return result;
 }
