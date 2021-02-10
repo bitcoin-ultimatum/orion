@@ -68,7 +68,7 @@ in the download folder where you've placed the file. If the file has another nam
 
 ## Dependencies
 ```shell
-    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf rocksdb snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake
+    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf rocksdb snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp
     # libscrypt from local since we need a version with cmake support but you still can get it via brew
 ```
 
@@ -313,7 +313,7 @@ You can monitor the download process by looking at the debug.log file:
     btcud -daemon      # Starts the btcu daemon.
     btcu-cli --help    # Outputs a list of command-line options.
     btcu-cli help      # Outputs a list of RPC commands when the daemon is running.
-    ./src/qt/btcu-qt   # Start GUI
+    ./bin/btcu-qt   # Start GUI
 ```
 
 ## Notes
