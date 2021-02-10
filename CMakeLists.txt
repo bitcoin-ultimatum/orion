@@ -143,7 +143,7 @@ option(WITH_MINIUNPC "Enable UPnP support" ON)
 option(START_WITH_UPNP "If UPNP is enabled, turn it on at startup" OFF)
 option(ENABLE_GPROF "Use gprof profiling compiler flags " OFF)
 option(ENABLE_LEASING_MANAGER "Enable leasing manager" ON)
-option(ENABLE_TESTS "Build tests" OFF)
+option(ENABLE_TESTS "Build tests" ON)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set(DEFAULT_ENABLE_DBUS_NOTIFICATIONS ON)
@@ -1601,7 +1601,9 @@ endif()
 add_subdirectory(src/qt)
 
 if(ENABLE_TESTS)
+    add_subdirectory(test)
     set(BTCU_TEST_SOURCES
+            ./src/script/bitcoinconsensus.cpp
             ./src/test/test_btcu.cpp
             ./src/test/zerocoin_denomination_tests.cpp
             ./src/test/zerocoin_transactions_tests.cpp
