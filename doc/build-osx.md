@@ -200,77 +200,19 @@ It is important: Do not use spaces and other line breaking simbols in a path to 
     make osx-dmg
 ```
 
-### Libscrypt (optional)
-You can also make a separate libscrypt lib file. In order to do this you have to run followed commands:
+## XCode build
 
+You can run and build the application from the Apple XCode.
+Firstly, you will have to create an XCode project file by the command: 
 ```shell
-    cd src/libscrypt
-    cmake .
-    make
-    cd ../..
+    cmake . -G Xcode
 ```
 
-### Cryptopp (optional)
-For a separate building of a libcryptopp lib file:
+This will create an btcu.xcodeproj file in a root project folder.
+Next, open it via XCode and select target you want. For example it can be `btcu-qt`.
+After that you can select options `Run` (⌘R) of `Build` (⌘R).
 
-```shell
-    cd src/cryptopp
-    cmake .
-    make
-    cd ../..
-```
-
-### Secp256k1 (optional)
-And for a libsecp256k1 lib file:
-
-```shell
-    cd src/secp256k1
-    ./autogen.sh
-    ./configure
-    make
-    cd ../..
-```
-
-### Univalue (optional)
-And for a libunivalue lib file:
-
-```shell
-    cd src/univalue
-    ./autogen.sh
-    ./configure
-    make
-    cd ../..
-```
-
-### JSON CPP (optional)
-And for a libjsoncpp lib file:
-
-```shell
-    cd src/jsoncpp/jsoncpp-build
-    cmake ../jsoncpp 
-    make
-    cd ../../..
-```
-
-### LibFF (optional)
-And for a libff lib file go to src/libff and uncomment lines from 102 to 113. Then run commands:
-
-```shell
-    cd src/libff
-    cmake .
-    make
-    cd ../..
-```
-
-### Ethash (optional)
-For libethash.a file:
-
-```shell
-    cd src/cpp-ethereum/ethash
-    cmake .
-    make
-    cd ../../..
-```
+Happy building!
 
 ## Compiling for different MacOS versions
 In a case when you need a different version of the OSX platforms add the parameter to a cmake command (for example we use 10.10 version) :
