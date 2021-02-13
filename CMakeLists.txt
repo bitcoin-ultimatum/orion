@@ -518,39 +518,58 @@ list(APPEND CMAKE_PREFIX_PATH ./src/cryptopp)
 list(APPEND CMAKE_PREFIX_PATH ./src/cpp-ethereum/ethash)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/qt5)
-	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/berkeley-db)
 	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/rocksdb)
-	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/libjson-rpc-cpp)
-	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/google-benchmark)
-	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/snappy)
-	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/libevent)
-    
-	set(BerkeleyDB_ROOT_DIR "/usr/local/opt/berkeley-db")
+	list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/opt/rocksdb)
 
-	set( CURL_INCLUDE_DIR "/usr/local/opt/curl/include" )
-	set( CURL_LIBRARY "/usr/local/opt/curl/lib" )
+	find_brew_prefix(qt5_ROOT_DIR qt5)
+	find_brew_prefix(libjsonrpccpp_ROOT_DIR libjson-rpc-cpp)
+	find_brew_prefix(GBenchmark_ROOT_DIR google-benchmark)
+	find_brew_prefix(snappy_ROOT_DIR snappy)    
 
-	set( MHD_INCLUDE_DIR "/usr/local/opt/libmicrohttpd/include" )
-	set( MHD_LIBRARY "/usr/local/opt/libmicrohttpd/lib" )
-
-	set( BerkeleyDB_INCLUDE_DIR "/usr/local/opt/berkeley-db/include" )
-	set( BerkeleyDB_LIBRARY "/usr/local/opt/berkeley-db/lib" )
-
+	find_brew_prefix(CURL_ROOT_DIR curl)
+	find_brew_prefix(MHD_ROOT_DIR libmicrohttpd)
+	find_brew_prefix(BerkeleyDB_ROOT_DIR berkeley-db)
+	find_brew_prefix(LibEvent_ROOT_DIR libevent)
+	find_brew_prefix(GMP_ROOT_DIR gmp)
 	find_brew_prefix(OPENSSL_ROOT_DIR openssl)
 	find_brew_prefix(ZMQ_ROOT_DIR zmq)
+	find_brew_prefix(Qrcode_ROOT_DIR qrencode)
 
-	set( LibEvent_INCLUDE_DIR "/usr/local/opt/libevent/include" )
-	set( LibEvent_LIBRARY "/usr/local/opt/libevent/lib" )
+	list(APPEND CMAKE_PREFIX_PATH ${qt5_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${libjsonrpccpp_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${GBenchmark_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${snappy_ROOT_DIR})
 
-	set( GMP_INCLUDE_DIR "/usr/local/opt/gmp/include" )
-	set( GMP_LIBRARY "/usr/local/opt/gmp/lib" )
+	list(APPEND CMAKE_PREFIX_PATH ${CURL_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${MHD_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${BerkeleyDB_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${LibEvent_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${GMP_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${OPENSSL_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${ZMQ_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${Qrcode_ROOT_DIR})
+
+	set( CURL_INCLUDE_DIR "${CURL_ROOT_DIR}/include" )
+	set( CURL_LIBRARY "${CURL_ROOT_DIR}/lib" )
+
+	set( MHD_INCLUDE_DIR "${MHD_ROOT_DIR}/include" )
+	set( MHD_LIBRARY "${MHD_ROOT_DIR}/lib" )
+
+	set( BerkeleyDB_INCLUDE_DIR "${BerkeleyDB_ROOT_DIR}/include" )
+	set( BerkeleyDB_LIBRARY "${BerkeleyDB_ROOT_DIR}/lib" )
+
+	set( LibEvent_INCLUDE_DIR "${LibEvent_ROOT_DIR}/include" )
+	set( LibEvent_LIBRARY "${LibEvent_ROOT_DIR}/lib" )
+
+	set( GMP_INCLUDE_DIR "${GMP_ROOT_DIR}/include" )
+	set( GMP_LIBRARY "${GMP_ROOT_DIR}/lib" )
 
 	set( ZeroMQ_INCLUDE_DIR "${ZMQ_ROOT_DIR}/include" )
 	set( ZeroMQ_LIBRARY "${ZMQ_ROOT_DIR}/lib" )
 
-	set( Qrcode_INCLUDE_DIR "/usr/local/opt/qrencode/include" )
-	set( Qrcode_LIBRARY "/usr/local/opt/qrencode/lib" )
+	set( Qrcode_INCLUDE_DIR "${Qrcode_ROOT_DIR}/include" )
+	set( Qrcode_LIBRARY "${Qrcode_ROOT_DIR}/lib" )
+
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set( GTest_DIR "/usr/src/googletest" CACHE PATH "Path to googletest")
 	set( GTEST_ROOT "/usr/src/googletest" CACHE PATH "Path to googletest")

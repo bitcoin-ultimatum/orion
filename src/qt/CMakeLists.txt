@@ -47,8 +47,10 @@ if (Qt5Charts_FOUND)
     add_compile_options("-DUSE_QTCHARTS")
 endif()
 
+find_brew_prefix(qt5_ROOT_DIR qt5)
+
 find_program(MOC_BIN NAMES moc moc-qt5 qt5-moc
-        PATHS /usr/lib/qt5/bin /usr/lib/x86_64-linux-gnu/qt5/bin /usr/local/opt/qt/bin /usr/local/opt/qt5/bin ${MOC_BIN_DIR}
+        PATHS /usr/lib/qt5/bin /usr/lib/x86_64-linux-gnu/qt5/bin ${qt5_ROOT_DIR}/bin ${MOC_BIN_DIR}
         NO_DEFAULT_PATH
         NO_SYSTEM_ENVIRONMENT_PATH)
 if (MOC_BIN)
