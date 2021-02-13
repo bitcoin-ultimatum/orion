@@ -68,7 +68,7 @@ in the download folder where you've placed the file. If the file has another nam
 
 ## Dependencies
 ```shell
-    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf rocksdb snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp
+    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp
     # libscrypt from local since we need a version with cmake support but you still can get it via brew
 ```
 
@@ -87,36 +87,38 @@ If you'll get a refuse result such as "Warning: Refusing to link macOS provided/
     ( brew --prefix openssl && echo '/include/openssl'; ) | tr -d "[:space:]" | xargs -I '{}' ln -s {} /usr/local/include
 ```
 
-Next run an important command to keep appopriate versions to run:
+#### Boost
+In order to make things simplier and to support Apple M-series we will have to build Boost from the sources.
+To do this please run commands:
 ```shell
-    export HOMEBREW_NO_AUTO_UPDATE=1
-    export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+    alias nproc="sysctl -n hw.logicalcpu"
+
+    curl https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz -o boost_1_71_0.tar.gz
+    tar -xf boost_1_71_0.tar.gz
+
+    cd boost_1_71_0
+    ./bootstrap.sh --prefix=/usr/local/opt/boost --with-python=python3 &&
+    sudo ./b2 stage -j$(nproc) cxxflags="-std=c++11" --reconfigure threading=multi link=shared --with-regex --with-test --with-filesystem --with-date_time --with-random --with-system --with-thread --with-program_options --with-chrono --with-fiber --with-log --with-context --with-math && sudo ./b2 install --prefix=/usr/local/opt/boost
+    sudo ln -s /usr/local/opt/boost/lib/*.dylib /usr/local/lib
+    cd -
 ```
 
-Next:
+This will install Boost to the brew default packages folder. You can change it but make sure it is visible in system path for lib and for includes.
+
+#### Rocksdb
+If you build on Mac Intell you can just run:
 ```shell
-    # since brew has been removed the required version of the boost
-    curl https://raw.githubusercontent.com/Homebrew/homebrew-core/8d748e26ccc9afc8ea0d0201ae234fda35de721e/Formula/boost.rb -o boost.rb
-    brew install ./boost.rb
+    brew install rocksdb
 ```
 
-Also it may be usefull to add openssl bin folder to PATH as it recommended by result of the command "brew link openssl --force".
-
-See [dependencies.md](dependencies.md) for a complete overview.
-
-
-Also it is important to have the exact version of the icu4c:
+In an M-series you will have to compile it from the sources:
 ```shell
-    brew uninstall --ignore-dependencies icu4c
-    curl https://raw.githubusercontent.com/Homebrew/homebrew-core/a806a621ed3722fb580a58000fb274a2f2d86a6d/Formula/icu4c.rb -o icu4c.rb
-    brew install ./icu4c.rb
-    ln -s /usr/local/Cellar/icu4c/64.2 /usr/local/opt/icu4c
-```
+    git clone https://github.com/facebook/rocksdb.git
+    cd rocksdb
+    cmake . -DPORTABLE=ON -DUSE_RTTI=ON -DWITH_BENCHMARK_TOOLS=OFF -DWITH_BZ2=O -DWITH_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
 
-After finishing this steps of the dependencies installation you may run the command to undo brew configuration:
-```shell
-    export HOMEBREW_NO_AUTO_UPDATE=0
-    export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=0
+    sudo make install
+    cd -
 ```
 
 #### SQLite
