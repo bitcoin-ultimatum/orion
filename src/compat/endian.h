@@ -19,6 +19,44 @@
 #include <sys/endian.h>
 #endif
 
+#if defined(__APPLE__)
+
+#	include <libkern/OSByteOrder.h>
+
+#	define htobe16(x) OSSwapHostToBigInt16(x)
+#	define htole16(x) OSSwapHostToLittleInt16(x)
+#	define be16toh(x) OSSwapBigToHostInt16(x)
+#	define le16toh(x) OSSwapLittleToHostInt16(x)
+ 
+#	define htobe32(x) OSSwapHostToBigInt32(x)
+#	define htole32(x) OSSwapHostToLittleInt32(x)
+#	define be32toh(x) OSSwapBigToHostInt32(x)
+#	define le32toh(x) OSSwapLittleToHostInt32(x)
+ 
+#	define htobe64(x) OSSwapHostToBigInt64(x)
+#	define htole64(x) OSSwapHostToLittleInt64(x)
+#	define be64toh(x) OSSwapBigToHostInt64(x)
+#	define le64toh(x) OSSwapLittleToHostInt64(x)
+
+#define __BYTE_ORDER    BYTE_ORDER
+#define __BIG_ENDIAN    BIG_ENDIAN
+#define __LITTLE_ENDIAN LITTLE_ENDIAN
+#define __PDP_ENDIAN    PDP_ENDIAN
+
+#define HAVE_DECL_HTOBE16 1
+#define HAVE_DECL_HTOLE16 1
+#define HAVE_DECL_BE16TOH 1
+#define HAVE_DECL_LE16TOH 1
+#define HAVE_DECL_HTOBE32 1
+#define HAVE_DECL_HTOLE32 1
+#define HAVE_DECL_BE32TOH 1
+#define HAVE_DECL_LE32TOH 1
+#define HAVE_DECL_HTOBE64 1
+#define HAVE_DECL_HTOLE64 1
+#define HAVE_DECL_BE64TOH 1
+#define HAVE_DECL_LE64TOH 1
+#endif //  defined(__APPLE__)
+
 #if (defined(_WIN16) || defined(_WIN32) || defined(_WIN64)) && !defined(__WINDOWS__)
 #	define __WINDOWS__
 #endif
