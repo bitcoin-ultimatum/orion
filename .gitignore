@@ -183,3 +183,6 @@ src/config/CMakeFiles/
 src/univalue/CMakeFiles/
 *.cbp
 src/cryptopp/cryptopp-config-version.cmake
+btcu.build/
+btcu.xcodeproj/
+*.xcodeproj
