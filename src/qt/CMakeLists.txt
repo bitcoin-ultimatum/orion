@@ -314,11 +314,11 @@ endif()
 if(ZeroMQ_FOUND)
     target_link_libraries(btcu-qt ZMQ_A)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-		target_link_libraries(btcu-qt 
+		target_link_libraries(btcu-qt
 			${ZeroMQ_STATIC_LIBRARY}
 			)
 	else()
-		target_link_libraries(btcu-qt 
+		target_link_libraries(btcu-qt
 			${ZeroMQ_LIBRARY}
 			)
 	endif()
@@ -377,18 +377,42 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 		"${EMPTY_LPROJ_FILE}"
 	)
 
+	set(CLIENT_VERSION_MAJOR ${btcu_VERSION_MAJOR})
+	set(CLIENT_VERSION_MINOR ${btcu_VERSION_MINOR})
+	set(CLIENT_VERSION_REVISION ${btcu_VERSION_PATCH})
+	set(CLIENT_VERSION_BUILD ${btcu_VERSION_TWEAK})
+
+
+	set(APP_VERSION "${CLIENT_VERSION_MAJOR}.${CLIENT_VERSION_MINOR}.${CLIENT_VERSION_REVISION}")
+
+	set(COPYRIGHT_YEAR 2021)
+
 	set(BITCOIN_QT_OSX_BUNDLE_NAME "btcu-qt")
+
+	set(MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/share/qt/Info.plist")
+	set(MACOSX_BUNDLE_BUNDLE_NAME "${BITCOIN_QT_OSX_BUNDLE_NAME}")
+	set(MACOSX_BUNDLE_BUNDLE_VERSION "${APP_VERSION}")
+	set(MACOSX_BUNDLE_GUI_IDENTIFIER "org.BTCU.${BITCOIN_QT_OSX_BUNDLE_NAME}")
+	set(MACOSX_BUNDLE_ICON_FILE "${OSX_INSTALLER_ICONS_NAME}")
+	set(MACOSX_BUNDLE_INFO_STRING "${APP_VERSION}.${CLIENT_VERSION_BUILD}, Copyright © ${COPYRIGHT_YEAR} BTCU")
+	set(MACOSX_BUNDLE_LONG_VERSION_STRING "${APP_VERSION}")
+	set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}")
+
+	configure_file(
+		"${CMAKE_SOURCE_DIR}/share/qt/Info.plist.cmake.in"
+		"${CMAKE_SOURCE_DIR}/share/qt/Info.plist"
+	)
 	set_target_properties(btcu-qt PROPERTIES
 		MACOSX_BUNDLE ON
 		OUTPUT_NAME "${BITCOIN_QT_OSX_BUNDLE_NAME}"
-		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/share/qt/Info.plist.cmake.in"
+		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/share/qt/Info.plist"
 		MACOSX_BUNDLE_BUNDLE_NAME "${BITCOIN_QT_OSX_BUNDLE_NAME}"
-		MACOSX_BUNDLE_BUNDLE_VERSION "${btcu_VERSION}"
+		MACOSX_BUNDLE_BUNDLE_VERSION "${APP_VERSION}"
 		MACOSX_BUNDLE_GUI_IDENTIFIER "org.BTCU.${BITCOIN_QT_OSX_BUNDLE_NAME}"
 		MACOSX_BUNDLE_ICON_FILE "${OSX_INSTALLER_ICONS_NAME}"
-		MACOSX_BUNDLE_INFO_STRING "${btcu_VERSION}.${CLIENT_VERSION_BUILD}, Copyright © 2009-${COPYRIGHT_YEAR} ${COPYRIGHT_HOLDERS_FINAL}"
-		MACOSX_BUNDLE_LONG_VERSION_STRING "${btcu_VERSION}"
-		MACOSX_BUNDLE_SHORT_VERSION_STRING "${btcu_VERSION}"
+		MACOSX_BUNDLE_INFO_STRING "${APP_VERSION}.${CLIENT_VERSION_BUILD}, Copyright © ${COPYRIGHT_YEAR} BTCU"
+		MACOSX_BUNDLE_LONG_VERSION_STRING "${APP_VERSION}"
+		MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}"
 		RESOURCE "${BITCOINQT_BUNDLE_RESOURCES}"
 	)
 	# The InfoPlist.strings files should be located in a resource subdirectory.
@@ -536,62 +560,105 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 			"${DMG_DIST}"
 	)
 
-	string(REPLACE " " "-" OSX_VOLNAME "${PACKAGE_NAME}")
-	file(WRITE "${CMAKE_BINARY_DIR}/osx_volname" "${OSX_VOLNAME}")
+	if (CMAKE_GENERATOR MATCHES "Xcode")
+		set_target_properties(btcu-qt PROPERTIES
+			XCODE_ATTRIBUTE_INSTALL_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+			XCODE_ATTRIBUTE_SKIP_INSTALL "No"
+		)
+	else()
+		string(REPLACE " " "-" OSX_VOLNAME "${PACKAGE_NAME}")
+		file(WRITE "${CMAKE_BINARY_DIR}/osx_volname" "${OSX_VOLNAME}")
 
-	set(DMG_DSSTORE "${DMG_DIST}/.DS_Store")
-	set(GEN_DSSTORE "${MACDEPLOY_DIR}/custom_dsstore.py")
-	add_custom_command(
-		OUTPUT
-			"${DMG_DSSTORE}"
-		COMMAND
-			"${Python_EXECUTABLE}"
-			"${GEN_DSSTORE}"
-			"${DMG_DSSTORE}"
-			"${OSX_VOLNAME}"
-		DEPENDS
-			"${GEN_DSSTORE}"
-			"${DMG_DIST}"
-	)
+		set(DMG_DSSTORE "${DMG_DIST}/.DS_Store")
+		set(GEN_DSSTORE "${MACDEPLOY_DIR}/custom_dsstore.py")
+		add_custom_command(
+			OUTPUT
+				"${DMG_DSSTORE}"
+			COMMAND
+				"${Python_EXECUTABLE}"
+				"${GEN_DSSTORE}"
+				"${DMG_DSSTORE}"
+				"${OSX_VOLNAME}"
+			DEPENDS
+				"${GEN_DSSTORE}"
+				"${DMG_DIST}"
+		)
 
-	set(OSX_APPLICATION_DIR "Applications")
-	set(OSX_APPLICATION_SYMLINK "${DMG_DIST}/${OSX_APPLICATION_DIR}")
-	add_custom_command(
-		OUTPUT
-			"${OSX_APPLICATION_SYMLINK}"
-		COMMAND
-			${CMAKE_COMMAND} -E create_symlink "/${OSX_APPLICATION_DIR}" "${OSX_APPLICATION_SYMLINK}"
-		DEPENDS
-			"${DMG_DIST}"
-	)
-
-	if (NOT CMAKE_GENERATOR MATCHES "Xcode")
+		set(OSX_APPLICATION_DIR "Applications")
+		set(OSX_APPLICATION_SYMLINK "${DMG_DIST}/${OSX_APPLICATION_DIR}")
+		add_custom_command(
+			OUTPUT
+				"${OSX_APPLICATION_SYMLINK}"
+			COMMAND
+				${CMAKE_COMMAND} -E create_symlink "/${OSX_APPLICATION_DIR}" "${OSX_APPLICATION_SYMLINK}"
+			DEPENDS
+				"${DMG_DIST}"
+		)
 		add_custom_target(osx-deploydir
 			DEPENDS
 				"${OSX_APPLICATION_SYMLINK}"
 				"${DMG_DSSTORE}"
 				"${BACKGROUND_DIST_TIFF}"
 		)
-	endif()
 
-	add_custom_target(osx-dmg
-		COMMAND
-			"${Python_EXECUTABLE}"
-			"${MACDEPLOYQTPLUS}"
-			"${STRIPPED_BUNDLE}"
-			-translations-dir "${CMAKE_CURRENT_SOURCE_DIR}/locale"
-			-add-qt-tr "${QT_LOCALES}"
-			-dmg
-			-fancy "${MACDEPLOY_DIR}/fancy.plist"
-			-volname "${OSX_VOLNAME}"
-			-sys-lib-dir "/usr/local/lib"
-			-built-lib-dir "${CMAKE_SOURCE_DIR}/lib"
-		WORKING_DIRECTORY
-			"${CMAKE_BINARY_DIR}"
-		DEPENDS
-			"${STRIPPED_BUNDLE}"
-			"${BACKGROUND_TIFF_MULTIRES}"
-	)
+		set(LOCAL_LIB_PATH "${CMAKE_SOURCE_DIR}/lib")
+
+		if(SIGN_DMG)
+			include(CodeSignIOS)
+
+			# Do this on every run, to keep list of possible identities up-to-date.
+			if (NOT DEFINED SIGN_CERT_NAME)
+				code_sign_get_identity_macos(M_SIGN_CERT_NAME)
+			else()
+				set(M_SIGN_CERT_NAME "${SIGN_CERT_NAME}")
+			endif ()
+			set(SIGN_CERT_NAME "${M_SIGN_CERT_NAME}" CACHE STRING "code signing identity (e.g., \"iPhone Developer\") (required for code signing)")
+			
+			code_sign_get_cmd_args_macos(CODESIGNARGS)
+			message(STATUS "Variable CODESIGNARGS now is ${CODESIGNARGS}")
+			
+
+			add_custom_target(osx-dmg
+				COMMAND
+					"${Python_EXECUTABLE}"
+					"${MACDEPLOYQTPLUS}"
+					"${STRIPPED_BUNDLE}"
+					-translations-dir "${CMAKE_CURRENT_SOURCE_DIR}/locale"
+					-add-qt-tr "${QT_LOCALES}"
+					-dmg
+					-sign
+					-codesignargs "${CODESIGNARGS}"
+					-fancy "${MACDEPLOY_DIR}/fancy.plist"
+					-volname "${OSX_VOLNAME}"
+					-sys-lib-dir "/usr/local/lib"
+					-built-lib-dir "${LOCAL_LIB_PATH}"
+				WORKING_DIRECTORY
+					"${CMAKE_BINARY_DIR}"
+				DEPENDS
+					"${STRIPPED_BUNDLE}"
+					"${BACKGROUND_TIFF_MULTIRES}"
+			)
+		else()
+			add_custom_target(osx-dmg
+				COMMAND
+					"${Python_EXECUTABLE}"
+					"${MACDEPLOYQTPLUS}"
+					"${STRIPPED_BUNDLE}"
+					-translations-dir "${CMAKE_CURRENT_SOURCE_DIR}/locale"
+					-add-qt-tr "${QT_LOCALES}"
+					-dmg
+					-fancy "${MACDEPLOY_DIR}/fancy.plist"
+					-volname "${OSX_VOLNAME}"
+					-sys-lib-dir "/usr/local/lib"
+					-built-lib-dir "${LOCAL_LIB_PATH}"
+				WORKING_DIRECTORY
+					"${CMAKE_BINARY_DIR}"
+				DEPENDS
+					"${STRIPPED_BUNDLE}"
+					"${BACKGROUND_TIFF_MULTIRES}"
+			)
+		endif()
+	endif()
 endif()
 
 

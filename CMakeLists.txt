@@ -14,6 +14,10 @@ project(btcu
 set(PACKAGE_NAME "BTCU")
 set(PACKAGE_BUGREPORT "https://github.com/bitcoin-ultimatum/orion/issues")
 
+if (CMAKE_GENERATOR MATCHES "Xcode")
+    set_property(GLOBAL PROPERTY XCODE_ATTRIBUTE_SKIP_INSTALL "Yes")
+endif()
+
 # currently the crossbuild is not supported
 set(__IS_NATIVE_BUILD 1 CACHE INTERNAL "Indicate if this is a native build")
 
@@ -106,7 +110,7 @@ endif()
 # USE_QTCHARTS --with-qtcharts  --  ENABLE_QTCHARTS, configure flag, no cmake
 # USE_LCOV --enable-lcov 
 # GLIBC_BACK_COMPAT --enable-glibc-back-compat  --  ENABLE_GLIBC_BACK_COMPAT, configure flag, no cmake
-# HARDEN --disable-hardening  --  DISABLE_HARDENING, configure flag, no cmake
+# HARDEN --disable-hardening  --  ENABLE_HARDENING, configure flag, no cmake
 # USE_ASM --enable-asm   --  ENABLE_ASM, configure flag, no cmake
 # BUILD_BITCOIND --with-daemon 
 # BUILD_BITCOIN_UTILS --with-utils  --  BUILD_UTILS, configure flag, no cmake
@@ -136,7 +140,7 @@ option(ENABLE_ZMQ "Activate the ZMQ notifications" ON)
 option(ENABLE_WALLET "Activate the wallet functionality" ON)
 option(BUILD_UTILS "Build btcu-cli and btcu-tx" ON)
 option(BUILD_LIBS "Build the btcuconsensus shared library" ON)
-option(DISABLE_HARDENING "Do not attempt to harden the resulting executables" OFF)
+option(ENABLE_HARDENING "Attempt to harden the resulting executables" OFF)
 option(ENABLE_REDUCE_EXPORTS "Attempt to reduce exported symbols in the resulting" OFF)
 option(ENABLE_GLIBC_BACK_COMPAT "Enable backwards compatibility with glibc" OFF)
 option(WITH_MINIUNPC "Enable UPnP support" ON)
@@ -144,6 +148,33 @@ option(START_WITH_UPNP "If UPNP is enabled, turn it on at startup" OFF)
 option(ENABLE_GPROF "Use gprof profiling compiler flags " OFF)
 option(ENABLE_LEASING_MANAGER "Enable leasing manager" ON)
 option(ENABLE_TESTS "Build tests" ON)
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    option(SIGN_DMG "Sign the application and frameworks with codesign" ON)
+
+    if(SIGN_DMG)
+        message(STATUS "Enabled option: Sign btcu-qt")
+
+        if (NOT DEFINED SIGN_CERT_NAME)
+            message(STATUS "Parameter SIGN_CERT_NAME is not provided. Will be used first found identity from the computer.")
+
+			include(CodeSignIOS)
+
+		    code_sign_get_identity_macos(TEST_CERT)
+
+            if(NOT TEST_CERT)
+                message(WARNING "Failed to locate installed developer certificate. SIGN_DMG will be turned off. Please note that signing is required for dmg build on Apple Silicone processors")
+
+                option(SIGN_DMG "Sign the application and frameworks with codesign" OFF)
+                message(STATUS "Disabled option: Sign btcu-qt")
+            else()
+	            message(STATUS "Selected identity: ${TEST_CERT}")
+            endif()
+		endif()
+    else()
+        message(STATUS "Disabled option: Sign btcu-qt")
+    endif()
+endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set(DEFAULT_ENABLE_DBUS_NOTIFICATIONS ON)
@@ -182,10 +213,10 @@ if(BUILD_LIBS)
 else()
     message(STATUS "Disabled option: Build the btcuconsensus shared library")
 endif()
-if(DISABLE_HARDENING)
-    message(STATUS "Disabled option: Harden the executables")
-else()
+if(ENABLE_HARDENING)
     message(STATUS "Enabled option: Harden the executables")
+else()
+    message(STATUS "Disabled option: Harden the executables")
 endif()
 if(ENABLE_REDUCE_EXPORTS)
     message(STATUS "Enabled option: Attempt to reduce exported symbols in the resulting")
