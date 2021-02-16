@@ -24,6 +24,7 @@ import shutil
 import stat
 import os.path
 import time
+import plistlib
 from string import Template
 from argparse import ArgumentParser
 from typing import List, Optional
@@ -323,16 +324,45 @@ def copyFramework(framework: FrameworkInfo, path: str,
     if not os.path.exists(toDir):
         os.makedirs(toDir)
 
-    shutil.copy2(fromPath, toPath)
-    if verbose >= 3:
-        print("Copied:", fromPath)
-        print(" to:", toPath)
+    if framework.isDylib():
+        shutil.copy2(fromPath, toPath)
+        if verbose >= 3:
+            print("Copied:", fromPath)
+            print(" to:", toPath)
+    else:
+        frameFrom = framework.frameworkPath
+        frameto = os.path.join(
+            path,
+            "Contents",
+            "Frameworks",
+            framework.frameworkName)
+
+        if os.path.exists(frameto):
+            shutil.rmtree(frameto)
+        
+        shutil.copytree(frameFrom, frameto, symlinks=True)
+
+        if verbose >= 3:
+            print("Copied:", frameFrom)
+            print(" to:", frameto)
+
+    codesignpath = os.path.join(
+            path,
+            "Contents",
+            "Frameworks",
+            framework.frameworkName,
+            "Versions",
+            "Current",
+            "_CodeSignature")
+    
+    if os.path.exists(codesignpath):
+        shutil.rmtree(codesignpath)
 
     permissions = os.stat(toPath)
     if not permissions.st_mode & stat.S_IWRITE:
         os.chmod(toPath, permissions.st_mode | stat.S_IWRITE)
 
-    if not framework.isDylib():  # Copy resources for real frameworks
+    if not framework.isDylib():  # Correct resources plists
 
         linkfrom = os.path.join(
             path,
@@ -341,19 +371,38 @@ def copyFramework(framework: FrameworkInfo, path: str,
             framework.frameworkName,
             "Versions",
             "Current")
-        linkto = framework.version
-        if not os.path.exists(linkfrom):
-            os.symlink(linkto, linkfrom)
-            if verbose >= 2:
-                print("Linked:", linkfrom, "->", linkto)
         fromResourcesDir = framework.sourceResourcesDirectory
         if os.path.exists(fromResourcesDir):
             toResourcesDir = os.path.join(
                 path, framework.destinationResourcesDirectory)
-            shutil.copytree(fromResourcesDir, toResourcesDir, symlinks=True)
+            infopath = os.path.join(toResourcesDir, 'Info.plist')
+
+            with open(infopath, 'rb') as f:
+                infoplist = plistlib.load(f)
+
+            if not "CFBundleName" in infoplist:
+                infoplist['CFBundleName'] = infoplist['CFBundleExecutable']
+                if verbose >= 3:
+                    print("Added CFBundleName plist field with value:", infoplist['CFBundleExecutable'])
+            if not "CFBundleDisplayName" in infoplist:
+                infoplist['CFBundleDisplayName'] = infoplist['CFBundleExecutable']
+                if verbose >= 3:
+                    print("Added CFBundleDisplayName plist field with value:", infoplist['CFBundleExecutable'])
+            if not "CFBundleInfoDictionaryVersion" in infoplist:
+                infoplist['CFBundleInfoDictionaryVersion'] = "6.0"
+                if verbose >= 3:
+                    print("Added CFBundleInfoDictionaryVersion plist field with value:", "6.0")
+            if "NOTE" in infoplist:
+                del infoplist["NOTE"]
+            
+            os.remove(infopath)
+
+            with open(infopath, 'wb') as f:
+                plistlib.dump(infoplist, f)
+            
             if verbose >= 3:
-                print("Copied resources:", fromResourcesDir)
-                print(" to:", toResourcesDir)
+                print("Patched plist:", infopath)
+            
         fromContentsDir = framework.sourceVersionContentsDirectory
         if not os.path.exists(fromContentsDir):
             fromContentsDir = framework.sourceContentsDirectory
@@ -639,9 +688,9 @@ Note, that the "dist" folder will be deleted before deploying on each run.
 
 Optionally, Qt translation files (.qm) and additional resources can be added to the bundle.
 
-Also optionally signs the .app bundle; set the CODESIGNARGS environment variable to pass arguments
+Also optionally signs the .app bundle; set the -codesignargs variable to pass arguments
 to the codesign tool.
-E.g. CODESIGNARGS='--sign "Developer ID Application: ..." --keychain /encrypted/foo.keychain'""")
+E.g. -codesignargs '--sign "Developer ID Application: ..." --keychain /encrypted/foo.keychain'""")
 
 ap.add_argument("app_bundle", nargs=1, metavar="app-bundle",
                 help="application bundle to be deployed")
@@ -652,6 +701,9 @@ ap.add_argument(
     default=[1],
     metavar="<0-3>",
     help="0 = no output, 1 = error/warning (default), 2 = normal, 3 = debug")
+ap.add_argument(
+    "-codesignargs",
+    help="set the codesignargs variable to pass arguments to the codesign tool")
 ap.add_argument(
     "-no-plugins",
     dest="plugins",
@@ -759,16 +811,6 @@ for p in config.add_resources:
 # ------------------------------------------------
 
 if len(config.fancy) == 1:
-    if verbose >= 3:
-        print("Fancy: Importing plistlib...")
-    try:
-        import plistlib
-    except ImportError:
-        if verbose >= 1:
-            sys.stderr.write(
-                "Error: Could not import plistlib which is required for fancy disk images.\n")
-        sys.exit(1)
-
     p = config.fancy[0]
     if verbose >= 3:
         print("Fancy: Loading \"{}\"...".format(p))
@@ -964,13 +1006,13 @@ for p in config.add_resources:
 
 # ------------------------------------------------
 
-if config.sign and 'CODESIGNARGS' not in os.environ:
-    print("You must set the CODESIGNARGS environment variable. Skipping signing.")
+if config.sign and config.codesignargs is None:
+    print("You must set the -codesignargs variable. Skipping signing.")
 elif config.sign:
     if verbose >= 1:
         print("Code-signing app bundle {}".format(target))
     subprocess.check_call(
-        "codesign --force {} {}".format(os.environ['CODESIGNARGS'], target), shell=True)
+        "codesign --force --deep {} {}".format(config.codesignargs, target), shell=True)
 
 # ------------------------------------------------
 
