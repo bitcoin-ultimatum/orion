@@ -19,7 +19,7 @@ Write-Host "Starting and installation of the BTCU..." -ForegroundColor Cyan
 & Write-Host "[49%] Installing VCPKG dependencies... Done!" -ForegroundColor Cyan
 & Write-Host "[50%] Cloning BTCU repository..." -ForegroundColor Cyan
 & git clone https://github.com/bitcoin-ultimatum/orion 
-& cd btcu
+& cd orion
 & Write-Host "[54%] Cloning BTCU repository... Done!" -ForegroundColor Cyan
 & Write-Host "[55%] Installing Boost 1.71.0..." -ForegroundColor Cyan
 &"$PSScriptRoot\BuildBoost.ps1"
