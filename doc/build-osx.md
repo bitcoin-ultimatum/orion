@@ -68,7 +68,7 @@ in the download folder where you've placed the file. If the file has another nam
 
 ## Dependencies
 ```shell
-    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf rocksdb snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp
+    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf rocksdb snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake
     # libscrypt from local since we need a version with cmake support but you still can get it via brew
 ```
 
@@ -164,7 +164,7 @@ If the brew installed a different version run the followed command:
 
 1. Clone the BTCU source code:
 ```shell
-    git clone https://github.com/bitcoin-ultimatum/orion
+    git clone https://github.com/bitcoin-ultimatum/btcu
     cd btcu
 ```
 
@@ -200,19 +200,77 @@ It is important: Do not use spaces and other line breaking simbols in a path to 
     make osx-dmg
 ```
 
-## XCode build
+### Libscrypt (optional)
+You can also make a separate libscrypt lib file. In order to do this you have to run followed commands:
 
-You can run and build the application from the Apple XCode.
-Firstly, you will have to create an XCode project file by the command: 
 ```shell
-    cmake . -G Xcode
+    cd src/libscrypt
+    cmake .
+    make
+    cd ../..
 ```
 
-This will create an btcu.xcodeproj file in a root project folder.
-Next, open it via XCode and select target you want. For example it can be `btcu-qt`.
-After that you can select options `Run` (⌘R) of `Build` (⌘R).
+### Cryptopp (optional)
+For a separate building of a libcryptopp lib file:
 
-Happy building!
+```shell
+    cd src/cryptopp
+    cmake .
+    make
+    cd ../..
+```
+
+### Secp256k1 (optional)
+And for a libsecp256k1 lib file:
+
+```shell
+    cd src/secp256k1
+    ./autogen.sh
+    ./configure
+    make
+    cd ../..
+```
+
+### Univalue (optional)
+And for a libunivalue lib file:
+
+```shell
+    cd src/univalue
+    ./autogen.sh
+    ./configure
+    make
+    cd ../..
+```
+
+### JSON CPP (optional)
+And for a libjsoncpp lib file:
+
+```shell
+    cd src/jsoncpp/jsoncpp-build
+    cmake ../jsoncpp 
+    make
+    cd ../../..
+```
+
+### LibFF (optional)
+And for a libff lib file go to src/libff and uncomment lines from 102 to 113. Then run commands:
+
+```shell
+    cd src/libff
+    cmake .
+    make
+    cd ../..
+```
+
+### Ethash (optional)
+For libethash.a file:
+
+```shell
+    cd src/cpp-ethereum/ethash
+    cmake .
+    make
+    cd ../../..
+```
 
 ## Compiling for different MacOS versions
 In a case when you need a different version of the OSX platforms add the parameter to a cmake command (for example we use 10.10 version) :
@@ -255,7 +313,7 @@ You can monitor the download process by looking at the debug.log file:
     btcud -daemon      # Starts the btcu daemon.
     btcu-cli --help    # Outputs a list of command-line options.
     btcu-cli help      # Outputs a list of RPC commands when the daemon is running.
-    ./bin/btcu-qt   # Start GUI
+    ./src/qt/btcu-qt   # Start GUI
 ```
 
 ## Notes

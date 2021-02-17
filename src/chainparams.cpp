@@ -245,16 +245,16 @@ public:
 
 
         std::vector<std::string> validatorsPubkeys = {
-         "035a3bd03cc490f708b7f2b6f59e8bdfd6710e3062fe3f463010209d5a88051949",
-         "035f34d50ab22176a1cf77fddd6fd8899580a2b3ea494a46af9561f1ad50f8e292",
-         "02f62678b04d51346456e8729d06de164e2ea51942d36032f8aab109abeb232b02",
-         "0216d358a5884b30dfafced60db969704d684d8d9f2fac11bafb1c232878f8aceb",
-         "032eb0a80fcf000ba5cb0bac4c4ebf20db392e413c647171293b1972f165122887",
-         "02d85311e86ec25d2e14609a3dd68eb8efd2447c421e54d284ba09c7598639f892",
-         "031240ccf07831d70e4e473b861e6811843cfd709a2b417ab2a25df876b25e226f",
-         "020cb70524c81d14d669160cb4014317c4e897ba1458e6db1387f60980db990098",
-         "02a61b8dfde0cfa01196e8793382d417f8f772e2e6c2baf456432212dce63defe2",
-         "033a799fd8496643269b9fa259e8b9edff36754945db5173262469a6f89563ab80"
+         "02e5b68ebea89e38340362c21adbbcc086485decbfe160b657f4357413058761f4",
+         "02222a0a658afaed8ee0867a31a15100c24f0a5d106fde23776a376415d026c850",
+         "0372697e2fdaab9fd8c884c8eacb0f14dbd7ebf08dccb7529f578c92c4bd86c2e5",
+         "02b0cf66b4553eb8b35843bc95f6d15a2a37c9e6c8e2d88352064139f1d544b2c4",
+         "037c932e25fd0ae81698cc7d6bef3f35fee65e46f8062731961137ef6d93b3491d",
+         "03d079948de5fe9c189a3664c4aa74969ec4a24d5c670099eca7a79cabf8357641",
+         "02cfadf65422ddf50162bec899bbe8f1cf8d839d8e74aad1064fb1e77408294a23",
+         "0314e324c9df4023ba0377d923db4bbfbc344e0c00e63fe95488c74b5cf2243355",
+         "03eba5c0f39462a42679f656ba57d8b877cf523c4d24636fb04f5e380b2edf92d4",
+         "020270e971b840ddb5ccfa03728a7a71c3dd9b3e2629c5064cded9374c4c0cbc3a"
          };
 
 
@@ -274,24 +274,15 @@ public:
         genesis.nVersion = 8;
         genesis.nTime = 1583491266;
         genesis.nBits = 0x1e0ffff0;
-        genesis.nNonce = 5492953;
-        genesis.hashChainstate = uint256("0x91ea77397a8e48f8a69377a505add5bff9a8e23c47e4e4e4b747edfeba9b6a79");
+        genesis.nNonce = 7860220;
+        genesis.hashChainstate = uint256("0x789ee471178b992f2b979ab75726b0999703d1e3c0a0e21ae25969f2b92c5549");
         genesis.hashStateRoot = uint256(h256Touint(dev::h256("e965ffd002cd6ad0e2dc402b8044de833e06b23127ea8c3d80aec91410771495"))); // qtum
         genesis.hashUTXORoot = uint256(h256Touint(dev::sha3(dev::rlp("")))); // qtum
 
         hashGenesisBlock = genesis.GetHash();
-
-        assert(hashGenesisBlock == uint256("0x000000786809183e51a8a112ee0b082be2a46df19f05d6b4a7525c0c027fc04a"));
-        assert(genesis.hashMerkleRoot == uint256("0x858d38eb69842a10816427748c0cd8f60211113a5f62f669891aae88b0c85884"));
-
-        //For dev orion need to cleanup seednodes for running many different subnetworks
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v1", "135.125.7.216"));
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v2", "51.68.119.204"));
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v3", "51.178.74.114"));
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v4", "51.210.0.82"));
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v5", "51.210.154.220"));
-
-
+        assert(hashGenesisBlock == uint256("0x000004b9b0ce0013c3718e2a691097a462e388161ec8356463ad14d9e68077e0"));
+        assert(genesis.hashMerkleRoot == uint256("0x42f64a5c362004b2fbbd763fa0691b1efa4319962081d7f030d223842b74794c"));
+        
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
@@ -339,7 +330,141 @@ public:
         //////////qtum
         nMPoSRewardRecipients = 10;
         
-        vExcludedAddresses = {"1P8pv9WdDiy9LSyU9Z2DzuEEz74LwRxsqs"};
+        vExcludedAddresses = {"35hK24tcLEWcgNA4JxpvbkNkoAcDGqQPsP",
+                              "3Cbq7aT1tY8kMxWLbitaG7yT6bPbKChq64",
+                              "1Q7STsw9UzG92BB9qQSs8QNTvni74gVtFG",
+                              "1CAdFckxw4o1HbhHD6VZdP68RAURvi8mbC",
+                              "1L6oeJ5JVHaSQ4gEQXjvyNGPUdk34magKG",
+                              "18PMTSpccrmkgKXPcbqJ3C9A3YTNs6owbm",
+                              "18DUJaeuJ8bYjqjrybi48us2dGikSngnrR",
+                              "13sAgarPMUPuNkJdRCNr8FiqZrP7RiYwNA",
+                              "1H7A7JzChg7KzgQPJ8oHQT1prCSgcBftXa",
+                              "1L1xSXttdsBAPVjVfyoyCg3RZbdHinT5G5",
+                              "1LAnF8h3qMGx3TSwNUHVneBZUEpwE4gu3D",
+                              "1MW8QJahh2YXovXpbhDcXAN8MEEL2AUn4n",
+                              "1MAuu297HnLfnCpU3pZJFiLT8HryK3MwLV",
+                              "1BKN5obhkdoequshHnn96zZvFi3wCEdfiC",
+                              "1Ms2exLWXnXPx3i8za1AVu4mQkqS1fy9W6",
+                              "19A8mj9FfW54v1X6wxvHnqS5qVthMT1RsJ",
+                              "1E1TB6uxjaEL2N7CJfHkYrA5vwVLa3KfvL",
+                              "1WiXrjTFWknSekam88r4Tq1YKNbTZonZo",
+                              "1HckjUpRGcrrRAtFaaCAUaGjsPx9oYmLaZ",
+                              "18EoFYuD7C37djm6FZi5Csf4AoUtk1yTH3",
+                              "19KedreX9aR64fN7tnNzVLVFHQAUL6dLzr",
+                              "1LEeT8K9oNdDSfetnyff86qaE5h3ahUEQG",
+                              "13dYQ3Vud9jV8e7P7nCqXNvUJ4xkXce1Tt",
+                              "1AmajNxtJyU7JjAuyiFFkqDaaxuYqkNSkF",
+                              "1GroGcCQfAnL12pLTzGwBDCJ4vbEeypWVd",
+                              "1P5ZEDWTKTFGxQjZphgWPQUpe554WKDfHQ",
+                              "18vpRm9gLhjhZVdXcEvVgGsop9JWrjDGSG",
+                              "1GVzumGXyDyS1dUrQ1TjE82CouGdRWcyz9",
+                              "1LQLFiem5HDtjnPL92YeSU3pwvYxtBV8sT",
+                              "13eSjPPdKEBSSBktayGBmcYAk4zZ2LZnuT",
+                              "bc1q4jchcr7nla277su5lpjzttxp3xg5j8wds5lcwg",
+                              "1Fq2zEzWqRPWCwHs1RnvUcx8pGYFcjdLtB",
+                              "17xTTMaeW6aGCZMhrCDB8FgfRaeEZbMQyW",
+                              "1AotsYu7cMiS6c9KM8dcT6mk1AQS8PmYxV",
+                              "121U8Bh6BthG2C8gMhzAwppGdzDjb6nBRX",
+                              "1NdR9KZagXjCuQZ2Vhv9zvPenyp3RkYq3C",
+                              "12tM672QgT5H49kb6cdzwoHsZ2X3CrfFYy",
+                              "12Twhqz9QpHUwtTg9oZdnV2B91DELt1GoW",
+                              "1AKbgcGu6dEmPmipzeBuQvfmVknd7gyCnM",
+                              "1GMXB5zcf2wooPPS3MyhAeyA1UdK9RcNuF",
+                              "bc1qgdjqv0av3q56jvd82tkdjpy7gdp9ut8tlqmgrpmv24sq90ecnvqqjwvw97",
+                              "3JZq4atUahhuA9rLhXLMhhTo133J9rF97j",
+                              "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
+                              "16FSBGvQfy4K8dYvPPWWpmzgKM6CvrCoVy",
+                              "385cR5DM96n1HvBDMzLHPYcw89fZAXULJP",
+                              "1N52wHoVR79PMDishab2XmRHsbekCdGquK",
+                              "bc1qajh7jfy44sswutqlwj2tz9wcejpxrgflc8penw",
+                              "3EKJz9SV3XJmgS3wkmW73tkxhK17j64vct",
+                              "3Nxwenay9Z8Lc9JBiywExpnEFiLp6Afp8v",
+                              "bc1qx9t2l3pyny2spqpqlye8svce70nppwtaxwdrp4",
+                              "12ib7dApVFvg82TXKycWBNpN8kFyiAN1dr",
+                              "3Kzh9qAqVWQhEsfQz7zEQL1EuSx5tyNLNS",
+                              "1aXzEKiDJKzkPxTZy9zGc3y1nCDwDPub2",
+                              "3GQTrVEaRhgGZJzutYhuCsc884WVsd27nq",
+                              "3HwHGHcR65mv6zvFvx3RmpBSyT5iUJL85r",
+                              "3BMEXqGpG4FxBA1KWhRFufXfSTRgzfDBhJ",
+                              "38UmuUqPCrFmQo4khkomQwZ4VbY2nZMJ67",
+                              "1MDq7zyLw6oKichbFiDDZ3aaK59byc6CT8",
+                              "3DVJfEsDTPkGDvqPCLC41X85L1B1DQWDyh",
+                              "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo",
+                              "1NDyJtNTjmwk5xPNhjgAMu4HDHigtobu1s",
+                              "3LCGsSmfr24demGvriN4e3ft8wEcDuHFqh",
+                              "336xGpGweq1wtY4kRTuA4w6d7yDkBU9czU",
+                              "3EiEN1JJCudBgAwL7c6ajqnPzx9LrK1VT6",
+                              "19iqYbeATe4RxghQZJnYVFU4mjUUu76EA6",
+                              "1J1F3U7gHrCjsEsRimDJ3oYBiV24wA8FuV",
+                              "1AnwDVbwsLBVwRfqN2x9Eo4YEJSPXo2cwG",
+                              "14eQD1QQb8QFVG8YFwGz7skyzsvBLWLwJS",
+                              "1Kd6zLb9iAjcrgq8HzWnoWNVLYYWjp3swA",
+                              "17CzhFvGwH6TT46JtzhnhMpTw4mHYpEGCR",
+                              "1PNJfc9MzeBGV1UAjegqhFJb3erejqKHCi",
+                              "16iqmhUox1Vh8yjR71SyuYRfP8oRwXspW9",
+                              "12fXB6sBJCGbmf7XhRvTXMDCu91329aven",
+                              "19Wa69eDP1F6J2Segjsd8co7bVjdLFeL2n",
+                              "12gr1kbYQU2M81QBUQ5uAdwA9jKT6oDwx5",
+                              "36EHjjQ2sh5KB1pcjXjtBYAaUjfnANavhs",
+                              "18EtP9azZCFZgjdNdTSurtNEWF8AEjj8Cs",
+                              "3JJdNaku1CUW7Xc4hEytkSs5Y2jmxgmBVX",
+                              "17QVYyUMgWzZaTBHgXeA5hM5tnWHXtEmnQ",
+                              "169zLUVW2hwqhfaxas9sFaMndRYq5CF6PM",
+                              "35vwSVYBZgpxGT3AqjAunHmPHdfvjLWDLY",
+                              "3JhjT61XfQZPGAh7Mkj5mrLuv4uG36X3DN",
+                              "1Ed6rraaUdKTSGXdkHUw2hVF75469dz77C",
+                              "1D32tY21kqGhMnipxP8LLuX4g3o3QbcrK7",
+                              "18ZHDyqpcizhEf7GJCgL4XrToXAy38XvUk",
+                              "12oMwT4TuDmPe28jJRAw7ox5Pp6t2CSe5H",
+                              "14m6BwmNjxrueKwCUA2fE8hkcKcdtdUium",
+                              "1A7znRYE24Z6K8MCAKXLmEvuS5ixzvUrjH",
+                              "1CXsUumeVbi6SqJ9bWEeC7D8b24PNLxaJv",
+                              "1PVgNiKcqXGs7DVxSE2zZE9kKu3GLGL3uv",
+                              "1N3dwNTnxDY2mSJTvU3vEGbPGUqPM2W5yx",
+                              "18Zcyxqna6h7Z7bRjhKvGpr8HSfieQWXqj",
+                              "3Caz8UPikPGR77vJac7ncPGzVbRjRNKMQF",
+                              "1DBDgGuZwN2LzeB2ahFRfAZemQpciqSopc",
+                              "34DKfu84kAKVKwSsvnqJL1TzspeLTRSoZo",
+                              "37vPwvYPFk12KNTtDNZkKMv7qxx2adHHPA",
+                              "3NDuGtLTjBEF1yj5KpsqT7C6EQhhNM4E6n",
+                              "1NQXknw7x3ubk3SuXZJQXZgGH3GUS53Xb8",
+                              "3KTQYXvjteNoMECi62JYuqXobYQpcHjoVs",
+                              "1BKapnuL2HJ7VH839Kcq8nJYC18ya8QHVg",
+                              "19Z3UUqMMCwEifofoAc7epqNeP2t556Fte",
+                              "3GKzCD4cQFqstTPseYp1j3CVsh8KNfHtjm",
+                              "1JAkRY3Tbegff9ZLUNgPSNYgJv2fUNbRMK",
+                              "35pgGeez3ou6ofrpjt8T7bvC9t6RrUK4p6",
+                              "1NsCi66rAsp49pnxMQxfKT7XHpAK7q9mZ3",
+                              "3K7Hv5DgZ6QK8peZbh2T9LU24495J8LUht",
+                              "16SgQsyge2ov79B4Ncp6DQfKNSxwE2hzsi",
+                              "396x7FJ3J9K1M6HaKeiWNyEf84aKFBSbxL",
+                              "3BTTDAn8HrmS2Lx48EoJy6v35B4jvAUW8p",
+                              "1MYkFz8bXgnfWpdE7cHFwFqaULV4o8xMJQ",
+                              "3NrWT4hyAzcqBxZrF6TSDWbYpBktovBWoV",
+                              "3HosKm4oiSWdnHC2By4MfYzWzccRHqRYgn",
+                              "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2",
+                              "1NYAd6fA2dc5xowuweFUSDRqRTEzDwk28",
+                              "19TNyoWBB2VzXb14YoDFfsoDhu9D74j5RW",
+                              "1FeexV6bAHb8ybZjqQMjJrcCrHGW9sb6uF",
+                              "1HTzd3sKVmrTNZ6QGisPPA1MvBkoyPiZWJ",
+                              "12cgpFdJViXbwHbhrA3TuW1EGnL25Zqc3P",
+                              "17A16QmavnUfCW11DAApiJxp7ARnxN5pGX",
+                              "17ac9tXHxu1nxdLgLu9WYk7vR8ggFN5GkH",
+                              "37XuVSEpWW4trkfmvWzegTHQt7BdktSKUs",
+                              "16SLJL6RCqHjySsKEdaEnNRWTrMhv6S8Z5",
+                              "1KFHE7w8BhaENAswwryaoccDb6qcT6DbYY",
+                              "1LU4sSfLAukDcbJim9dvNKELHxk4YMSnW1",
+                              "1M3Nn3Znq2MVqjDaoR1GucVYmXvXLgYPz4",
+                              "1Gpn6EG28vX2fyoKSQANCoUMc3ZGMtbWF9",
+                              "1aXp4NfaT9vb8yuvu78raWfLN52PBe1xQ",
+                              "3QkHGNXtWX9CHkRz9QnwYnC3eeCv6qc6ji",
+                              "1AgyKRw9DAf4BjSBQBAMn8UFJYnKxkMypK",
+                              "1PhtuY4vR4vrCqDSSiXXEwFmjsvKbW2in9",
+                              "3BMEXxSMT2b2kvsnC4Q35d2kKJZ4u9bSLh",
+                              "15Z5YJaaNSxeynvr6uW6jQZLwq3n1Hu6RX",
+                              "1A1QkRJfBKZkf8NhYPH9TtcCi99bp2TVQ6"
+        };
+
         rechargedAddress = "1P8pv9WdDiy9LSyU9Z2DzuEEz74LwRxsqs";
     }
 
@@ -415,7 +540,7 @@ public:
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1583491266;
-        genesis.nNonce = 7611948;
+        genesis.nNonce = 8424874;
 
         //! Modify genesis testnet validators pubkeys
         CMutableTransaction txNew = genesis.vtx[0];
@@ -440,7 +565,7 @@ public:
         genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
 
         hashGenesisBlock = genesis.GetHash();
-        assert(hashGenesisBlock == uint256("0x000003183e92427181593aecf30167f8a8ada4678001e4557cd29f2346b4e526"));
+        assert(hashGenesisBlock == uint256("0x00000c6a7006cd1a4c53ada0d162cd1b946226742e4ee6815b92c19eeda12f23"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -534,7 +659,7 @@ public:
         
         //! Modify the regtest genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1583491266;
-        genesis.nNonce = 3055395;
+        genesis.nNonce = 5273717;
 
         //! Modify genesis regtest validators pubkeys
         CMutableTransaction txNew = genesis.vtx[0];
@@ -557,7 +682,7 @@ public:
         genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
 
         hashGenesisBlock = genesis.GetHash();
-        assert(hashGenesisBlock == uint256("0x00000e203c36e781e6cc4f08508c2256cd7f5dd02693fad1bea1f2e9eea51dcc"));
+        assert(hashGenesisBlock == uint256("0x00000e122e0b667d0f81ce3aa511f272fd1cf3a8692552c9afa24e48ff189120"));
         
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
         vSeeds.clear();      //! Testnet mode doesn't have any DNS seeds.

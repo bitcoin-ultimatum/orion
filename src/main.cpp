@@ -2648,7 +2648,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
        if (Params().NetworkID() == CBaseChainParams::MAIN)
        {
           if(block.hashChainstate != g_hashChainstate)
-             LogPrintf("%s: block.hashChainstate=%s HashDir=%s\n", __func__, block.hashChainstate.GetHex(), g_hashChainstate.GetHex());
+             LogPrintf("%s: block.hashChainstate=%s g_hashChainstate=%s\n", __func__, block.hashChainstate.GetHex(), g_hashChainstate.GetHex());
           assert(block.hashChainstate == g_hashChainstate);
        }
 

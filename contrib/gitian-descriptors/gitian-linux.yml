@@ -33,7 +33,7 @@ packages:
 - "ca-certificates"
 - "python3"
 remotes:
-- "url": "https://github.com/bitcoin-ultimatum/orion.git"
+- "url": "https://github.com/bitcoin-ultimatum/btcu.git"
   "dir": "btcu"
 files: []
 script: |
