@@ -58,9 +58,9 @@ TxDetailDialog::TxDetailDialog(QWidget *parent, bool isConfirmDialog, QString wa
 
     if(isConfirmDialog){
         ui->labelTitle->setText(tr("Confirm Your Transaction"));
-        setCssProperty(ui->btnCancel, "btn-dialog-cancel");
         ui->btnSave->setText(tr("SEND"));
-        setCssBtnPrimary(ui->btnSave);
+       ui->btnCancel->setProperty("cssClass", "btn-primary");
+       ui->btnSave->setProperty("cssClass", "btn-secundary");
         if (!warningStr.isEmpty()) {
             ui->labelWarning->setVisible(true);
             ui->labelWarning->setText(warningStr);
@@ -128,7 +128,7 @@ void TxDetailDialog::setData(WalletModel *model, const QModelIndex &index){
 
         connect(ui->pushCopy, &QPushButton::clicked, [this](){
             GUIUtil::setClipboard(QString::fromStdString(this->txHash.GetHex()));
-            Q_EMIT messageInfo(tr("ID copied"), CClientUIInterface::MSG_WARNING_SNACK);
+            Q_EMIT messageInfo(tr("Hash copied"), CClientUIInterface::MSG_WARNING_SNACK);
             /*if (!snackBar) snackBar = new SnackBar(nullptr, this);
             snackBar->setText(tr("ID copied"));
             openDialogDropRight(this->snackBar, this);*/

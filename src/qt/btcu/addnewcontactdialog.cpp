@@ -64,8 +64,14 @@ void AddNewContactDialog::showEvent(QShowEvent *event)
 }
 
 void AddNewContactDialog::ok() {
-    this->res = true;
-    accept();
+   if(ui->lineEditName->text().length()>30)
+   {
+      Q_EMIT informMessage(tr("Name exceeds 30 characters"));
+   }else
+   {
+      this->res = true;
+      accept();
+   }
 }
 
 QString AddNewContactDialog::getLabel(){

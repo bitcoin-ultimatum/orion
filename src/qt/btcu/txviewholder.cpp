@@ -21,11 +21,15 @@ void TxViewHolder::init(QWidget* holder,const QModelIndex &index, bool isHovered
     txRow->updateStatus(isLightTheme, isHovered, isSelected);
 
     QModelIndex rIndex = (filter) ? filter->mapToSource(index) : index;
+   int col = rIndex.column();
     QDateTime date = rIndex.data(TransactionTableModel::DateRole).toDateTime();
     qint64 amount = rIndex.data(TransactionTableModel::AmountRole).toLongLong();
     QString amountText = BitcoinUnits::formatWithUnit(nDisplayUnit, amount, true, BitcoinUnits::separatorAlways);
     QModelIndex indexType = rIndex.sibling(rIndex.row(),TransactionTableModel::Type);
     QString label = indexType.data(Qt::DisplayRole).toString();
+   QString labelT = rIndex.data(TransactionTableModel::LabelRole).toString();
+   std::string s = label.toStdString();
+   std::string st = labelT.toStdString();
     int type = rIndex.data(TransactionTableModel::TypeRole).toInt();
 
     if(type != TransactionRecord::ZerocoinMint &&
@@ -52,6 +56,6 @@ void TxViewHolder::init(QWidget* holder,const QModelIndex &index, bool isHovered
 }
 
 QColor TxViewHolder::rectColor(bool isHovered, bool isSelected) {
-    return QColor("#FFFFFF");
-    /*return getRowColor(isLightTheme, isHovered, isSelected);*/
+    /*return QColor("#FFFFFF");*/
+    return getRowColor(isLightTheme, isHovered, isSelected);
 }

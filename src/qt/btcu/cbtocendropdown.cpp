@@ -51,7 +51,7 @@ PWidget(parent)
    this->setStyleSheet(parent->styleSheet());
    delegate = new FurAbstractListItemDelegate(
    DECORATION_SIZE,
-   new TocenViewHolder(true),
+   new TocenViewHolder(isLightTheme()),
    this
    );
    setMinimumWidth(minWidth);
@@ -60,10 +60,11 @@ PWidget(parent)
    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
    frameList = new QFrame(this);
-   //frameList->setProperty("cssClass", "container-border-light");
+   frameList->setProperty("cssClass", "container-border-light");
    //frameList->setContentsMargins(10,10,10,10);
    frameList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
    list = new QListView(frameList);
+   //list->layout()->setSpacing(0);
    list->setMinimumWidth(minWidth);
    list->setProperty("cssClass", "container-border-light");
    list->setItemDelegate(delegate);

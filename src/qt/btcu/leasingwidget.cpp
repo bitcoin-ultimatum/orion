@@ -28,6 +28,7 @@
 #define LOAD_MIN_TIME_INTERVAL 15
 #define REQUEST_LOAD_TASK 1
 
+#include <iostream>
 
 class LeasingHolder : public FurListRow<QWidget*>
 {
@@ -83,7 +84,7 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
    setCssProperty(ui->containerLeft, "container-border");
    setCssProperty(ui->containerright, "container-border");
    setCssProperty(ui->containerbottom, "container-border");
-   initCssEditLine(ui->containerBTCU);
+   //initCssEditLine(ui->containerBTCU);
    setCssProperty(ui->scrollAreaHistory, "container");
    setCssProperty(ui->scrollArea, "container");
    //ui->containerSend->setGraphicsEffect(0);
@@ -98,8 +99,8 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
    setCssTitleScreen(ui->labelTopLeasing);
    setCssTitleScreen(ui->labelHistory);
    setCssSubtitleScreen(ui->labelEditTitle);
-   setCssSubtitleScreen(ui->labelEnterAmount);
-   setCssSubtitleScreen(ui->labelBTCU);
+   //setCssSubtitleScreen(ui->labelEnterAmount);
+   //setCssSubtitleScreen(ui->labelBTCU);
    /*setCssSubtitleScreen(ui->labelStatus);
    setCssSubtitleScreen(ui->labelAmount);
    setCssSubtitleScreen(ui->labelMasternode);
@@ -113,14 +114,14 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
 
 
    ui->lineEditOwnerAddress->setPlaceholderText(tr("Masternode"));
-   btnOwnerContact = ui->lineEditOwnerAddress->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
+   btnOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
    setCssProperty(ui->lineEditOwnerAddress, "edit-primary-multi-book");
    ui->lineEditOwnerAddress->setAttribute(Qt::WA_MacShowFocusRect, 0);
    setShadow(ui->lineEditOwnerAddress);
    connect(btnOwnerContact, &QAction::triggered, [this](){ onContactsClicked(true); });
-   ui->lineEditBTCU->setPlaceholderText(tr("0"));
-   ui->lineEditBTCU->setProperty("cssClass","edit-primary-BTCU");
-   btnUpOwnerContact = ui->lineEditOwnerAddress->addAction(QIcon("://ic-contact-arrow-up"), QLineEdit::TrailingPosition);
+   //ui->lineEditBTCU->setPlaceholderText(tr("0"));
+   //ui->lineEditBTCU->setProperty("cssClass","edit-primary-BTCU");
+   btnUpOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),true), QLineEdit::TrailingPosition);
    connect(btnUpOwnerContact, &QAction::triggered, [this](){ onContactsClicked(true); });
    ui->lineEditOwnerAddress->removeAction(btnUpOwnerContact);
    /* Button*/
@@ -132,6 +133,7 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
    connect(ui->pbnCONFIRM, SIGNAL(clicked()), this, SLOT(onpbnCONFIRM()));
 
    showHistory();
+
    /*ui->labelTitle->setText(tr("Leasing"));
    setCssTitleScreen(ui->labelTitle);
    ui->labelTitle->setFont(fontLight);*/
@@ -151,7 +153,7 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
 
     setCssProperty(ui->labelSubtitleDescription, "text-title");
     ui->lineEditOwnerAddress->setPlaceholderText(tr("Enter owner address"));
-    btnOwnerContact = ui->lineEditOwnerAddress->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
+    btnOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
     setCssProperty(ui->lineEditOwnerAddress, "edit-primary-multi-book");
     ui->lineEditOwnerAddress->setAttribute(Qt::WA_MacShowFocusRect, 0);
     setShadow(ui->lineEditOwnerAddress);
@@ -169,11 +171,12 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
 
     ui->labelEditTitle->setText(tr("Leasing address"));
     setCssProperty(ui->labelEditTitle, "text-title");
-    sendMultiRow.reset(new SendMultiRow(this));
+    */
+    sendMultiRow =new SendMultiRow(this);
     sendMultiRow->setOnlyLeasingAddressAccepted(true);
-    ((QVBoxLayout*)ui->containerSend->layout())->insertWidget(1, sendMultiRow.get());
-    connect(sendMultiRow.get(), &SendMultiRow::onContactsClicked, [this](){ onContactsClicked(false); });
-
+    ((QVBoxLayout*)ui->containerSend->layout())->insertWidget(1, sendMultiRow);
+    connect(sendMultiRow, &SendMultiRow::onContactsClicked, [this](){ onContactsClicked(false); });
+    /*
     // List
     ui->labelListHistory->setText(tr("Leased balance history"));
     setCssProperty(ui->labelLeasingTotal, "text-title-right");
@@ -258,11 +261,11 @@ void LeasingWidget::showHistory()
    }
 }
 
-void LeasingWidget::onTempADD(QString Address, QString Name, QString Amount)
+void LeasingWidget::onTempADD(QString Address = QString(), QString Name = QString(), QString Amount = QString())
 {
-   if(Address.isEmpty()) return;
-   bShowHistory = true;
-   n++;
+   clearLeasingHistoryrow();
+   int count = addressesFilter->rowCount();
+   if(count <= 0 ) return;
    if(SpacerHistory)
    {
       ui->scrollAreaWidgetContents->layout()->removeItem(SpacerHistory);
@@ -273,13 +276,25 @@ void LeasingWidget::onTempADD(QString Address, QString Name, QString Amount)
       ui->scrollAreaWidgetContentsTop->layout()->removeItem(SpacerTop);
       delete SpacerTop;
    }
-   SpacerTop = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
-   SpacerHistory = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
-   ui->scrollAreaWidgetContents->layout()->addWidget(createLeasinghistoryrow(Address, Name, Amount));
-   ui->scrollAreaWidgetContents->layout()->addItem(SpacerHistory);
-   ui->scrollAreaWidgetContentsTop->layout()->addWidget(createLeasingTop(n, Address));
-   ui->scrollAreaWidgetContentsTop->layout()->addItem(SpacerTop);
-
+   bShowHistory = true;
+   for(int i = 0; i < count; i++)
+   {
+      QModelIndex rIndex = addressesFilter->index(i, TransactionTableModel::ToAddress);
+      QString address = rIndex.data(Qt::DisplayRole).toString();
+      QString label = rIndex.data(TransactionTableModel::LabelRole).toString();
+      if (label.isEmpty()) {
+         label = "Address with no label";
+      }
+      qint64 amount = rIndex.data(TransactionTableModel::AmountRole).toLongLong();
+      int status = rIndex.data(TransactionTableModel::StatusRole).toInt();
+      n++;
+      SpacerTop = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
+      SpacerHistory = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
+      ui->scrollAreaWidgetContents->layout()->addWidget(createLeasinghistoryrow(address, label, QString::number(amount, 10)));
+      ui->scrollAreaWidgetContents->layout()->addItem(SpacerHistory);
+      ui->scrollAreaWidgetContentsTop->layout()->addWidget(createLeasingTop(n, address));
+      ui->scrollAreaWidgetContentsTop->layout()->addItem(SpacerTop);
+   }
    showHistory();
 }
 
@@ -292,6 +307,7 @@ QWidget* LeasingWidget::createLeasinghistoryrow(QString Address, QString Name, Q
    shadowEffect->setBlurRadius(6);
 
    QWidget * Historyrow = new QWidget();
+   Historyrow->setObjectName("Historyrow");
    Historyrow->setGraphicsEffect(shadowEffect);
    QHBoxLayout* Layout = new QHBoxLayout(Historyrow);
    Historyrow->setMaximumHeight(50);
@@ -410,27 +426,14 @@ QWidget* LeasingWidget::createLeasingTop(int Nun, QString Address)
 }
 void LeasingWidget::onpbnCONFIRM()
 {
-   DefaultDialog *dialog = new DefaultDialog(window);
-   dialog->setText(tr("Are you sure to lease"), tr("%1 BTCU?\n").arg(ui->lineEditBTCU->text()), tr("yes"),tr("no"));
-   dialog->setType();
-   //dialog->setText("", tr("Are you sure to lease\n\n%1 BTCU?\n").arg(ui->lineEditBTCU->text()), tr("yes"),tr("no"));
-   dialog->adjustSize();
-   showHideOp(true);
-   openDialogWithOpaqueBackground(dialog, window );
-   if(dialog->result())
-      {
-         onSendClicked();
-         onTempADD(curentAddress, curentName, ui->lineEditBTCU->text());
-        /* CBTCUAddress address;
-         address.SetString(curentAddress.toStdString());
-         walletModel->getNewLeasingAddress(address, curentName.toStdString());*/
-         informWarning(tr("Confirm new Leasing"));
+   bool ok;
+   /*if(walletModel->getBalance() <= (ui->lineEditBTCU->text().toLongLong(&ok, 10)))
+   {
+      informError(tr("Not enough balance to create a Leasing"));
+      return;
+   }*/
+   onSendClicked();
 
-
-      }
-      else{
-         informError(tr("Not confirm new Leasing"));
-      }
 }
 
 
@@ -487,7 +490,7 @@ void LeasingWidget::onNewLeasingClicked()
    if(dialogML->result())
    {
       DefaultDialog *dialog = new DefaultDialog(window);
-      dialog->setText(tr("Are you sure to lease"), tr("%1 BTCU?\n").arg(ui->lineEditBTCU->text()), tr("yes"),tr("no"));
+      //dialog->setText(tr("Are you sure to lease"), tr("%1 BTCU?\n").arg(ui->lineEditBTCU->text()), tr("yes"),tr("no"));
       //dialog->setText("", tr("Are you sure to lease\n\n%1 BTCU?\n").arg(ui->lineEditBTCU->text()), tr("yes"),tr("no"));
       dialog->adjustSize();
       showHideOp(true);
@@ -508,7 +511,7 @@ void LeasingWidget::onMoreInformationClicked()
 }
 void LeasingWidget::loadWalletModel(){
     if(walletModel) {
-        //sendMultiRow->setWalletModel(walletModel);
+        sendMultiRow->setWalletModel(walletModel);
         txModel = walletModel->getTransactionTableModel();
         leasingModel.reset(new LeasingModel(walletModel->getAddressTableModel(), this));
         //ui->listView->setModel(leasingModel.get());
@@ -520,6 +523,15 @@ void LeasingWidget::loadWalletModel(){
         //ui->listViewLeasingAddress->setModel(addressesFilter);
         //ui->listViewLeasingAddress->setModelColumn(AddressTableModel::Address);
 
+       /*filter = new TransactionFilterProxy();
+       filter->setDynamicSortFilter(true);
+       filter->setSortCaseSensitivity(Qt::CaseInsensitive);
+       filter->setFilterCaseSensitivity(Qt::CaseInsensitive);
+       filter->setSortRole(Qt::EditRole);
+       filter->setSourceModel(txModel);
+       filter->setTypeFilter(TransactionFilterProxy::TYPE(TransactionRecord::P2LLeasingRecv));
+       filter->sort(TransactionTableModel::Date, Qt::DescendingOrder);*/
+
         connect(txModel, &TransactionTableModel::txArrived, this, &LeasingWidget::onTxArrived);
 
         updateDisplayUnit();
@@ -528,7 +540,7 @@ void LeasingWidget::loadWalletModel(){
         //ui->emptyContainer->setVisible(false);
         //ui->listView->setVisible(false);
 
-        tryRefreshLeasings();
+       onTempADD();
     }
 
 }
@@ -731,16 +743,16 @@ void LeasingWidget::showList(bool show){
 }
 
 void LeasingWidget::onSendClicked(){
-    /*if (!walletModel || !walletModel->getOptionsModel() || !verifyWalletUnlocked())
+    if (!walletModel || !walletModel->getOptionsModel() || !verifyWalletUnlocked())
         return;
 
     if (!walletModel->isLeasingNetworkelyEnabled()) {
-        inform(tr("Leasing is networkely disabled"));
+       informError(tr("Leasing is networkely disabled"));
         return;
     }
 
     if (!sendMultiRow->validate()) {
-        inform(tr("Invalid entry"));
+       informError(tr("Invalid entry"));
         return;
     }
 
@@ -750,18 +762,17 @@ void LeasingWidget::onSendClicked(){
     // Amount must be >= minLeasingAmount
     const CAmount& minLeasingAmount = walletModel->getMinLeasingAmount();
     if (dest.amount < minLeasingAmount) {
-        inform(tr("Invalid entry, minimum leasing amount is ") +
+       informError(tr("Invalid entry, minimum leasing amount is ") +
                BitcoinUnits::formatWithUnit(nDisplayUnit, minLeasingAmount));
         return;
     }
 
-    QString inputOwner ;//= ui->lineEditOwnerAddress->text();
+    QString inputOwner = ui->lineEditOwnerAddress->text();
     bool isOwnerEmpty = inputOwner.isEmpty();
     if (!isOwnerEmpty && !walletModel->validateAddress(inputOwner)) {
-        inform(tr("Owner address invalid"));
+       informError(tr("Owner address invalid"));
         return;
     }
-
 
     bool isLeasingAddressFromThisWallet = walletModel->isMine(dest.address);
     bool isOwnerAddressFromThisWallet = isOwnerEmpty;
@@ -784,10 +795,21 @@ void LeasingWidget::onSendClicked(){
 
     // Don't try to lease the balance if both addresses are from this wallet
     if (isLeasingAddressFromThisWallet && isOwnerAddressFromThisWallet) {
-        inform(tr("Leasing address corresponds to this wallet, change it to an external node"));
+       informError(tr("Leasing address corresponds to this wallet, change it to an external node"));
         return;
     }
 
+   DefaultDialog *Defdialog = new DefaultDialog(window);
+   Defdialog->setText(tr("Are you sure to lease"), tr("%1 BTCU?\n").arg(dest.amount/100000000.0), tr("yes"),tr("no"));
+   Defdialog->setType();
+   Defdialog->adjustSize();
+   showHideOp(true);
+   openDialogWithOpaqueBackground(Defdialog, window );
+   if(!Defdialog->result())
+   {
+      informError(tr("Not confirm new Leasing"));
+      return;
+   }
     dest.ownerAddress = inputOwner;
     QList<SendCoinsRecipient> recipients;
     recipients.append(dest);
@@ -806,7 +828,7 @@ void LeasingWidget::onSendClicked(){
     );
 
     if (prepareStatus.status != WalletModel::OK) {
-        inform(tr("Cannot create transaction."));
+       informError(tr("Cannot create transaction."));
         return;
     }
 
@@ -829,17 +851,68 @@ void LeasingWidget::onSendClicked(){
 
         if (sendStatus.status == WalletModel::OK) {
             clearAll();
-            inform(tr("Coins leased"));
+           informWarning(tr("Coins leased"));
+           onTempADD();
         }
     }
 
-    dialog->deleteLater();*/
+    dialog->deleteLater();
 }
 
+bool LeasingWidget::validate()
+{
+   if (!walletModel)
+      return false;
+
+   // Check input validity
+   bool retval = true;
+
+   // Skip checks for payment request
+   if (recipient.paymentRequest.IsInitialized())
+      return retval;
+
+   // Check address validity, returns false if it's invalid
+   QString address = ui->lineEditOwnerAddress ->text();
+   if (address.isEmpty()){
+      retval = false;
+   } else
+      retval = true;//addressChanged(address);
+
+      /*bool isValid = false;
+    CAmount value = GUIUtil::parseValue(ui->lineEditBTCU->text(), walletModel->getOptionsModel()->getDisplayUnit(), &isValid);
+    value = isValid ? value : -1;
+   //CAmount value = getAmountValue(ui->lineEditBTCU->text());
+
+   // Sending a zero amount is invalid
+   if (value <= 0) {
+      setCssEditLine(ui->containerBTCU, false, true);
+      retval = false;
+   }
+
+   // Reject dust outputs:
+   if (retval && GUIUtil::isDust(address, value)) {
+      setCssEditLine(ui->containerBTCU, false, true);
+      retval = false;
+   }
+*/
+   return retval;
+}
+void LeasingWidget::clearLeasingHistoryrow()
+{
+   QList<QWidget *> listRow = ui->scrollAreaWidgetContents->findChildren<QWidget *> ("Historyrow");
+   int size = listRow.length();
+   QWidget * row;
+   for(int i = 0; i < size; i++)
+   {
+      row = listRow.at(i);
+      ui->scrollAreaWidgetContents->layout()->removeWidget(row);
+      delete row;
+   }
+}
 void LeasingWidget::clearAll() {
-    /*if (sendMultiRow) sendMultiRow->clear();
+    if (sendMultiRow) sendMultiRow->clear();
     //ui->lineEditOwnerAddress->clear();
-    if (CoinControlDialog::coinControl) {
+    /*if (CoinControlDialog::coinControl) {
         CoinControlDialog::coinControl->SetNull();
         //ui->btnCoinControl->setActive(false);
     }*/
@@ -1038,4 +1111,6 @@ void LeasingWidget::updateLeasingTotalLabel()
 
 LeasingWidget::~LeasingWidget(){
    // ui->rightContainer->removeItem(spacerDiv.get());
+    if (sendMultiRow)
+        delete sendMultiRow;
 }

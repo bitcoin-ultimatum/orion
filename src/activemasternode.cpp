@@ -425,11 +425,14 @@ bool CActiveMasternode::GetMasterNodeVin(
         }
     }
 
-    CAmount amount = 0;
-    if (!pwalletMain->GetMaxP2LCoins(pubKeyLeasing, keyLeasing, amount)) return false;
-
     // At this point we have a selected output, retrieve the associated info
-    return GetVinFromOutput(*selectedOutput, vin, pubkey, secretKey);
+    if (GetVinFromOutput(*selectedOutput, vin, pubkey, secretKey)) {
+       pubKeyLeasing = pubkey;
+       keyLeasing = secretKey;
+       return true;
+    }
+    else
+       return false;
 }
 
 

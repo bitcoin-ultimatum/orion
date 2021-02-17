@@ -103,13 +103,14 @@ private:
     ContactsDropdown *menuContacts = nullptr;
     TooltipMenu* menu = nullptr;
     TooltipMenu* menuAddresses = nullptr;
-    std::unique_ptr<SendMultiRow> sendMultiRow;
+    SendMultiRow* sendMultiRow;
     bool isShowingDialog = false;
     bool isChainSync = false;
 
     bool isContactOwnerSelected;
     int64_t lastRefreshTime = 0;
     std::atomic<bool> isLoading;
+   SendCoinsRecipient recipient;
 
     // Cached index
     QModelIndex index;
@@ -131,8 +132,10 @@ private:
     bool refreshLeasings();
     void onLabelClicked(QString dialogTitle, const QModelIndex &index, const bool& isMyLeasingAddresses);
     void updateLeasingTotalLabel();
-   QWidget* createLeasinghistoryrow(QString Address, QString Name, QString Amount);
+   QWidget* createLeasinghistoryrow(QString Address = QString(), QString Name = QString(), QString Amount = QString());
    QWidget* createLeasingTop(int Nun, QString Address);
+   bool validate();
+   void clearLeasingHistoryrow();
 };
 
 #endif // LEASINGWIDGET_H

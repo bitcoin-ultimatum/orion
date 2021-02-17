@@ -27,6 +27,8 @@ public:
 
     bool res = false;
 
+Q_SIGNALS:
+   void informMessage(QString message);
 public Q_SLOTS:
     void ok();
 private:

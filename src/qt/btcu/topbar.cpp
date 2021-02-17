@@ -24,7 +24,7 @@
 #include "qt/btcu/cbtokenrow.h"
 #include "qt/btcu/cbtokenmodel.h"
 
-
+#include <QSizePolicy>
 #include "addresstablemodel.h"
 #include <QStandardItem>
 
@@ -70,7 +70,7 @@ TopBar::TopBar(BTCUGUI* _mainWindow, QWidget *parent) :
    //ui->lineEditTocens->setPlaceholderText(tr("My tocens"));
    ui->lineEditTocens->setGraphicsEffect(nullptr);
    ui->lineEditTocens->setText(tr("My Tokens"));
-   btnOwnerTocen = ui->lineEditTocens->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
+   btnOwnerTocen = ui->lineEditTocens->addAction(getIconComboBox(isLightTheme(), false), QLineEdit::TrailingPosition);
    ui->lineEditTocens->installEventFilter(this);
 
    setCssProperty(ui->lineEditTocens, "edit-primary-multi-book");
@@ -121,7 +121,7 @@ TopBar::TopBar(BTCUGUI* _mainWindow, QWidget *parent) :
         ui->pushButtonTheme->setButtonClassStyle("cssClass", "btn-check-theme-dark");
         ui->pushButtonTheme->setButtonText(tr("Dark Theme"));
     }
-   ui->pushButtonTheme->setVisible(false);
+   //ui->pushButtonTheme->setVisible(false);
 
     //setCssProperty(ui->qrContainer, "container-qr");
     //setCssProperty(ui->pushButtonQR, "btn-qr");
@@ -150,6 +150,8 @@ TopBar::TopBar(BTCUGUI* _mainWindow, QWidget *parent) :
     connect(ui->pushButtonSync, &ExpandableButton::Mouse_Hover, this, &TopBar::refreshProgressBarSize);
     //connect(ui->comboBoxTokens, SIGNAL(currentIndexChanged(int)), this, SLOT(ChangedTokens(int)));
     connect(this, SIGNAL(SaveOptionsTokens()), parent, SLOT(onSaveOptionsClicked()));
+
+    QString totalPiv = GUIUtil::formatBalance(1000, nDisplayUnit);
 }
 
 void TopBar::onThemeClicked(){
@@ -635,6 +637,7 @@ void TopBar::updateBalances(const CAmount& balance, const CAmount& unconfirmedBa
     //ui->labelAmountTopzPiv->setText(totalzPiv);
 
     // Expanded
+    std::cout << totalPiv.toStdString() << std::endl;
     ui->labelAmountPiv->setText(totalPiv);
     //ui->labelAmountzPiv->setText(totalzPiv);
 
@@ -721,7 +724,7 @@ void TopBar::onTocensClicked()
       menuTocen->setTokenModel(CBModel,"");
       connect(menuTocen, &CbTocenDropdown::contactSelected, [this](QString Tocen,  QPixmap pixmap){
          ui->lineEditTocens->setText(Tocen);
-         btnOwnerTocen->setIcon(QIcon("://ic-contact-arrow-down"));
+         btnOwnerTocen->setIcon(getIconComboBox(isLightTheme(),false));
          //QPixmap p =pixmap.scaled(13, 13,Qt::KeepAspectRatioByExpanding);
          if(!icoTocen)
          {
@@ -739,10 +742,12 @@ void TopBar::onTocensClicked()
 
    if(menuTocen->isVisible()){
       menuTocen->hide();
-      btnOwnerTocen->setIcon(QIcon("://ic-contact-arrow-down"));
+      btnOwnerTocen->setIcon(getIconComboBox(isLightTheme(), false));
+      delete menuTocen;
+      menuTocen = nullptr;
       return;
    }
-   btnOwnerTocen->setIcon(QIcon("://ic-contact-arrow-up"));
+   btnOwnerTocen->setIcon(getIconComboBox(isLightTheme(), true));
    int Count = CBModel->rowCount();
    height = Count < 5 ? 25 + (Count * 30) : 25 + 5* 30;
 
@@ -790,7 +795,7 @@ bool TopBar::eventFilter(QObject *obj, QEvent *event)
 
 void TopBar::hideMenuTocen()
 {
-   if(!menuTocen->underMouse() && !ui->lineEditTocens->underMouse() && menuTocen->isVisible())
+   if(menuTocen && !menuTocen->underMouse() && !ui->lineEditTocens->underMouse() && menuTocen->isVisible())
    {
       onTocensClicked();
    }

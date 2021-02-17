@@ -146,7 +146,7 @@ private:
     PrivacyWidget *privacyWidget = nullptr;
     MasterNodesWidget *masterNodesWidget = nullptr;
     ColdStakingWidget *coldStakingWidget = nullptr;
-    std::unique_ptr<LeasingWidget> leasingWidget;
+    LeasingWidget *leasingWidget = nullptr;
     SettingsWidget* settingsWidget = nullptr;
     //CreateMasterNodeWidget* createMasterNode = nullptr;
     //CreateValidatorWidget * createValidator = nullptr;

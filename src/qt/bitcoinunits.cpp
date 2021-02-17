@@ -239,9 +239,9 @@ QString BitcoinUnits::floorHtmlWithUnit(int unit, const CAmount& amount, bool pl
     QString str(floorWithUnit(unit, amount, plussign, separators, cleanRemainderZeros, isZBTCU));
     str.replace(QChar(THIN_SP_CP), QString(COMMA_HTML));
     int size = str.lastIndexOf(";");
-   if(str.length()>size + 12)
+   if(str.length()>size + 13)
    {
-      str = str.left(size + 9) + "...";
+      str = str.left(size + 10) + "...";
 
    }
     return QString("<span style='white-space: nowrap;'>%1</span>").arg(str);

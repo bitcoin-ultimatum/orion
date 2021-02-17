@@ -47,8 +47,8 @@ public:
     }
 
     QColor rectColor(bool isHovered, bool isSelected) override{
-       return QColor("#FFFFFF");
-        /*return getRowColor(isLightTheme, isHovered, isSelected);*/
+       /*return QColor("#FFFFFF");*/
+        return getRowColor(isLightTheme, isHovered, isSelected);
     }
 
    AddressLabelRow* getWidget() override{
@@ -125,16 +125,16 @@ AddressesWidget::AddressesWidget(BTCUGUI* parent) :
     setCssProperty(ui->layoutNewContact, "container");
 
     // Name
-   ui->labelName->setVisible(false);
     ui->labelName->setText(tr("Contact name"));
-    setCssProperty(ui->labelName, "text-title");
+    setCssSubtitleScreen(ui->labelName);
+    ui->labelName->setStyleSheet("padding-left: 10px;");
     ui->lineEditName->setPlaceholderText(tr("e.g. John Doe"));
     setCssEditLine(ui->lineEditName, true);
 
     // Address
-   ui->labelAddress->setVisible(false);
     ui->labelAddress->setText(tr("Enter BTCU address"));
-    setCssProperty(ui->labelAddress, "text-title");
+    setCssSubtitleScreen(ui->labelAddress);
+    ui->labelAddress->setStyleSheet("padding-left: 10px;");
     ui->lineEditAddress->setPlaceholderText("e.g. D7VFR83SQbiezrW72hjc…");
     setCssEditLine(ui->lineEditAddress, true);
     ui->lineEditAddress->setValidator(new QRegExpValidator(QRegExp("^[A-Za-z0-9]+"), ui->lineEditName));

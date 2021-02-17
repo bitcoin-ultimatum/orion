@@ -206,22 +206,51 @@ void updateStyle(QWidget* widget){
 
 QColor getRowColor(bool isLightTheme, bool isHovered, bool isSelected){
     if(isLightTheme){
-        if (isSelected) {
+       return QColor("#ffffff");
+        /*if (isSelected) {
             return QColor("#EDF0F8ff");
         }else if(isHovered){
             return QColor("#25bababa");
         } else{
             return QColor("#ffffff");
-        }
+        }*/
     }else{
-        if (isSelected) {
+       return QColor("#222241");
+        /*if (isSelected) {
             return QColor("#25b088ff");
         }else if(isHovered){
             return QColor("#25bababa");
         } else{
             return QColor("#0f0b16");
-        }
+        }*/
     }
+}
+
+
+QIcon getIconComboBox(bool isLightTheme, bool isUncapped)
+{
+   if(isLightTheme){
+      if(isUncapped)
+      {
+         return QIcon("://ic-contact-arrow-up");
+      }
+      else
+      {
+        return QIcon("://ic-contact-arrow-down");
+      }
+   }
+   else
+   {
+      if(isUncapped)
+      {
+         return QIcon("://ic-contact-arrow-up-white");
+      }
+      else
+      {
+         return QIcon("://ic-contact-arrow-down-white");
+      }
+   }
+
 }
 
 void initComboBox(QComboBox* combo, QLineEdit* lineEdit){

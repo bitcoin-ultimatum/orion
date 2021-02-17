@@ -8,12 +8,12 @@ cmake_minimum_required(VERSION 3.14)
 
 project(cryptopp)
 
-# In order to make XCode correct build this 
+# In order to make XCode correct build this
 # we need to simplify the process
 if (CMAKE_GENERATOR MATCHES "Xcode")
 	set(CRYPTOPP_CROSS_COMPILE 0)
 	option(BUILD_SHARED "Build shared library" ON)
-	option(BUILD_TESTING "Build library tests" ON)	
+	option(BUILD_TESTING "Build library tests" ON)
 	# Library headers
 	file(GLOB cryptopp_HEADERS *.h)
 
@@ -58,9 +58,9 @@ if (CMAKE_GENERATOR MATCHES "Xcode")
 
 	include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 	add_library(cryptopp-object OBJECT ${cryptopp_SOURCES})
-	
+
 	add_library(cryptopp SHARED ${cryptopp_SOURCES})
-			
+
 	set_target_properties(
 		cryptopp PROPERTIES
 		SOVERSION 0
@@ -80,9 +80,9 @@ if (CMAKE_GENERATOR MATCHES "Xcode")
 	)
 else()
 	# Make RelWithDebInfo the default (it does e.g. add '-O2 -g -DNDEBUG' for GNU)
-	#   If not in multi-configuration environments, no explicit build type or CXX 
+	#   If not in multi-configuration environments, no explicit build type or CXX
 	#   flags are set by the user and if we are the root CMakeLists.txt file.
-	if (NOT CMAKE_CONFIGURATION_TYPES AND 
+	if (NOT CMAKE_CONFIGURATION_TYPES AND
 		NOT CMAKE_NO_BUILD_TYPE AND
 		NOT CMAKE_BUILD_TYPE AND
 		NOT CMAKE_CXX_FLAGS AND
@@ -209,7 +209,7 @@ else()
 		endif()
 	endif()
 
-	# Solaris specific 
+	# Solaris specific
 	if ((NOT CRYPTOPP_CROSS_COMPILE) AND "${UNAME_SYSTEM}" STREQUAL "SunOS")
 		# SunCC needs -native
 		if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "SunPro")

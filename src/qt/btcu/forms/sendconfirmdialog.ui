@@ -304,7 +304,7 @@
                       </size>
                      </property>
                      <property name="text">
-                      <string>ID:</string>
+                      <string>Hash:</string>
                      </property>
                     </widget>
                    </item>
@@ -479,7 +479,7 @@
                       </size>
                      </property>
                      <property name="text">
-                      <string>Total amount</string>
+                      <string>Total amount:</string>
                      </property>
                     </widget>
                    </item>

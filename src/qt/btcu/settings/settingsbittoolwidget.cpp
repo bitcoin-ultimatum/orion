@@ -107,7 +107,7 @@ SettingsBitToolWidget::SettingsBitToolWidget(BTCUGUI* _window, QWidget *parent) 
     ui->encryptedKeyOut_ENC->setReadOnly(true);
     initCssEditLine(ui->encryptedKeyOut_ENC);
 
-    btnContact = ui->addressIn_ENC->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
+    btnContact = ui->addressIn_ENC->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
     ui->pushButtonEncrypt->setText(tr("ENCRYPT"));
     ui->pushButtonClear->setText(tr("CLEAR ALL"));
     ui->pushButtonDecryptClear->setText(tr("CLEAR"));
@@ -230,17 +230,17 @@ void SettingsBitToolWidget::onAddressesClicked(){
         menuContacts->setWalletModel(walletModel, AddressTableModel::Receive);
         connect(menuContacts, &ContactsDropdown::contactSelected, [this](QString address, QString label){
             setAddress_ENC(address);
-            btnContact->setIcon(QIcon("://ic-contact-arrow-down"));
+            btnContact->setIcon(getIconComboBox(isLightTheme(),false));
         });
 
     }
 
     if(menuContacts->isVisible()){
         menuContacts->hide();
-        btnContact->setIcon(QIcon("://ic-contact-arrow-down"));
+        btnContact->setIcon(getIconComboBox(isLightTheme(),false));
         return;
     }
-    btnContact->setIcon(QIcon("://ic-contact-arrow-up"));
+    btnContact->setIcon(getIconComboBox(isLightTheme(),true));
     menuContacts->resizeList(width, height);
     menuContacts->setStyleSheet(this->styleSheet());
     menuContacts->adjustSize();

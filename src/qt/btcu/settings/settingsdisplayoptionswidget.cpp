@@ -38,8 +38,8 @@ SettingsDisplayOptionsWidget::SettingsDisplayOptionsWidget(BTCUGUI* _window, QWi
    this->setGraphicsEffect(0);
    lw->setGraphicsEffect(shadowEffect);
    lw->setProperty("cssClass", "container-border-light");
-   btnBoxUnit = ui->lineEditBoxUnit->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
-   btnUpBoxUnit = ui->lineEditBoxUnit->addAction(QIcon("://ic-contact-arrow-up"), QLineEdit::TrailingPosition);
+   btnBoxUnit = ui->lineEditBoxUnit->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
+   btnUpBoxUnit = ui->lineEditBoxUnit->addAction(getIconComboBox(isLightTheme(),true), QLineEdit::TrailingPosition);
    ui->lineEditBoxUnit->removeAction(btnUpBoxUnit);
    pwLanguage =new QWidget(this);
    QVBoxLayout* LayoutLanguage = new QVBoxLayout(pwLanguage);
@@ -48,8 +48,8 @@ SettingsDisplayOptionsWidget::SettingsDisplayOptionsWidget(BTCUGUI* _window, QWi
    pwLanguage->setGraphicsEffect(0);
    lwLanguage->setGraphicsEffect(shadowEffect);
    lwLanguage->setProperty("cssClass", "container-border-light");
-   btnBoxLanguage = ui->lineEditLanguage->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
-   btnUpBoxLanguage = ui->lineEditLanguage->addAction(QIcon("://ic-contact-arrow-up"), QLineEdit::TrailingPosition);
+   btnBoxLanguage = ui->lineEditLanguage->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
+   btnUpBoxLanguage = ui->lineEditLanguage->addAction(getIconComboBox(isLightTheme(),true), QLineEdit::TrailingPosition);
    ui->lineEditLanguage->removeAction(btnUpBoxLanguage);
    pwDigits=new QWidget(this);
    QVBoxLayout* LayoutDigits = new QVBoxLayout(pwDigits);
@@ -58,8 +58,8 @@ SettingsDisplayOptionsWidget::SettingsDisplayOptionsWidget(BTCUGUI* _window, QWi
    pwDigits->setGraphicsEffect(0);
    lwDigits->setGraphicsEffect(shadowEffect);
    lwDigits->setProperty("cssClass", "container-border-light");
-   btnBoxDigits = ui->lineEditDigits->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
-   btnUpBoxDigits = ui->lineEditDigits->addAction(QIcon("://ic-contact-arrow-up"), QLineEdit::TrailingPosition);
+   btnBoxDigits = ui->lineEditDigits->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
+   btnUpBoxDigits = ui->lineEditDigits->addAction(getIconComboBox(isLightTheme(),true), QLineEdit::TrailingPosition);
    ui->lineEditDigits->removeAction(btnUpBoxDigits);
    // Containers
     ui->left->setProperty("cssClass", "container-border");

@@ -92,7 +92,7 @@ DashboardWidget::DashboardWidget(BTCUGUI* parent) :
 
     // Sort Transactions
    setCssProperty(ui->lineEditBoxSort, "edit-primary-multi-book");
-    btnBoxSort = ui->lineEditBoxSort->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
+    btnBoxSort = ui->lineEditBoxSort->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
    connect(btnBoxSort, &QAction::triggered, [this](){ onBoxSortClicked(); });
     SortEdit* lineEdit = new SortEdit(ui->comboBoxSort);
     initComboBox(ui->comboBoxSort, lineEdit);
@@ -118,7 +118,7 @@ DashboardWidget::DashboardWidget(BTCUGUI* parent) :
 
     // Sort type
    setCssProperty(ui->lineEditBoxSortType, "edit-primary-multi-book");
-    btnBoxSortType = ui->lineEditBoxSortType->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
+    btnBoxSortType = ui->lineEditBoxSortType->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
    connect(btnBoxSortType, &QAction::triggered, [this](){ onBoxSortTypeClicked(); });
     SortEdit* lineEditType = new SortEdit(ui->comboBoxSortType);
     initComboBox(ui->comboBoxSortType, lineEditType);
@@ -924,14 +924,14 @@ void DashboardWidget::onBoxSortClicked()
 {
    if(widgetBoxSortType->isVisible()){
       widgetBoxSortType->hide();
-      btnBoxSortType->setIcon(QIcon("://ic-contact-arrow-down"));
+      btnBoxSortType->setIcon(getIconComboBox(isLightTheme(),false));
    }
    if(widgetBoxSort->isVisible()){
       widgetBoxSort->hide();
-      btnBoxSort->setIcon(QIcon("://ic-contact-arrow-down"));
+      btnBoxSort->setIcon(getIconComboBox(isLightTheme(),false));
       return;
    }
-   btnBoxSort->setIcon(QIcon("://ic-contact-arrow-up"));
+   btnBoxSort->setIcon(getIconComboBox(isLightTheme(),true));
    QPoint pos = ui->lineEditBoxSort->pos();
 
    QPoint point = ui->lineEditBoxSort->rect().bottomRight();
@@ -945,14 +945,14 @@ void DashboardWidget::onBoxSortTypeClicked()
 {
    if(widgetBoxSort->isVisible()){
       widgetBoxSort->hide();
-      btnBoxSort->setIcon(QIcon("://ic-contact-arrow-down"));
+      btnBoxSort->setIcon(getIconComboBox(isLightTheme(),false));
    }
    if(widgetBoxSortType->isVisible()){
       widgetBoxSortType->hide();
-      btnBoxSortType->setIcon(QIcon("://ic-contact-arrow-down"));
+      btnBoxSortType->setIcon(getIconComboBox(isLightTheme(),false));
       return;
    }
-   btnBoxSortType->setIcon(QIcon("://ic-contact-arrow-up"));
+   btnBoxSortType->setIcon(getIconComboBox(isLightTheme(),true));
    QPoint pos = ui->lineEditBoxSortType->pos();
    QPoint point = ui->lineEditBoxSortType->rect().bottomRight();
    widgetBoxSortType->setFixedSize(ui->lineEditBoxSortType->width() + 20,400);
@@ -972,7 +972,7 @@ void DashboardWidget::BoxSortClick(const QModelIndex &index)
    ui->lineEditBoxSort->setText(value);
    ui->comboBoxSort->setCurrentIndex(index.row());
    widgetBoxSort->hide();
-   btnBoxSort->setIcon(QIcon("://ic-contact-arrow-down"));
+   btnBoxSort->setIcon(getIconComboBox(isLightTheme(),false));
 }
 void DashboardWidget::BoxSortTypeClick(const QModelIndex &index)
 {
@@ -984,5 +984,5 @@ void DashboardWidget::BoxSortTypeClick(const QModelIndex &index)
    ui->lineEditBoxSortType->setText(value);
    ui->comboBoxSortType->setCurrentIndex(index.row());
    widgetBoxSortType->hide();
-   btnBoxSortType->setIcon(QIcon("://ic-contact-arrow-down"));
+   btnBoxSortType->setIcon(getIconComboBox(isLightTheme(),false));
 }
