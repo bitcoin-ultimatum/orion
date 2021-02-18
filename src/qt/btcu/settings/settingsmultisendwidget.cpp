@@ -320,6 +320,7 @@ void SettingsMultisendWidget::activate(){
     {
        strRet = tr("Unable to activate MultiSend, no available recipients");
        informError(strRet);
+       ui->pushRight->setChecked(true);
     }
     else if (!(ui->checkBoxStake->isChecked() || ui->checkBoxRewards->isChecked())) {
         strRet = tr("Unable to activate MultiSend\nCheck one or both of the check boxes to send on stake and/or masternode rewards");

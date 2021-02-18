@@ -47,6 +47,7 @@ QPixmap encodeToQr(QString str, QString &errorStr, QColor qrColor = Qt::black);
 // Helpers
 void updateStyle(QWidget* widget);
 QColor getRowColor(bool isLightTheme, bool isHovered, bool isSelected);
+QIcon getIconComboBox(bool isLightTheme, bool isUncapped);
 
 // Settings
 QSettings* getSettings();

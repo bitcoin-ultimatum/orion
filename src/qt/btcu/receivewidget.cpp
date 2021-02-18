@@ -183,6 +183,7 @@ void ReceiveWidget::onLabelClicked(){
         isShowingDialog = true;
         showHideOp(true);
         AddNewContactDialog *dialog = new AddNewContactDialog(window);
+       connect(dialog, &AddNewContactDialog::informMessage, [this](QString Message){ informError(Message); });
         dialog->setTexts(tr("Edit Address Label"));
         dialog->setData(info->address, addressTableModel->labelForAddress(info->address));
         if (openDialogWithOpaqueBackgroundY(dialog, window, 3.5, 6)) {

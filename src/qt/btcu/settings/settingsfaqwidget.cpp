@@ -45,6 +45,11 @@ SettingsFaqWidget::SettingsFaqWidget(BTCUGUI *parent) :
 
    // Content
    setCssProperty({
+                  ui->scrollAreaWidgetContents,
+                  ui->scrollAreaButtons
+                  }, "faq-scroll");
+
+   setCssProperty({
                   ui->scrollAreaWidgetContents1,
                   ui->scrollAreaWidgetContents2,
                   ui->scrollAreaWidgetContents3,
@@ -54,7 +59,8 @@ SettingsFaqWidget::SettingsFaqWidget(BTCUGUI *parent) :
                   ui->scrollAreaWidgetContents7,
                   ui->scrollAreaWidgetContents8,
                   ui->scrollAreaWidgetContents9,
-                  ui->scrollAreaWidgetContents10
+                  ui->scrollAreaWidgetContents10,
+                  ui->scrollAreaWidgetContents
                   }, "container-faq-scroll");
 
    setCssProperty({
@@ -106,6 +112,26 @@ SettingsFaqWidget::SettingsFaqWidget(BTCUGUI *parent) :
                    ui->labelContent9_Req_3,
                    ui->labelContent9_Req_4
                   }, "text-content-ic-faq");
+   QScrollBar* TempScrollBar;
+   QList<QScrollBar*> lsb;
+   lsb = ui->scrollAreaButtons->findChildren<QScrollBar*>();
+   for(int i = 0; i < lsb.length(); i++)
+   {
+      TempScrollBar = lsb.at(i);
+      TempScrollBar->setVisible(false);
+   }
+   lsb = ui->scrollArea9->findChildren<QScrollBar*>();
+   for(int i = 0; i < lsb.length(); i++)
+   {
+      TempScrollBar = lsb.at(i);
+      TempScrollBar->setVisible(true);
+   }
+   lsb = ui->scrollArea7->findChildren<QScrollBar*>();
+   for(int i = 0; i < lsb.length(); i++)
+   {
+      TempScrollBar = lsb.at(i);
+      TempScrollBar->setVisible(true);
+   }
 
    ui->labelContent1->setText("BTCU is a form of digital online money using blockchain technology that can be easily transferred \n"
                               "globally, instantly, and with near zero fees. BTCU incorporates market leading security & privacy t\n"

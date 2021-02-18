@@ -346,5 +346,7 @@
         <file alias="ic-copy-red-hover">btcu/res/img/ic-copy-red-hover.svg</file>
         <file alias="ic-label-hover">btcu/res/img/ic-label-hover.svg</file>
         <file alias="ic-update-red-hover">btcu/res/img/ic-update-red-hover.svg</file>
+        <file alias="ic-contact-arrow-up-white">btcu/res/img/ic-contact-arrow-up-white.svg</file>
+        <file alias="ic-drop-down-white">btcu/res/img/ic-drop-down-white.svg</file>
     </qresource>
 </RCC>

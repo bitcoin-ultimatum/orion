@@ -18,6 +18,7 @@ ui(new Ui::CBTokenRow)
    ui->labelIc->setPixmap(QPixmap("://img-tokens"));
 
    setCssProperty(ui->lblDivisory,"container-divider");
+   setCssProperty(ui->container, "container");
    ui->lblDivisory->setVisible(false);
 }
 

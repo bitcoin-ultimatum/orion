@@ -137,7 +137,7 @@ BTCUGUI::BTCUGUI(const NetworkStyle* networkStyle, QWidget* parent) :
         privacyWidget = new PrivacyWidget(this);
         masterNodesWidget = new MasterNodesWidget(this);
         coldStakingWidget = new ColdStakingWidget(this);
-        leasingWidget.reset(new LeasingWidget(this));
+        leasingWidget =new LeasingWidget(this);
         settingsWidget = new SettingsWidget(this);
         //createMasterNode= new CreateMasterNodeWidget(this);
         //createValidator = new CreateValidatorWidget(this);
@@ -151,7 +151,7 @@ BTCUGUI::BTCUGUI(const NetworkStyle* networkStyle, QWidget* parent) :
         stackedContainer->addWidget(privacyWidget);
         stackedContainer->addWidget(masterNodesWidget);
         stackedContainer->addWidget(coldStakingWidget);
-        stackedContainer->addWidget(leasingWidget.get());
+        stackedContainer->addWidget(leasingWidget);
         stackedContainer->addWidget(settingsWidget);
         //stackedContainer->addWidget(createMasterNode);
         //stackedContainer->addWidget(createValidator);
@@ -225,8 +225,8 @@ void BTCUGUI::connectActions() {
     connect(masterNodesWidget, &MasterNodesWidget::execDialog, this, &BTCUGUI::execDialog);
     connect(coldStakingWidget, &ColdStakingWidget::showHide, this, &BTCUGUI::showHide);
     connect(coldStakingWidget, &ColdStakingWidget::execDialog, this, &BTCUGUI::execDialog);
-    connect(leasingWidget.get(), &LeasingWidget::showHide, this, &BTCUGUI::showHide);
-    connect(leasingWidget.get(), &LeasingWidget::execDialog, this, &BTCUGUI::execDialog);
+    connect(leasingWidget, &LeasingWidget::showHide, this, &BTCUGUI::showHide);
+    connect(leasingWidget, &LeasingWidget::execDialog, this, &BTCUGUI::execDialog);
     connect(settingsWidget, &SettingsWidget::execDialog, this, &BTCUGUI::execDialog);
 }
 
@@ -281,7 +281,7 @@ void BTCUGUI::setClientModel(ClientModel* clientModel) {
         connect(clientModel, SIGNAL(message(QString, QString, unsigned int)), this, SLOT(message(QString, QString, unsigned int)));
         connect(topBar, SIGNAL(walletSynced(bool)), dashboard, SLOT(walletSynced(bool)));
         connect(topBar, SIGNAL(walletSynced(bool)), coldStakingWidget, SLOT(walletSynced(bool)));
-        connect(topBar, SIGNAL(walletSynced(bool)), leasingWidget.get(), SLOT(walletSynced(bool)));
+        connect(topBar, SIGNAL(walletSynced(bool)), leasingWidget, SLOT(walletSynced(bool)));
 
         // Get restart command-line parameters and handle restart
         connect(settingsWidget, &SettingsWidget::handleRestart, [this](QStringList arg){handleRestart(arg);});
@@ -529,7 +529,7 @@ void BTCUGUI::goToColdStaking(){
 }
 
 void BTCUGUI::goToLeasing(){
-    showTop(leasingWidget.get());
+    showTop(leasingWidget);
 }
 
 void BTCUGUI::goToSettings(){
@@ -652,7 +652,7 @@ bool BTCUGUI::addWallet(const QString& name, WalletModel* walletModel)
     connect(privacyWidget, &PrivacyWidget::message, this, &BTCUGUI::message);
     connect(masterNodesWidget, &MasterNodesWidget::message, this, &BTCUGUI::message);
     connect(coldStakingWidget, &MasterNodesWidget::message, this, &BTCUGUI::message);
-    connect(leasingWidget.get(), &MasterNodesWidget::message, this, &BTCUGUI::message);
+    connect(leasingWidget, &MasterNodesWidget::message, this, &BTCUGUI::message);
     connect(topBar, &TopBar::message, this, &BTCUGUI::message);
     connect(sendWidget, &SendWidget::message,this, &BTCUGUI::message);
     connect(receiveWidget, &ReceiveWidget::message,this, &BTCUGUI::message);

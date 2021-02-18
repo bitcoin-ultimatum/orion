@@ -44,7 +44,7 @@ SendMultiRow::SendMultiRow(PWidget *parent) :
     ui->btnMenu->setVisible(false);
 
     // Button Contact
-    btnContact = ui->lineEditAddress->addAction(QIcon("://ic-contact-arrow-down"), QLineEdit::TrailingPosition);
+    btnContact = ui->lineEditAddress->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
 
     //btnUpContact = ui->lineEditAddress->addAction(QIcon("://ic-contact-arrow-up"), QLineEdit::TrailingPosition);
     //ui->lineEditAddress->removeAction(btnUpContact);
@@ -67,13 +67,13 @@ SendMultiRow::SendMultiRow(PWidget *parent) :
     connect(ui->lineEditBTCU, SIGNAL(textChanged(const QString&)), this, SLOT(amountChanged(const QString&)));
     connect(ui->lineEditAddress, SIGNAL(textChanged(const QString&)), this, SLOT(addressChanged(const QString&)));
     connect(btnContact, &QAction::triggered, [this](){
-       btnContact->setIcon(QIcon("://ic-contact-arrow-up"));
+       btnContact->setIcon(getIconComboBox(isLightTheme(),true));
        /*ui->lineEditAddress->removeAction(btnContact);
        ui->lineEditAddress->addAction(btnUpContact, QLineEdit::TrailingPosition);*/
        Q_EMIT onContactsClicked(this);});
     connect(ui->btnMenu, &QPushButton::clicked, [this](){Q_EMIT onMenuClicked(this);});
     /*connect(btnUpContact, &QAction::triggered, [this](){
-       btnContact->setIcon(QIcon("://ic-contact-arrow-down"));
+       btnContact->setIcon(getIconComboBox(isLightTheme(),false));
        Q_EMIT onContactsClicked(this);});*/
 
 }
@@ -242,12 +242,12 @@ int SendMultiRow::getNumber(){
 void SendMultiRow::setAddress(const QString& address) {
     ui->lineEditAddress->setText(address);
     ui->lineEditBTCU->setFocus();
-   btnContact->setIcon(QIcon("://ic-contact-arrow-down"));
+   btnContact->setIcon(getIconComboBox(isLightTheme(),false));
 }
 
 void SendMultiRow::updateAction()
 {
-   btnContact->setIcon(QIcon("://ic-contact-arrow-down"));
+   btnContact->setIcon(getIconComboBox(isLightTheme(),false));
 }
 
 void SendMultiRow::setAmount(const QString& amount){
