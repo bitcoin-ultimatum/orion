@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>858</width>
+    <width>868</width>
     <height>60</height>
    </rect>
   </property>
@@ -45,10 +45,10 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="labelName">
         <property name="minimumSize">
          <size>
-          <width>80</width>
+          <width>90</width>
           <height>0</height>
          </size>
         </property>
@@ -77,7 +77,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_2">
+       <widget class="QLabel" name="labelAddress">
         <property name="minimumSize">
          <size>
           <width>250</width>
@@ -109,7 +109,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_3">
+       <widget class="QLabel" name="labelLeasing">
         <property name="minimumSize">
          <size>
           <width>80</width>
@@ -141,7 +141,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_4">
+       <widget class="QLabel" name="labelBlockHeight">
         <property name="minimumSize">
          <size>
           <width>90</width>
@@ -173,7 +173,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_5">
+       <widget class="QLabel" name="labelType">
         <property name="minimumSize">
          <size>
           <width>80</width>
@@ -205,7 +205,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_6">
+       <widget class="QLabel" name="labelProfit">
         <property name="minimumSize">
          <size>
           <width>150</width>

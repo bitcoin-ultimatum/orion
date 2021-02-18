@@ -31,6 +31,7 @@
 #include "qt/btcu/createmasternodewidget.h"
 #include "qt/btcu/createvalidatorwidget.h"
 
+#include "main.h"
 #include <QGraphicsDropShadowEffect>
 
 #define DECORATION_SIZE 65
@@ -56,7 +57,7 @@ public:
         QString address = index.sibling(index.row(), MNModel::ADDRESS).data(Qt::DisplayRole).toString();
         QString status = index.sibling(index.row(), MNModel::STATUS).data(Qt::DisplayRole).toString();
         bool wasCollateralAccepted = index.sibling(index.row(), MNModel::WAS_COLLATERAL_ACCEPTED).data(Qt::DisplayRole).toBool();
-        row->updateView("Address: " + address, label, status, wasCollateralAccepted);
+        //row->updateView("Address: " + address, label);
     }
 
     QColor rectColor(bool isHovered, bool isSelected) override{
@@ -131,7 +132,7 @@ MasterNodesWidget::MasterNodesWidget(BTCUGUI *parent) :
    setCssBtnSecondary(ui->pbnTempAdd);
    connect(ui->pbnTempAdd, SIGNAL(clicked()), this, SLOT(onTempADD()));
    connect(ui->pbnValidator, SIGNAL(clicked()), this, SLOT(onpbnValidatorClicked()));
-   connect(ui->pbnMasternode, SIGNAL(clicked()), this, SLOT(onpbnMasternodeClicked()));
+   connect(ui->pbnMasternode, SIGNAL(clicked()), this, SLOT(onCreateMNClicked())); //onpbnMasternodeClicked()
    connect(ui->pbnMy, SIGNAL(clicked()), this, SLOT(onpbnMyClicked()));
    connect(ui->pbnGlobal, SIGNAL(clicked()), this, SLOT(onpbnGlobalClicked()));
    showHistory();
@@ -185,17 +186,76 @@ void MasterNodesWidget::onTempADD()
    if(ui->pbnMy->isChecked())
    {
       bShowHistoryMy = true;
-      if(SpacerNodeMy)
-      {
-         ui->scrollAreaWidgetContentsMy->layout()->removeItem(SpacerNodeMy);
-         delete SpacerNodeMy;
-      }
-      SpacerNodeMy = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
-      MNRow * mnrow = new MNRow(ui->scrollAreaMy);
-      mnrow->setGraphicsEffect(shadowEffect);
-      connect(mnrow, SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
-      ui->scrollAreaWidgetContentsMy->layout()->addWidget(mnrow);
-      ui->scrollAreaWidgetContentsMy->layout()->addItem(SpacerNodeMy);
+
+
+       std::string name = "";
+       std::string hash = "";
+
+
+
+       std::string strConfFile = "masternode.conf";
+       std::string strDataDir = GetDataDir().string();
+       if (strConfFile != boost::filesystem::basename(strConfFile) + boost::filesystem::extension(strConfFile)){
+           throw std::runtime_error(strprintf(_("masternode.conf %s resides outside data directory %s"), strConfFile, strDataDir));
+       }
+
+       boost::filesystem::path pathBootstrap = GetDataDir() / strConfFile;
+       if (boost::filesystem::exists(pathBootstrap)) {
+           boost::filesystem::path pathMasternodeConfigFile = GetMasternodeConfigFile();
+           boost::filesystem::ifstream streamConfig(pathMasternodeConfigFile);
+
+           if (streamConfig.good()) {
+
+           int linenumber = 1;
+           for (std::string line; std::getline(streamConfig, line); linenumber++) {
+               if (line.empty()) continue;
+               if (line.at(0) == '#') continue;
+
+               std::string buffLine = "";
+               int count = 0;
+               for (int i = 0; i < line.size(); ++i) {
+                   if (line.at(i) == ' ') {
+                       if (count == 0) {
+                           name = buffLine;
+                       } else if (count == 3) {
+                           hash = buffLine;
+                       }
+                       buffLine = "";
+                       ++count;
+                   } else {
+                       buffLine += line.at(i);
+                   }
+               }
+
+
+               if(SpacerNodeMy)
+               {
+                   ui->scrollAreaWidgetContentsMy->layout()->removeItem(SpacerNodeMy);
+                   delete SpacerNodeMy;
+               }
+
+               uint256 uHash =  uint256(hash);
+               uint256 uBlock;
+               CTransaction tr;
+               int blockHeight = -1;
+               CBlockIndex* cbIndex = nullptr;
+
+               GetTransaction(uHash, tr, uBlock, true);
+               IsTransactionInChain(uHash, blockHeight, tr);
+
+               SpacerNodeMy = new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding);
+               MNRow *mnrow = new MNRow(ui->scrollAreaMy);
+               mnrow->setGraphicsEffect(shadowEffect);
+               connect(mnrow, SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
+               mnrow->updateView(QString::fromStdString(name), QString::fromStdString(hash), blockHeight);
+               ui->scrollAreaWidgetContentsMy->layout()->addWidget(mnrow);
+               ui->scrollAreaWidgetContentsMy->layout()->addItem(SpacerNodeMy);
+
+           }
+       }
+       }
+
+
    }
    else{
       bShowHistory = true;
@@ -668,7 +728,8 @@ void MasterNodesWidget::onDeleteMNClicked(){
 }
 
 void MasterNodesWidget::onCreateMNClicked(){
-    /*if(verifyWalletUnlocked()) {
+    if(verifyWalletUnlocked()) {
+
         if(walletModel->getBalance() <= (COIN * 10000)){
             inform(tr("Not enough balance to create a masternode, 10,000 BTCU required."));
             return;
@@ -687,7 +748,7 @@ void MasterNodesWidget::onCreateMNClicked(){
             }
         }
         dialog->deleteLater();
-    }*/
+    }
 }
 
 void MasterNodesWidget::changeTheme(bool isLightTheme, QString& theme){

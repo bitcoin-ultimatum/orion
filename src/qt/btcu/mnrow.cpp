@@ -14,25 +14,24 @@ MNRow::MNRow(QWidget *parent) :
     ui->setupUi(this);
 
    setCssProperty(ui->Contener, "container-border");
-   setCssSubtitleScreen(ui->label);
-   ui->label_2->setProperty("cssClass","text-list-amount-send");
-   setCssSubtitleScreen(ui->label_3);
-   setCssSubtitleScreen(ui->label_4);
-   setCssSubtitleScreen(ui->label_5);
-   setCssSubtitleScreen(ui->label_6);
+   setCssSubtitleScreen(ui->labelName);
+   ui->labelAddress->setProperty("cssClass","text-list-amount-send");
+   setCssSubtitleScreen(ui->labelLeasing);
+   setCssSubtitleScreen(ui->labelBlockHeight);
+   setCssSubtitleScreen(ui->labelType);
+   setCssSubtitleScreen(ui->labelProfit);
    connect(ui->pushButtonMenu, SIGNAL(clicked()), this, SLOT(onPbnMenuClicked()));
 
 }
 
-void MNRow::updateView(QString address, QString label, QString status, bool wasCollateralAccepted){
-    /*ui->labelName->setText(label);
+void MNRow::updateView(QString label, QString address, int blockHeight){
+
+    ui->labelName->setText(label);
     ui->labelAddress->setText(address);
-    ui->labelDate->setText("Status: " + status);
-    if (!wasCollateralAccepted){
-        ui->labelDate->setText("Status: Collateral tx not found");
-    } else {Q_EMIT
-        ui->labelDate->setText("Status: " + status);
-    }*/
+    ui->labelLeasing->setText("");
+    ui->labelBlockHeight->setText(blockHeight != -1 ? QString::number(blockHeight) : "-");
+    ui->labelType->setText("");
+    ui->labelProfit->setText("");
 }
 void MNRow::onPbnMenuClicked()
 {
