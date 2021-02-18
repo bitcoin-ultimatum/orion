@@ -239,6 +239,21 @@ target_include_directories(qt_stuff
         )
 set_property(TARGET qt_stuff PROPERTY CXX_STANDARD 11)
 
+if(SIGN_DMG)
+	include(CodeSignIOS)
+
+	# Do this on every run, to keep list of possible identities up-to-date.
+	if (NOT DEFINED SIGN_CERT_NAME)
+		code_sign_get_identity_macos(M_SIGN_CERT_NAME)
+	else()
+		set(M_SIGN_CERT_NAME "${SIGN_CERT_NAME}")
+	endif ()
+	set(SIGN_CERT_NAME "${M_SIGN_CERT_NAME}" CACHE STRING "code signing identity (e.g., \"iPhone Developer\") (required for code signing)")
+	
+	code_sign_get_cmd_args_macos(CODESIGNARGS)
+	message(STATUS "Variable SIGN_CERT_NAME now is ${SIGN_CERT_NAME}")
+endif()
+
 file(GLOB QT_TRANSLATIONS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/locale/*.ts)
 
 get_filename_component(QM_FILES_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/locale" ABSOLUTE)
@@ -250,7 +265,7 @@ add_custom_target(translations_target ALL DEPENDS ${QM})
 QT5_ADD_RESOURCES(QRC_RESOURCE btcu.qrc)
 QT5_ADD_RESOURCES(QRC_LOCALE_RESOURCE btcu_locale.qrc)
 
-add_executable(btcu-qt btcu.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE})
+add_executable(btcu-qt btcu.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/btcu.qrc)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	include(WindowsVersionInfo)
 	generate_windows_version_info(btcu-qt
@@ -275,8 +290,32 @@ target_link_libraries(btcu-qt
 		${LibEvent_LIBRARIES}
         ${Qrcode_LIBRARIES}
         Threads::Threads
-        )
+    )
 
+get_filename_component(_qt_bin_dir "${qt5_ROOT_DIR}/bin" DIRECTORY)
+find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND BUILTIN_QTDEPLOY)
+	if(SIGN_DMG)
+		add_custom_command(TARGET btcu-qt POST_BUILD
+			COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+				"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/btcu-qt.app"
+				-always-overwrite -codesign=${SIGN_CERT_NAME}
+			COMMENT "Deploying Qt..."
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+			VERBATIM
+		)
+	else()
+		add_custom_command(TARGET btcu-qt POST_BUILD
+			COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+				"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/btcu-qt.app"
+				-always-overwrite
+			COMMENT "Deploying Qt..."
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+			VERBATIM
+		)
+	endif()
+endif()
 
 # Linux support
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -339,12 +378,12 @@ if(MINIUPNP_FOUND)
     target_include_directories(btcu-qt PUBLIC ${MINIUPNP_INCLUDE_DIR})
 endif()
 
-target_link_libraries(btcu-qt Qt5::Gui Qt5::Core Qt5::Widgets Qt5::Network Qt5::Svg ${QT_LIBRARIES})
+target_link_libraries(btcu-qt Qt5::Gui Qt5::Core Qt5::Widgets Qt5::Network Qt5::Svg ${Qt5_LIBRARIES})
 if (Qt5DBus_FOUND)
-    target_link_libraries(btcu-qt Qt5::DBus ${QT_LIBRARIES})
+    target_link_libraries(btcu-qt Qt5::DBus)
 endif()
 if (Qt5Charts_FOUND)
-    target_link_libraries(btcu-qt Qt5::Charts ${QT_LIBRARIES})
+    target_link_libraries(btcu-qt Qt5::Charts)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -414,6 +453,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 		MACOSX_BUNDLE_LONG_VERSION_STRING "${APP_VERSION}"
 		MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}"
 		RESOURCE "${BITCOINQT_BUNDLE_RESOURCES}"
+		INSTALL_RPATH "@executable_path/../Frameworks"
 	)
 	# The InfoPlist.strings files should be located in a resource subdirectory.
 	# This is not supported by the RESOURCE property and require the use of the
@@ -423,7 +463,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set_source_files_properties(
 		"${INFO_PLIST_STRINGS_PATH}"
 		PROPERTIES
-			MACOSX_PACKAGE_LOCATION "Resources/${INFO_PLIST_STRINGS_FILE}"
+			MACOSX_PACKAGE_LOCATION "Resources/Base.lproj"
 	)
 
 	# Create a stripped version of the application bundle to be used in the DMG.
@@ -499,7 +539,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set(MACDEPLOY_DIR "${CMAKE_SOURCE_DIR}/contrib/macdeploy")
 	set(MACDEPLOYQTPLUS "${MACDEPLOY_DIR}/macdeployqtplus.py")
 	set(DMG_DIST "${CMAKE_BINARY_DIR}/dist")
-	
 	add_custom_command(
 		OUTPUT
 			"${DMG_DIST}"
@@ -603,60 +642,67 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 		set(LOCAL_LIB_PATH "${CMAKE_SOURCE_DIR}/lib")
 
-		if(SIGN_DMG)
-			include(CodeSignIOS)
-
-			# Do this on every run, to keep list of possible identities up-to-date.
-			if (NOT DEFINED SIGN_CERT_NAME)
-				code_sign_get_identity_macos(M_SIGN_CERT_NAME)
-			else()
-				set(M_SIGN_CERT_NAME "${SIGN_CERT_NAME}")
-			endif ()
-			set(SIGN_CERT_NAME "${M_SIGN_CERT_NAME}" CACHE STRING "code signing identity (e.g., \"iPhone Developer\") (required for code signing)")
-			
-			code_sign_get_cmd_args_macos(CODESIGNARGS)
-			message(STATUS "Variable CODESIGNARGS now is ${CODESIGNARGS}")
-			
-
+		if(BUILTIN_QTDEPLOY)
 			add_custom_target(osx-dmg
 				COMMAND
 					"${Python_EXECUTABLE}"
 					"${MACDEPLOYQTPLUS}"
-					"${STRIPPED_BUNDLE}"
-					-translations-dir "${CMAKE_CURRENT_SOURCE_DIR}/locale"
-					-add-qt-tr "${QT_LOCALES}"
+					"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/btcu-qt.app"
 					-dmg
-					-sign
-					-codesignargs "${CODESIGNARGS}"
 					-fancy "${MACDEPLOY_DIR}/fancy.plist"
 					-volname "${OSX_VOLNAME}"
 					-sys-lib-dir "/usr/local/lib"
 					-built-lib-dir "${LOCAL_LIB_PATH}"
+					-no-processing
+					-no-strip
 				WORKING_DIRECTORY
 					"${CMAKE_BINARY_DIR}"
 				DEPENDS
-					"${STRIPPED_BUNDLE}"
+					btcu-qt
 					"${BACKGROUND_TIFF_MULTIRES}"
 			)
 		else()
-			add_custom_target(osx-dmg
-				COMMAND
-					"${Python_EXECUTABLE}"
-					"${MACDEPLOYQTPLUS}"
-					"${STRIPPED_BUNDLE}"
-					-translations-dir "${CMAKE_CURRENT_SOURCE_DIR}/locale"
-					-add-qt-tr "${QT_LOCALES}"
-					-dmg
-					-fancy "${MACDEPLOY_DIR}/fancy.plist"
-					-volname "${OSX_VOLNAME}"
-					-sys-lib-dir "/usr/local/lib"
-					-built-lib-dir "${LOCAL_LIB_PATH}"
-				WORKING_DIRECTORY
-					"${CMAKE_BINARY_DIR}"
-				DEPENDS
-					"${STRIPPED_BUNDLE}"
-					"${BACKGROUND_TIFF_MULTIRES}"
-			)
+			if(SIGN_DMG)
+				add_custom_target(osx-dmg
+					COMMAND
+						"${Python_EXECUTABLE}"
+						"${MACDEPLOYQTPLUS}"
+						"${STRIPPED_BUNDLE}"
+						-translations-dir "${CMAKE_CURRENT_SOURCE_DIR}/locale"
+						-add-qt-tr "${QT_LOCALES}"
+						-dmg
+						-sign
+						-codesignargs "${CODESIGNARGS}"
+						-fancy "${MACDEPLOY_DIR}/fancy.plist"
+						-volname "${OSX_VOLNAME}"
+						-sys-lib-dir "/usr/local/lib"
+						-built-lib-dir "${LOCAL_LIB_PATH}"
+					WORKING_DIRECTORY
+						"${CMAKE_BINARY_DIR}"
+					DEPENDS
+						"${STRIPPED_BUNDLE}"
+						"${BACKGROUND_TIFF_MULTIRES}"
+				)
+			else()
+				add_custom_target(osx-dmg
+					COMMAND
+						"${Python_EXECUTABLE}"
+						"${MACDEPLOYQTPLUS}"
+						"${STRIPPED_BUNDLE}"
+						-translations-dir "${CMAKE_CURRENT_SOURCE_DIR}/locale"
+						-add-qt-tr "${QT_LOCALES}"
+						-dmg
+						-fancy "${MACDEPLOY_DIR}/fancy.plist"
+						-volname "${OSX_VOLNAME}"
+						-sys-lib-dir "/usr/local/lib"
+						-built-lib-dir "${LOCAL_LIB_PATH}"
+					WORKING_DIRECTORY
+						"${CMAKE_BINARY_DIR}"
+					DEPENDS
+						"${STRIPPED_BUNDLE}"
+						"${BACKGROUND_TIFF_MULTIRES}"
+				)
+			endif()
 		endif()
 	endif()
 endif()

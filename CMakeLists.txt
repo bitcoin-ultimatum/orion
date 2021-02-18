@@ -1,5 +1,19 @@
+option(QUIET "Hide all gcc warnings (-w) and CMake messages" OFF)
+
+if(QUIET)
+    function(message)
+        list(GET ARGV 0 MessageType)
+        if(MessageType STREQUAL FATAL_ERROR OR
+            MessageType STREQUAL SEND_ERROR OR
+            MessageType STREQUAL WARNING OR
+            MessageType STREQUAL AUTHOR_WARNING)
+            list(REMOVE_AT ARGV 0)
+            _message(${MessageType} "${ARGV}")
+        endif()
+    endfunction()
+endif()
+
 cmake_minimum_required(VERSION 3.14)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # the version of this package
 set(PROJECT_VERSION 1.0.0.0)
@@ -148,6 +162,10 @@ option(START_WITH_UPNP "If UPNP is enabled, turn it on at startup" OFF)
 option(ENABLE_GPROF "Use gprof profiling compiler flags " OFF)
 option(ENABLE_LEASING_MANAGER "Enable leasing manager" ON)
 option(ENABLE_TESTS "Build tests" ON)
+option(EXTRA_WARNINGS "Enable extra warnings" OFF)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" ON)
+endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     option(SIGN_DMG "Sign the application and frameworks with codesign" ON)
@@ -247,6 +265,21 @@ if(ENABLE_TESTS)
     message(STATUS "Enabled option: Build tests")
 else()
     message(STATUS "Disabled option: Build tests")
+endif()
+if(EXTRA_WARNINGS)
+    message(STATUS "Enabled option: Extra build warnings")
+else()
+    message(STATUS "Disabled option: Extra build warnings")
+endif()
+if(QUIET)
+    # You will never see this message. :)
+    message(STATUS "Enabled option: Quiet build (hide all gcc warnings with -w flag and quieting all messages)")
+    if(EXTRA_WARNINGS)
+        message(WARNING "EXTRA_WARNINGS option will be disabled due it is incompatible with QUIET mode.")
+        option(EXTRA_WARNINGS "Enable extra warnings" OFF)
+    endif()
+else()
+    message(STATUS "Disabled option: Quiet build (hide all gcc warnings with -w flag)")
 endif()
 
 # If ccache is available, then use it.
@@ -353,20 +386,16 @@ if(ENABLE_HARDENING AND NOT MSVC)
 	endif()
 endif()
 
-if (NOT MSVC)
+if (NOT MSVC AND NOT QUIET)
     # Enable warning
     add_c_compiler_flags(-Wnested-externs -Wstrict-prototypes)
     add_compiler_flags(
-        -Wall
-        -Wextra
         -Wformat
+        -Wextra
         -Wvla
         -Wcast-align
-        -Wunused-parameter
         -Wmissing-braces
         -Wthread-safety
-        -Wshadow
-        -Wshadow-field
         -Wrange-loop-analysis
         -Wredundant-decls
         -Wunreachable-code-loop-increment
@@ -376,13 +405,28 @@ if (NOT MSVC)
         -Wredundant-move
     )
 
-    option(EXTRA_WARNINGS "Enable extra warnings" OFF)
     if(EXTRA_WARNINGS)
-        add_cxx_compiler_flags(-Wsuggest-override)
+        add_compiler_flags(
+            -Wall
+            -Wsuggest-override
+            -Wshadow-field
+            -Wshadow
+        )
     else()
-        add_compiler_flags(-Wno-unused-parameter)
-        add_compiler_flags(-Wno-implicit-fallthrough)
+        add_compiler_flags(
+            -Wno-unused-parameter
+            -Wno-implicit-fallthrough
+            -Wno-macro-redefined
+            -Wno-sign-compare
+            -Wno-unused-parameter
+        )
     endif()
+endif()
+
+if(QUIET)
+    add_compiler_flags(
+        -w
+    )
 endif()
 
 if (MSVC)
@@ -851,7 +895,7 @@ if(BerkeleyDB_FOUND)
     message (STATUS ${BerkeleyDB_Cxx_LIBRARY_DIRS})
     
     if(${BerkeleyDB_VERSION} MATCHES "..")
-        message(WARNING "Unknown version Berkeley DB. If this is not ${BDB_VER}, please reinstall it!")
+        message(STATUS "Unknown version Berkeley DB. If this is not ${BDB_VER}, please reinstall it!")
     else()
         if(NOT ${BerkeleyDB_VERSION} MATCHES "${BDB_VER}")
             message(WARNING "BerkeleyDB version other than ${BDB_VER} found: ${BerkeleyDB_VERSION}!")
@@ -1012,8 +1056,11 @@ else()
     endif()
     set(libleveldb_a_sources ${libleveldb_a_sources} ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/port/port_posix.cc)
 endif()
-
-set(LEVELDB_COMPILE_OPTIONS -Wno-implicit-fallthrough -Wno-inconsistent-missing-override -Wno-maybe-uninitialized -Wno-shadow -Wno-sign-compare -Wno-unused-const-variable)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(LEVELDB_COMPILE_OPTIONS -Wno-implicit-fallthrough -Wno-inconsistent-missing-override -Wno-shadow -Wno-sign-compare -Wno-unused-const-variable)
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(LEVELDB_COMPILE_OPTIONS -Wno-implicit-fallthrough -Wno-inconsistent-missing-override -Wno-maybe-uninitialized -Wno-shadow -Wno-sign-compare -Wno-unused-const-variable)
+endif()
 
 add_library(leveldb ${libleveldb_a_headers} ${libleveldb_a_sources})
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -1777,6 +1824,8 @@ if(ENABLE_TESTS)
     add_custom_target(test_btcu_hex ALL DEPENDS ${BTCU_HEX_TEST_FILES})
 
     add_executable(test_btcu ${BTCU_TEST_SOURCES})
+    target_compile_definitions(test_btcu PUBLIC -DTEST_BTCU)
+
     add_dependencies(test_btcu test_btcu_hex leveldb leveldb_sse42 memenv)
     target_include_directories(test_btcu PUBLIC ${BTCU_HEX_DESTDIR} ./src/test)
 

@@ -2649,7 +2649,10 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
        {
           if(block.hashChainstate != g_hashChainstate)
              LogPrintf("%s: block.hashChainstate=%s HashDir=%s\n", __func__, block.hashChainstate.GetHex(), g_hashChainstate.GetHex());
-          assert(block.hashChainstate == g_hashChainstate);
+                      
+#ifndef TEST_BTCU
+            assert(block.hashChainstate == g_hashChainstate);
+#endif
        }
 
         view.SetBestBlock(pindex->GetBlockHash());
