@@ -285,11 +285,7 @@ public:
         assert(genesis.hashMerkleRoot == uint256("0x858d38eb69842a10816427748c0cd8f60211113a5f62f669891aae88b0c85884"));
 
         //For dev orion need to cleanup seednodes for running many different subnetworks
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v1", "135.125.7.216"));
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v2", "51.68.119.204"));
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v3", "51.178.74.114"));
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v4", "51.210.0.82"));
-        vSeeds.push_back(CDNSSeedData("btcu.orion.v5", "51.210.154.220"));
+        vSeeds.clear();
 
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
