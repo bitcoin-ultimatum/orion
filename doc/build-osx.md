@@ -39,6 +39,7 @@ It is important:  Even if you had homebrew installed beforehand, update your ver
 ```
 
 ## Troubleshooting
+### Brew problems
 If you see throught brew installation process errors like  `LibreSSL SSL_connect: SSL_ERROR_SYSCALL in connection`, try:
 ```shell
     networksetup -setv6off Wi-Fi
@@ -49,22 +50,35 @@ If you goes into error  `Error: Operation already in progress `, try:
     rm -rf /usr/local/var/homebrew/locks
 ```
 
-For other issues please check [Homebrew's Troubleshooting page](https://docs.brew.sh/Troubleshooting).
+For other brew-specific issues please check [Homebrew's Troubleshooting page](https://docs.brew.sh/Troubleshooting).
 
+### Installation problems
 In a case when you get `dmg` image or sources via browser, telegramm and etc you'll face with an error `Operation not permitted` for the application extracted from the the `dmg` or in a terminal thought the building process accordingly.
-
-Note: The described behaviour for the sources case will be overlapped with another problem while you try to complete a command `cmake .` from the build section. The terminal will show a successfull generation but commands for the autogen.sh and configure won't show any actual result and appopriate result files won't be generated. You can run separately a command `./autogen.sh` to see the actual problem which is the same `Operation not permitted` as for the dmg image case.
-
-To solve the problem in a sources folder please run:
-```shell
-    xattr -d com.apple.quarantine autogen.sh
-```
 
 To solve the problem for the image case:
 ```shell
     xattr -d com.apple.quarantine btcu-qt.dmg
 ```
-in the download folder where you've placed the file. If the file has another name please change the command accordingly to the file name (i.e. if your file name for example if `btcu-qt_somesimbols.dmg`, you'll run `xattr -d com.apple.quarantine btcu-qt_somesimbols.dmg`).
+in the download folder where you've placed the file (in that case you will have to reinstall the app from the dmg) or 
+```shell
+    sudo xattr -rd com.apple.quarantine /Applications/btcu-qt.app
+```
+for the installed app.
+
+### BUILTIN_QTDEPLOY and .dmg building flag caveats
+Sometimes the packaging into .dmg step will be failed due to `btcu-qt` image from the previous build is still mounted (error will be like `Permission denied`). You will have to unmount it in order to make it successful.
+
+It is good to unmount all unused images anyway.
+
+### Build problems
+If you face with problems in a build process please make sure you've read the instruction carefully and you've done all required steps.
+
+Also please check all Note and Important hints from the instruction. Probably thay have an essential information to solve the problem.
+
+If you face with an error on `cmake` command like `No CMAKE_C_COMPILER could be found.` please run a command:
+```shell
+    sudo xcode-select --reset
+```
 
 ## Dependencies
 ```shell
@@ -192,6 +206,8 @@ It is important: Do not use spaces and other line breaking simbols in a path to 
     make
 ```
 
+Note: There is a supported flag QUIET for more quiet build. It is usefull.
+
 4.  It is recommended to build and run the unit tests:
 ```shell
     make check
@@ -200,6 +216,45 @@ It is important: Do not use spaces and other line breaking simbols in a path to 
 5.  You can also create a .dmg that contains the .app bundle (optional):
 ```shell
     make osx-dmg
+```
+
+## Code Signing
+In order to sign the application you will have to install you're apple developer certificate on your MacBook.
+
+Next, run CMake with the flag SIGN_DMG. SIGN_DMG is required to tell cmake that it should use codesign tool to sign final .dmg image.
+
+By default cmake will try to detect you developer certificate identifier by himself. It will take the first one from the command `security find-identity -v -p codesigning` (For more information please check file `cmake/scripts/CodeSignIOS.cmake`). The result command will be:
+```shell
+    cmake . -DSIGN_DMG=ON
+    make osx-dmg
+```
+
+But you can provide specific certificate name with a flag SIGN_CERT_NAME, e.g.:
+```shell
+    cmake . -DSIGN_DMG=ON -DSIGN_CERT_NAME="Mac Developer: John Smith"
+    make osx-dmg
+```
+
+Important note: In some cases there will be a problem with missed media resources in the signed app. In that case you will have to recompile the app with the flag BUILTIN_QTDEPLOY.
+
+The flag BUILTIN_QTDEPLOY will tell cmake that it should use macdeployqt from qt package installed from brew on previous steps and the open source python script `contrib\macdeploy\macdeployqtplus.py` will be used only to create fancy-looking installer from the result.
+
+The result command will be:
+```shell
+    cmake . -DBUILTIN_QTDEPLOY=ON -DSIGN_DMG=ON
+    make osx-dmg
+```
+
+## Apple Silicon Processors Support (M-Series)
+We support build for Apple M-Series processors. You can build a runnable binaries just by following the build step from the instruction.
+
+However if you need to create a .dmg-file you will need to use apple developer certificate since it is required in ARM-architecture in Apple.
+In order to do this you will have to install you're apple developer certificate on your M-Series processor. Please check Code Signing section from the instruction. 
+
+It is also important to use BUILTIN_QTDEPLOY for the M-series build. The result command will be:
+
+```shell
+    cmake . -DBUILTIN_QTDEPLOY=ON -DSIGN_DMG=ON -DSIGN_CERT_NAME="Mac Developer: John Smith"
 ```
 
 ## XCode build
@@ -236,7 +291,7 @@ In this case there is no dependency on [*Berkeley DB*](#berkeley-db) and [*SQLit
 Mining is also possible in disable-wallet mode using the `getblocktemplate` RPC call.
 
 ## Running
-BTCU is now available at `./btcud`
+BTCU is now available at `./bin/btcud`
 
 Before running, it's recommended that you create an RPC configuration file:
 ```shell
@@ -254,10 +309,10 @@ You can monitor the download process by looking at the debug.log file:
 
 ## Other commands:
 ```shell
-    btcud -daemon      # Starts the btcu daemon.
-    btcu-cli --help    # Outputs a list of command-line options.
-    btcu-cli help      # Outputs a list of RPC commands when the daemon is running.
-    ./bin/btcu-qt   # Start GUI
+    ./bin/btcud -daemon      # Starts the btcu daemon.
+    ./bin/btcu-cli --help    # Outputs a list of command-line options.
+    ./bin/btcu-cli help      # Outputs a list of RPC commands when the daemon is running.
+    ./bin/btcu-qt      # Start GUI
 ```
 
 ## Notes
