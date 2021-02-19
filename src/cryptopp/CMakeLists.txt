@@ -110,7 +110,6 @@ else()
 		option(BUILD_TESTING "Build library tests" ON)
 	endif()
 
-	option(BUILD_STATIC "Build static library" ON)
 	option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)
 
 	option(DISABLE_ASM "Disable ASM" OFF)

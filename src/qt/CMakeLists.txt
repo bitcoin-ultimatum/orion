@@ -19,7 +19,7 @@ endif ()
 find_package(Qrcode REQUIRED)
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 	set(Qt5_USE_STATIC_LIBS ON)
 	set(Qt5_USE_STATIC_RUNTIME ON)
 endif ()
@@ -311,7 +311,7 @@ if(GMP_FOUND)
 endif()
 if(ZeroMQ_FOUND)
     target_link_libraries(btcu-qt ZMQ_A)
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 		target_link_libraries(btcu-qt 
 			${ZeroMQ_STATIC_LIBRARY}
 			)
@@ -327,7 +327,7 @@ if (Qrcode_FOUND)
     target_include_directories(btcu-qt PUBLIC ${Qrcode_INCLUDE_DIRS})
 endif()
 if(MINIUPNP_FOUND)
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 		target_compile_definitions(btcu-qt
 			PUBLIC -DSTATICLIB
 			PUBLIC -DMINIUPNP_STATICLIB
@@ -655,7 +655,7 @@ if(ENABLE_TESTS)
 	endif()
 	if(ZeroMQ_FOUND)
 		target_link_libraries(test_btcu-qt PUBLIC ZMQ_A)
-		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 			target_link_libraries(test_btcu-qt PUBLIC
 				${ZeroMQ_STATIC_LIBRARY}
 				)
@@ -667,7 +667,7 @@ if(ENABLE_TESTS)
 		target_include_directories(test_btcu-qt PUBLIC ${ZeroMQ_INCLUDE_DIRS})
 	endif()
 	if(MINIUPNP_FOUND)
-		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 			target_compile_definitions(test_btcu-qt
 				PUBLIC -DSTATICLIB
 				PUBLIC -DMINIUPNP_STATICLIB

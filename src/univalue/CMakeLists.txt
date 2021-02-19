@@ -7,7 +7,7 @@ project(univalue
 
 option(UNIVALUE_BUILD_TESTS "Build univalue's unit tests" ON)
 
-if (MSVC)
+if (MSVC OR BUILD_STATIC)
     set(BUILD_SHARED_LIBS OFF)
     set(BUILD_STATIC_LIBS ON)
 else()

@@ -10,7 +10,7 @@ set(CMAKE_C_STANDARD 90)
 include(TestBigEndian)
 include(CheckCSourceCompiles)
 
-if (MSVC)
+if (MSVC OR BUILD_STATIC)
     set(BUILD_SHARED_LIBS OFF)
     set(BUILD_STATIC_LIBS ON)
 else()

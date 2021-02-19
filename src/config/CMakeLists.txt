@@ -22,7 +22,7 @@ set(COPYRIGHT_YEAR 2021)
 
 option(CLIENT_VERSION_IS_RELEASE "Build a release version" OFF)
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
     # turning off static libs for correct config tests
     set(BUILD_STATIC_LIBS OFF)
 endif()
@@ -633,7 +633,7 @@ if(_HAVE_STD_SYSTEM OR _HAVE_WSYSTEM)
 	set(HAVE_SYSTEM 1)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
     set(BUILD_STATIC_LIBS ON)
 endif()
 
