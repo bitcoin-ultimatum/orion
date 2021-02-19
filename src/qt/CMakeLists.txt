@@ -633,12 +633,15 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 			DEPENDS
 				"${DMG_DIST}"
 		)
-		add_custom_target(osx-deploydir
-			DEPENDS
-				"${OSX_APPLICATION_SYMLINK}"
-				"${DMG_DSSTORE}"
-				"${BACKGROUND_DIST_TIFF}"
-		)
+
+		if (NOT CMAKE_GENERATOR MATCHES "Xcode")
+			add_custom_target(osx-deploydir
+				DEPENDS
+					"${OSX_APPLICATION_SYMLINK}"
+					"${DMG_DSSTORE}"
+					"${BACKGROUND_DIST_TIFF}"
+			)
+		endif()
 
 		set(LOCAL_LIB_PATH "${CMAKE_SOURCE_DIR}/lib")
 
