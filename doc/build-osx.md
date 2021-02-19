@@ -68,7 +68,7 @@ in the download folder where you've placed the file. If the file has another nam
 
 ## Dependencies
 ```shell
-    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp
+    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp gflags
     # libscrypt from local since we need a version with cmake support but you still can get it via brew
 ```
 
