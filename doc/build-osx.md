@@ -86,7 +86,7 @@ If you face with an error on `cmake` command like `No CMAKE_C_COMPILER could be 
     # libscrypt from local since we need a version with cmake support but you still can get it via brew
 ```
 
-If you want to build the disk image with `make deploy` (.dmg / optional), you need RSVG:
+If you want to build the disk image with `make osx=dmg` (.dmg / optional), you need RSVG:
 ```shell
     brew install librsvg
 ```
