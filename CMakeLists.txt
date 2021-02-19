@@ -164,11 +164,11 @@ option(ENABLE_LEASING_MANAGER "Enable leasing manager" ON)
 option(ENABLE_TESTS "Build tests" ON)
 option(EXTRA_WARNINGS "Enable extra warnings" OFF)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" ON)
+    option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" OFF)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    option(SIGN_DMG "Sign the application and frameworks with codesign" ON)
+    option(SIGN_DMG "Sign the application and frameworks with codesign" OFF)
 
     if(SIGN_DMG)
         message(STATUS "Enabled option: Sign btcu-qt")
