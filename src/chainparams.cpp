@@ -284,7 +284,7 @@ public:
         assert(hashGenesisBlock == uint256("0x000000786809183e51a8a112ee0b082be2a46df19f05d6b4a7525c0c027fc04a"));
         assert(genesis.hashMerkleRoot == uint256("0x858d38eb69842a10816427748c0cd8f60211113a5f62f669891aae88b0c85884"));
 
-        //For dev orion need to cleanup seednodes for running many different subnetworks
+        //For dev ours need to cleanup seednodes for running many different subnetworks
         vSeeds.clear();
 
 
