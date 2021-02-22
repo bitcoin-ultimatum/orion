@@ -54,9 +54,10 @@ find_package_handle_standard_args(RocksDB
 )
 
 if(RocksDB_FOUND)
-  set(ZeroMQ_INCLUDE_DIR "${RocksDB_INCLUDE_DIRS}")
+  set(RocksDB_INCLUDE_DIR "${RocksDB_INCLUDE_DIRS}")
+  set(RocksDB_LIBRARY "${RocksDB_LIBRARIES}")
   set(ROCKSDB_LIBRARY "${RocksDB_LIBRARIES}")
 
   message(STATUS "Found RocksDB  (include: ${RocksDB_INCLUDE_DIR}, library: ${ROCKSDB_LIBRARY})")
-  mark_as_advanced(RocksDB_INCLUDE_DIR ROCKSDB_LIBRARY)
+  mark_as_advanced(RocksDB_INCLUDE_DIR ROCKSDB_LIBRARY RocksDB_LIBRARY RocksDB_LIBRARIES)
 endif()

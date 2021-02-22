@@ -12,14 +12,15 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR BUILD_STATIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+	add_compile_options("-fPIE")
 endif ()
 
 find_package(Qrcode REQUIRED)
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 	set(Qt5_USE_STATIC_LIBS ON)
 	set(Qt5_USE_STATIC_RUNTIME ON)
 endif ()
@@ -219,8 +220,6 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     list(APPEND QT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/macos_appnap.mm)
 endif()
 
-
-
 add_library(qt_stuff STATIC ${BitcoinHeaders} ${QtHeaders} ${QT_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS})
 target_include_directories(qt_stuff 
 		PUBLIC 
@@ -238,6 +237,24 @@ target_include_directories(qt_stuff
 			${Boost_INCLUDE_DIRS}/filesystem
         )
 set_property(TARGET qt_stuff PROPERTY CXX_STANDARD 11)
+
+if(ZeroMQ_FOUND)
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+		target_link_libraries(qt_stuff
+			${ZeroMQ_STATIC_LIBRARY}
+			)
+	else()
+		target_link_libraries(qt_stuff
+			${ZeroMQ_LIBRARY}
+			)
+	endif()
+    target_include_directories(qt_stuff PUBLIC ${ZeroMQ_INCLUDE_DIRS})
+endif()
+if(BUILD_STATIC)
+	target_link_libraries(qt_stuff ZLIB::ZLIB)
+	target_link_libraries(qt_stuff RocksDB::rocksdb)
+    target_include_directories(qt_stuff PUBLIC ${RocksDB_INCLUDE_DIRS})
+endif()
 
 if(SIGN_DMG)
 	include(CodeSignIOS)
@@ -352,8 +369,8 @@ if(GMP_FOUND)
 endif()
 if(ZeroMQ_FOUND)
     target_link_libraries(btcu-qt ZMQ_A)
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-		target_link_libraries(btcu-qt
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+		target_link_libraries(btcu-qt 
 			${ZeroMQ_STATIC_LIBRARY}
 			)
 	else()
@@ -363,12 +380,17 @@ if(ZeroMQ_FOUND)
 	endif()
     target_include_directories(btcu-qt PUBLIC ${ZeroMQ_INCLUDE_DIRS})
 endif()
+if(BUILD_STATIC)
+	target_link_libraries(btcu-qt ZLIB::ZLIB)
+	target_link_libraries(btcu-qt RocksDB::rocksdb)
+    target_include_directories(btcu-qt PUBLIC ${RocksDB_INCLUDE_DIRS})
+endif()
 if (Qrcode_FOUND)
     target_link_libraries(btcu-qt ${Qrcode_LIBRARIES})
     target_include_directories(btcu-qt PUBLIC ${Qrcode_INCLUDE_DIRS})
 endif()
 if(MINIUPNP_FOUND)
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 		target_compile_definitions(btcu-qt
 			PUBLIC -DSTATICLIB
 			PUBLIC -DMINIUPNP_STATICLIB
@@ -775,7 +797,7 @@ if(ENABLE_TESTS)
 	endif()
 	if(ZeroMQ_FOUND)
 		target_link_libraries(test_btcu-qt PUBLIC ZMQ_A)
-		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 			target_link_libraries(test_btcu-qt PUBLIC
 				${ZeroMQ_STATIC_LIBRARY}
 				)
@@ -787,7 +809,7 @@ if(ENABLE_TESTS)
 		target_include_directories(test_btcu-qt PUBLIC ${ZeroMQ_INCLUDE_DIRS})
 	endif()
 	if(MINIUPNP_FOUND)
-		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 			target_compile_definitions(test_btcu-qt
 				PUBLIC -DSTATICLIB
 				PUBLIC -DMINIUPNP_STATICLIB

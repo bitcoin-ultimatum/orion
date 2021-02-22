@@ -162,6 +162,7 @@ option(START_WITH_UPNP "If UPNP is enabled, turn it on at startup" OFF)
 option(ENABLE_GPROF "Use gprof profiling compiler flags " OFF)
 option(ENABLE_LEASING_MANAGER "Enable leasing manager" ON)
 option(ENABLE_TESTS "Build tests" ON)
+option(BUILD_STATIC "Build dependencies as static libs" OFF)
 option(EXTRA_WARNINGS "Enable extra warnings" OFF)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" ON)
@@ -266,6 +267,11 @@ if(ENABLE_TESTS)
 else()
     message(STATUS "Disabled option: Build tests")
 endif()
+if(BUILD_STATIC)
+message(STATUS "Enabled option: Build static dependencies")
+else()
+message(STATUS "Disabled option: Build static dependencies")
+endif()
 if(EXTRA_WARNINGS)
     message(STATUS "Enabled option: Extra build warnings")
 else()
@@ -292,6 +298,18 @@ endif(CCACHE)
 
 # flags
 include(AddCompilerFlags)
+
+if(BUILD_STATIC)
+    add_linker_flags(-static)
+endif()
+
+if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a"  CACHE STRING "CMake search suffix" FORCE)
+endif()
+if (BUILD_STATIC)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+	add_compile_options("-fPIE")
+endif ()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	# Ensure that WINDRES_PREPROC is enabled when using windres.
@@ -474,6 +492,9 @@ if (MSVC)
     # warning LNK4099: pdb was not found with lib
     # stack size 16MB
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099,4075 /STACK:16777216 /NODEFAULTLIB:MSVCRT -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00")
+elseif(BUILD_STATIC)
+    set(BUILD_SHARED_LIBS OFF)
+    set(BUILD_STATIC_LIBS ON)
 else()
     set(BUILD_SHARED_LIBS ON)
     set(BUILD_STATIC_LIBS ON)
@@ -536,8 +557,13 @@ else()
     set( BOOST_ROOT "usr" )
     set( Boost_INCLUDE_DIR "/usr/include" )
     set( Boost_NO_BOOST_CMAKE ON )
-    set( Boost_USE_STATIC_LIBS  OFF )
-    set( Boost_USE_STATIC_RUNTIME OFF )
+    if(BUILD_STATIC)
+        set( Boost_USE_STATIC_LIBS ON )
+        set( Boost_USE_STATIC_RUNTIME ON )
+    else()
+        set( Boost_USE_STATIC_LIBS  OFF )
+        set( Boost_USE_STATIC_RUNTIME OFF )
+    endif()
 endif()
 
 set( Boost_USE_MULTITHREADED ON )
@@ -562,6 +588,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         BOOST_LOG_BUILDING_THE_LIB=1
         BOOST_THREAD_USE_LIB=1
 	)
+elseif(BUILD_STATIC)
+    add_definitions(-DBOOST_ALL_STATIC_LINK=1)
+    add_definitions(-DBOOST_LOG_STATIC_LINK=1)
 else()
     add_definitions(-DBOOST_LOG_DYN_LINK=1)
     add_definitions(-DBOOST_ALL_DYN_LINK=1)
@@ -593,6 +622,8 @@ list(APPEND CMAKE_PREFIX_PATH ./src/cryptopp)
 list(APPEND CMAKE_PREFIX_PATH ./src/cpp-ethereum/ethash)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    cmake_policy(SET CMP0074 NEW)
+
 	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/rocksdb)
 	list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/opt/rocksdb)
 
@@ -609,6 +640,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	find_brew_prefix(OPENSSL_ROOT_DIR openssl)
 	find_brew_prefix(ZMQ_ROOT_DIR zmq)
 	find_brew_prefix(Qrcode_ROOT_DIR qrencode)
+	find_brew_prefix(ZLIB_ROOT zlib)
+
+    set(ZLIB_ROOT "${ZLIB_ROOT}" CACHE STRING "")
+    set(ZLIB_INCLUDE_DIR "${ZLIB_ROOT}/include" CACHE STRING "")
 
 	list(APPEND CMAKE_PREFIX_PATH ${qt5_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${libjsonrpccpp_ROOT_DIR})
@@ -629,9 +664,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 	set( MHD_INCLUDE_DIR "${MHD_ROOT_DIR}/include" )
 	set( MHD_LIBRARY "${MHD_ROOT_DIR}/lib" )
-
-	set( BerkeleyDB_INCLUDE_DIR "${BerkeleyDB_ROOT_DIR}/include" )
-	set( BerkeleyDB_LIBRARY "${BerkeleyDB_ROOT_DIR}/lib" )
 
 	set( LibEvent_INCLUDE_DIR "${LibEvent_ROOT_DIR}/include" )
 	set( LibEvent_LIBRARY "${LibEvent_ROOT_DIR}/lib" )
@@ -783,6 +815,10 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     endif()
 endif()
 
+if(BUILD_STATIC)
+    find_package(ZLIB)
+endif()
+
 set(BDB_VER "18.1.32")
 
 # libtool style configure
@@ -832,6 +868,9 @@ if(ZeroMQ_FOUND)
     if(ZeroMQ_zmq_LIBRARY)
         set( ZeroMQ_LIBRARY "${ZeroMQ_zmq_LIBRARY}" CACHE STRING "")
     endif()
+    if(NOT ZeroMQ_STATIC_LIBRARY)
+        set( ZeroMQ_STATIC_LIBRARY "${ZeroMQ_LIBRARY}" CACHE STRING "")
+    endif()
     if(ZeroMQ_LIBRARIES)
         set( ZeroMQ_LIBRARY "${ZeroMQ_LIBRARIES}" CACHE STRING "" FORCE)
     endif()
@@ -842,9 +881,6 @@ if(ZeroMQ_FOUND)
     
     message(STATUS ZeroMQ_LIBRARY:)
     message (STATUS ${ZeroMQ_LIBRARY})
-    
-    message(STATUS ZeroMQ_STATIC_LIBRARY:)
-    message (STATUS ${ZeroMQ_STATIC_LIBRARY})
 else()
     message(WARNING "ZeroMQ not found!")
 endif()
@@ -1293,19 +1329,22 @@ target_link_libraries(SERVER_A
         Threads::Threads
         scrypt
         )
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
     target_link_libraries(SERVER_A 
         ${ZeroMQ_STATIC_LIBRARY} jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB
         )
-    if(CRYPT32_LIBRARY)
-        target_link_libraries(SERVER_A 
-            ${CRYPT32_LIBRARY}
-        )
-    endif()
 else()
     target_link_libraries(SERVER_A 
         ${ZeroMQ_LIBRARY} jsoncpp_lib cryptopp-shared ${BerkeleyDB_Cxx_LIBRARY}
         )
+endif()
+if(BUILD_STATIC)
+    target_link_libraries(SERVER_A ZLIB::ZLIB)
+endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND CRYPT32_LIBRARY)
+    target_link_libraries(SERVER_A 
+        ${CRYPT32_LIBRARY}
+    )
 endif()
 
 
@@ -1357,7 +1396,7 @@ if(ZeroMQ_FOUND)
         ${OPENSSL_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
         )
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
         target_link_libraries(ZMQ_A 
             ${ZeroMQ_STATIC_LIBRARY}
             )
@@ -1486,7 +1525,7 @@ target_link_libraries(COMMON_A
             UTIL_A
             SERVER_A
         )
-if (MSVC)
+if (MSVC OR BUILD_STATIC)
     target_link_libraries(COMMON_A jsoncpp_lib_static)
 else()
     target_link_libraries(COMMON_A jsoncpp_lib)
@@ -1521,7 +1560,7 @@ target_link_libraries(ZEROCOIN_A
             COMMON_A
             secp256k1
         )
-if (MSVC)
+if (MSVC OR BUILD_STATIC)
     target_link_libraries(ZEROCOIN_A jsoncpp_lib_static cryptopp-static)
 else()
     target_link_libraries(ZEROCOIN_A jsoncpp_lib cryptopp-shared)
@@ -1678,7 +1717,7 @@ if(GMP_FOUND)
 endif()
 if(ZeroMQ_FOUND)
     target_link_libraries(btcud ZMQ_A)
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
         target_link_libraries(btcud 
             ${ZeroMQ_STATIC_LIBRARY}
             )
@@ -1690,7 +1729,7 @@ if(ZeroMQ_FOUND)
     target_include_directories(btcud PUBLIC ${ZeroMQ_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/)
 endif()
 if(MINIUPNP_FOUND)
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 		target_compile_definitions(btcud
 			PUBLIC -DSTATICLIB
 			PUBLIC -DMINIUPNP_STATICLIB
@@ -1863,7 +1902,7 @@ if(ENABLE_TESTS)
     if(ZeroMQ_FOUND)
         target_link_libraries(test_btcu ZMQ_A)
         target_include_directories(test_btcu PUBLIC ${ZeroMQ_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/)
-        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
             target_link_libraries(test_btcu 
                 ${ZeroMQ_STATIC_LIBRARY}
                 )
@@ -1874,7 +1913,7 @@ if(ENABLE_TESTS)
         endif()
     endif()
     if(MINIUPNP_FOUND)
-        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
             target_compile_definitions(test_btcu
                 PUBLIC -DSTATICLIB
                 PUBLIC -DMINIUPNP_STATICLIB
