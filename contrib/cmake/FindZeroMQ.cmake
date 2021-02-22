@@ -115,6 +115,9 @@ if(ZeroMQ_INCLUDE_DIR)
 			INTERFACE_LINK_LIBRARIES "${_ZeroMQ_WINDOWS_LIBRARIES}"
 		)
 	else()
+		if(BUILD_STATIC AND Qrcode_FOUND)
+			list (APPEND _ZeroMQ_LIBRARIES ${Qrcode_LIBRARIES})
+		endif()
 
 		find_component(ZeroMQ zmq
 			NAMES zmq libzmq
@@ -122,6 +125,7 @@ if(ZeroMQ_INCLUDE_DIR)
 			HINTS ${_ZMQ_BREW_HINT}
 			PATH_SUFFIXES "lib" "lib64" "libs" "libs64"
 			PATHS ${_ZMQ_PATHS}
+			INTERFACE_LINK_LIBRARIES "${_ZeroMQ_LIBRARIES}"
 		)
 	endif()
 endif()

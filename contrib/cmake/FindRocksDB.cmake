@@ -35,6 +35,18 @@ if(NOT RocksDB_INCLUDE_DIR)
 endif()
 
 if(RocksDB_INCLUDE_DIR)
+    if(BUILD_STATIC)
+        find_package(BZip2)
+        find_library(ZSTD_LIBRARY zstd)
+        find_library(LZ4_LIBRARY lz4)
+        # find_library(GFLAGS_LIBRARY NAMES gflags PATHS ${GFLAGS_ROOT_DIR}/lib)
+        list (APPEND ROCKSDB_LIBRARIES ${Snappy_LIBRARIES})
+        list (APPEND ROCKSDB_LIBRARIES ${ZLIB_LIBRARY})
+        list (APPEND ROCKSDB_LIBRARIES ${LZ4_LIBRARY})
+        list (APPEND ROCKSDB_LIBRARIES ${BZIP2_LIBRARY})
+        list (APPEND ROCKSDB_LIBRARIES ${ZSTD_LIBRARY})
+        # list (APPEND ROCKSDB_LIBRARIES ${GFLAGS_LIBRARY})
+    endif()
 
 	find_component(
 		RocksDB rocksdb
@@ -44,6 +56,7 @@ if(RocksDB_INCLUDE_DIR)
 		HINTS ${_ROCKSDB_BREW_HINT}
         PATH_SUFFIXES "lib" "lib64" "libs" "libs64"
         PATHS ${_ROCKSDB_PATHS}
+        INTERFACE_LINK_LIBRARIES "${ROCKSDB_LIBRARIES}"
 	)
 endif()
 
@@ -54,10 +67,10 @@ find_package_handle_standard_args(RocksDB
 )
 
 if(RocksDB_FOUND)
-  set(RocksDB_INCLUDE_DIR "${RocksDB_INCLUDE_DIRS}")
-  set(RocksDB_LIBRARY "${RocksDB_LIBRARIES}")
-  set(ROCKSDB_LIBRARY "${RocksDB_LIBRARIES}")
+    set(RocksDB_INCLUDE_DIR "${RocksDB_INCLUDE_DIRS}")
+    set(RocksDB_LIBRARY "${RocksDB_LIBRARIES}")
+    set(ROCKSDB_LIBRARY "${RocksDB_LIBRARIES}")
 
-  message(STATUS "Found RocksDB  (include: ${RocksDB_INCLUDE_DIR}, library: ${ROCKSDB_LIBRARY})")
-  mark_as_advanced(RocksDB_INCLUDE_DIR ROCKSDB_LIBRARY RocksDB_LIBRARY RocksDB_LIBRARIES)
+    message(STATUS "Found RocksDB  (include: ${RocksDB_INCLUDE_DIR}, library: ${ROCKSDB_LIBRARY})")
+    mark_as_advanced(RocksDB_INCLUDE_DIR ROCKSDB_LIBRARY RocksDB_LIBRARY RocksDB_LIBRARIES)
 endif()

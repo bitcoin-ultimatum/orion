@@ -304,7 +304,7 @@ if(BUILD_STATIC)
 endif()
 
 if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a"  CACHE STRING "CMake search suffix" FORCE)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".so" ".dylib"  CACHE STRING "CMake search suffix" FORCE)
 endif()
 if (BUILD_STATIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -641,6 +641,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	find_brew_prefix(ZMQ_ROOT_DIR zmq)
 	find_brew_prefix(Qrcode_ROOT_DIR qrencode)
 	find_brew_prefix(ZLIB_ROOT zlib)
+	find_brew_prefix(BZIP2_ROOT_DIR bzip2)
+	find_brew_prefix(GFLAGS_ROOT_DIR gflags)
 
     set(ZLIB_ROOT "${ZLIB_ROOT}" CACHE STRING "")
     set(ZLIB_INCLUDE_DIR "${ZLIB_ROOT}/include" CACHE STRING "")
@@ -658,6 +660,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	list(APPEND CMAKE_PREFIX_PATH ${OPENSSL_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${ZMQ_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${Qrcode_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${BZIP2_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${GFLAGS_ROOT_DIR})
 
 	set( CURL_INCLUDE_DIR "${CURL_ROOT_DIR}/include" )
 	set( CURL_LIBRARY "${CURL_ROOT_DIR}/lib" )
@@ -815,10 +819,6 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     endif()
 endif()
 
-if(BUILD_STATIC)
-    find_package(ZLIB)
-endif()
-
 set(BDB_VER "18.1.32")
 
 # libtool style configure
@@ -859,6 +859,27 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     find_package(PkgConfig REQUIRED) 
 endif()
 
+if(BUILD_STATIC)
+    if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
+    else()
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lstdc++ -lgcc -lSystem")
+    endif()
+    # add_linker_flags(-static-libgcc -static-libstdc++)
+
+    find_package(ZLIB)
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+        # For some reason, Clang forcefully exits when symbols are undefined
+        # LibZip 'requires' BZip2 for BZip2 decompression, but we don't use that
+        # Therefore, it is safe to ignore these linker errors and continue building
+        # _BZ2_bzCompress,_BZ2_bzCompressEnd,_BZ2_bzCompress,_BZ2_bzCompressEnd,_BZ2_bzCompressInit,_BZ2_bzDecompress,_BZ2_bzDecompressEnd,_BZ2_bzDecompressInit
+	    # add_linker_flags(-m32 -Wl,-U,_BZ2_bzCompress -Wl,-U,_BZ2_bzCompressEnd -Wl,-U,_BZ2_bzCompress -Wl,-U,_BZ2_bzCompressEnd -Wl,-U,_BZ2_bzCompressInit -Wl,-U,_BZ2_bzDecompress -Wl,-U,_BZ2_bzDecompressEnd -Wl,-U,_BZ2_bzDecompressInit -Wno-unused-command-line-argument)
+    endif()
+endif()
+
+# Find Dependencies
+find_package(Qrcode REQUIRED)
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     find_package(ZeroMQ CONFIG)
 else()
@@ -885,6 +906,18 @@ else()
     message(WARNING "ZeroMQ not found!")
 endif()
 
+find_package(Snappy CONFIG REQUIRED)
+if(Snappy_FOUND)
+    message(STATUS "Found Snappy")
+    message(STATUS Snappy_LIBRARIES:)
+    message (STATUS ${Snappy_LIBRARIES})
+    message(STATUS Snappy_INCLUDE_DIRS:)
+    message (STATUS ${Snappy_INCLUDE_DIRS})
+else()
+    message(WARNING "Snappy not found! BTCU requires this functionality")
+endif()
+
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     find_package(RocksDB CONFIG REQUIRED)
 else()
@@ -904,18 +937,6 @@ else()
     message(WARNING "RocksDB not found! BTCU requires this functionality")
 endif()
 
-find_package(Snappy CONFIG REQUIRED)
-if(Snappy_FOUND)
-    message(STATUS "Found Snappy")
-    message(STATUS Snappy_LIBRARIES:)
-    message (STATUS ${Snappy_LIBRARIES})
-    message(STATUS Snappy_INCLUDE_DIRS:)
-    message (STATUS ${Snappy_INCLUDE_DIRS})
-else()
-    message(WARNING "Snappy not found! BTCU requires this functionality")
-endif()
-
-# Find Dependencies
 find_package(BerkeleyDB REQUIRED)
 if(BerkeleyDB_FOUND)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

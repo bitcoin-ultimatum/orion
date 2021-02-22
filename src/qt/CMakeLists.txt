@@ -17,7 +17,6 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR BUILD_STATIC)
 	add_compile_options("-fPIE")
 endif ()
 
-find_package(Qrcode REQUIRED)
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
