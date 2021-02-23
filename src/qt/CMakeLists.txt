@@ -240,7 +240,7 @@ set_property(TARGET qt_stuff PROPERTY CXX_STANDARD 11)
 if(ZeroMQ_FOUND)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 		target_link_libraries(qt_stuff
-			${ZeroMQ_STATIC_LIBRARY}
+			ZeroMQ::zmq
 			)
 	else()
 		target_link_libraries(qt_stuff
@@ -370,7 +370,7 @@ if(ZeroMQ_FOUND)
     target_link_libraries(btcu-qt ZMQ_A)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 		target_link_libraries(btcu-qt 
-			${ZeroMQ_STATIC_LIBRARY}
+			ZeroMQ::zmq
 			)
 	else()
 		target_link_libraries(btcu-qt
@@ -405,6 +405,13 @@ if (Qt5DBus_FOUND)
 endif()
 if (Qt5Charts_FOUND)
     target_link_libraries(btcu-qt Qt5::Charts)
+endif()
+
+if(BUILD_STATIC)
+    target_compile_options(btcu-qt INTERFACE "-stdlib=libc++")
+    target_link_libraries(btcu-qt "-stdlib=libc++")
+	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_START_STATIC 1)
+	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -798,7 +805,7 @@ if(ENABLE_TESTS)
 		target_link_libraries(test_btcu-qt PUBLIC ZMQ_A)
 		if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 			target_link_libraries(test_btcu-qt PUBLIC
-				${ZeroMQ_STATIC_LIBRARY}
+				ZeroMQ::zmq
 				)
 		else()
 			target_link_libraries(test_btcu-qt PUBLIC
@@ -816,6 +823,11 @@ if(ENABLE_TESTS)
 		endif()
 		target_link_libraries(test_btcu-qt PUBLIC ${MINIUPNP_LIBRARY})
 		target_include_directories(test_btcu-qt PUBLIC ${MINIUPNP_INCLUDE_DIR})
+	endif()
+
+	if(BUILD_STATIC)
+    target_compile_options(test_btcu-qt INTERFACE "-stdlib=libc++")
+    target_link_libraries(test_btcu-qt INTERFACE "-stdlib=libc++")
 	endif()
 endif()
 

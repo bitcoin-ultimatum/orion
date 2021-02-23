@@ -41,13 +41,21 @@ IF( NOT CMAKE_BUILD_TYPE )
     SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
 ENDIF()
 
+set(CMAKE_USER_MAKE_RULES_OVERRIDE
+	"${CMAKE_SOURCE_DIR}/cmake/scripts/OverrideInitFlags.cmake"
+)
+
+message(STATUS "CMAKE_TOOLCHAIN_FILE ${CMAKE_TOOLCHAIN_FILE}")
 # Trying to set toolchain if not presented
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    include(${CMAKE_SOURCE_DIR}/cmake/cable/bootstrap.cmake)
+    include(CableToolchains)
+
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-        set(CMAKE_TOOLCHAIN_FILE ./cmake/platforms/OSX.cmake)
+        cable_configure_toolchain(DEFAULT OSX)
         set(ENV{target} "Mac")
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        set(CMAKE_TOOLCHAIN_FILE ./cmake/platforms/Linux64.cmake)
+        cable_configure_toolchain(DEFAULT Linux64)
         set(ENV{target} "Linux")
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -55,10 +63,6 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
         endif()
     endif()
 endif()
-
-set(CMAKE_USER_MAKE_RULES_OVERRIDE
-	"${CMAKE_SOURCE_DIR}/cmake/scripts/OverrideInitFlags.cmake"
-)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -628,6 +632,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/opt/rocksdb)
 
 	find_brew_prefix(qt5_ROOT_DIR qt5)
+	find_brew_prefix(sodium_DIR libsodium)
 	find_brew_prefix(libjsonrpccpp_ROOT_DIR libjson-rpc-cpp)
 	find_brew_prefix(GBenchmark_ROOT_DIR google-benchmark)
 	find_brew_prefix(snappy_ROOT_DIR snappy)    
@@ -648,6 +653,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(ZLIB_INCLUDE_DIR "${ZLIB_ROOT}/include" CACHE STRING "")
 
 	list(APPEND CMAKE_PREFIX_PATH ${qt5_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${sodium_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${libjsonrpccpp_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${GBenchmark_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${snappy_ROOT_DIR})
@@ -860,20 +866,14 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif()
 
 if(BUILD_STATIC)
+    add_definitions(-DZMQ_STATIC)
     if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
-    else()
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lstdc++ -lgcc -lSystem")
     endif()
-    # add_linker_flags(-static-libgcc -static-libstdc++)
 
     find_package(ZLIB)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-        # For some reason, Clang forcefully exits when symbols are undefined
-        # LibZip 'requires' BZip2 for BZip2 decompression, but we don't use that
-        # Therefore, it is safe to ignore these linker errors and continue building
-        # _BZ2_bzCompress,_BZ2_bzCompressEnd,_BZ2_bzCompress,_BZ2_bzCompressEnd,_BZ2_bzCompressInit,_BZ2_bzDecompress,_BZ2_bzDecompressEnd,_BZ2_bzDecompressInit
-	    # add_linker_flags(-m32 -Wl,-U,_BZ2_bzCompress -Wl,-U,_BZ2_bzCompressEnd -Wl,-U,_BZ2_bzCompress -Wl,-U,_BZ2_bzCompressEnd -Wl,-U,_BZ2_bzCompressInit -Wl,-U,_BZ2_bzDecompress -Wl,-U,_BZ2_bzDecompressEnd -Wl,-U,_BZ2_bzDecompressInit -Wno-unused-command-line-argument)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Bstatic -lc++ -stdlib=libc++ -lc++abi")
     endif()
 endif()
 
@@ -888,9 +888,6 @@ endif()
 if(ZeroMQ_FOUND)
     if(ZeroMQ_zmq_LIBRARY)
         set( ZeroMQ_LIBRARY "${ZeroMQ_zmq_LIBRARY}" CACHE STRING "")
-    endif()
-    if(NOT ZeroMQ_STATIC_LIBRARY)
-        set( ZeroMQ_STATIC_LIBRARY "${ZeroMQ_LIBRARY}" CACHE STRING "")
     endif()
     if(ZeroMQ_LIBRARIES)
         set( ZeroMQ_LIBRARY "${ZeroMQ_LIBRARIES}" CACHE STRING "" FORCE)
@@ -1352,7 +1349,7 @@ target_link_libraries(SERVER_A
         )
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
     target_link_libraries(SERVER_A 
-        ${ZeroMQ_STATIC_LIBRARY} jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB
+        ZeroMQ::zmq jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB
         )
 else()
     target_link_libraries(SERVER_A 
@@ -1419,7 +1416,7 @@ if(ZeroMQ_FOUND)
         )
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
         target_link_libraries(ZMQ_A 
-            ${ZeroMQ_STATIC_LIBRARY}
+            ZeroMQ::zmq
             )
     else()
         target_link_libraries(ZMQ_A 
@@ -1674,6 +1671,11 @@ target_include_directories(btcu-cli
                 ${LibEvent_INCLUDE_DIR}
         )
 
+if(BUILD_STATIC)
+    target_compile_options(btcu-cli INTERFACE "-stdlib=libc++")
+    target_link_libraries(btcu-cli "-stdlib=libc++")
+endif()
+
 set(btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx.cpp)
 add_executable(btcu-tx ${btcu-tx_SOURCES})
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -1696,6 +1698,11 @@ target_link_libraries(btcu-tx
         )
 if(GMP_FOUND)
     target_link_libraries(btcu-tx ${GMP_LIBRARIES})
+endif()
+
+if(BUILD_STATIC)
+    target_compile_options(btcu-tx INTERFACE "-stdlib=libc++")
+    target_link_libraries(btcu-tx "-stdlib=libc++")
 endif()
 
 set(btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud.cpp ${Boost_INCLUDE_DIRS})
@@ -1740,7 +1747,7 @@ if(ZeroMQ_FOUND)
     target_link_libraries(btcud ZMQ_A)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
         target_link_libraries(btcud 
-            ${ZeroMQ_STATIC_LIBRARY}
+            ZeroMQ::zmq
             )
     else()
         target_link_libraries(btcud 
@@ -1758,6 +1765,10 @@ if(MINIUPNP_FOUND)
 	endif()
     target_link_libraries(btcud ${MINIUPNP_LIBRARY})
     target_include_directories(btcud PUBLIC ${MINIUPNP_INCLUDE_DIR})
+endif()
+if(BUILD_STATIC)
+    target_compile_options(btcud INTERFACE "-stdlib=libc++")
+    target_link_libraries(btcud "-stdlib=libc++")
 endif()
 
 add_subdirectory(src/qt)
@@ -1925,7 +1936,7 @@ if(ENABLE_TESTS)
         target_include_directories(test_btcu PUBLIC ${ZeroMQ_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/)
         if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
             target_link_libraries(test_btcu 
-                ${ZeroMQ_STATIC_LIBRARY}
+                ZeroMQ::zmq
                 )
         else()
             target_link_libraries(test_btcu 
@@ -1942,5 +1953,9 @@ if(ENABLE_TESTS)
         endif()
         target_link_libraries(test_btcu ${MINIUPNP_LIBRARY})
         target_include_directories(test_btcu PUBLIC ${MINIUPNP_INCLUDE_DIR})
+    endif()
+    if(BUILD_STATIC)
+        target_compile_options(test_btcu INTERFACE "-stdlib=libc++")
+        target_link_libraries(test_btcu "-stdlib=libc++")
     endif()
 endif()
