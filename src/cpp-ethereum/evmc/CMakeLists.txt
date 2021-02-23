@@ -16,7 +16,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/cable/bootstrap.cmake)
 include(CableToolchains)
 include(CableBuildInfo)
 include(CableCompilerSettings)
-cable_configure_toolchain(DEFAULT cxx11-pic)
 
 project(evmc)
 set(PROJECT_VERSION 6.1.1)

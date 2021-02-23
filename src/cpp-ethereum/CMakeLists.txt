@@ -15,8 +15,6 @@ include(CableBuildType)
 include(CableToolchains)
 include(GNUInstallDirs)
 
-cable_configure_toolchain(DEFAULT cxx11-pic)
-
 set(ETH_CMAKE_DIR "${CMAKE_SOURCE_DIR}/cmake" CACHE PATH "The path to the cmake directory")
 list(APPEND CMAKE_MODULE_PATH ${ETH_CMAKE_DIR})
 

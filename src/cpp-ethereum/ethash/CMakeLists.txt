@@ -11,7 +11,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/cable/bootstrap.cmake)
 include(CableToolchains)
 include(CableBuildType)
 include(CableCompilerSettings)
-cable_configure_toolchain(DEFAULT cxx11)
 
 list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/google-benchmark)
 list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/googletest)
