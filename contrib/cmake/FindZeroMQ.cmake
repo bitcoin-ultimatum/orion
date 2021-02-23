@@ -115,17 +115,22 @@ if(ZeroMQ_INCLUDE_DIR)
 			INTERFACE_LINK_LIBRARIES "${_ZeroMQ_WINDOWS_LIBRARIES}"
 		)
 	else()
-		if(BUILD_STATIC AND Qrcode_FOUND)
-			list (APPEND _ZeroMQ_LIBRARIES ${Qrcode_LIBRARIES})
+		if(BUILD_STATIC)
+			find_library(LIBSODIUM_LIBRARY NAMES sodium libsodium)
+			list (APPEND ZeroMQ_LIBRARIES ${Qrcode_LIBRARIES})
+			list (APPEND ZeroMQ_LIBRARIES ${LIBSODIUM_LIBRARY})
+			# list (APPEND ZeroMQ_LIBRARIES "-stdlib=libc++")
 		endif()
 
-		find_component(ZeroMQ zmq
-			NAMES zmq libzmq
+		find_component(
+			ZeroMQ zmq
+			NAMES
+			zmq libzmq
 			INCLUDE_DIRS ${ZeroMQ_INCLUDE_DIRS}
 			HINTS ${_ZMQ_BREW_HINT}
 			PATH_SUFFIXES "lib" "lib64" "libs" "libs64"
 			PATHS ${_ZMQ_PATHS}
-			INTERFACE_LINK_LIBRARIES "${_ZeroMQ_LIBRARIES}"
+			INTERFACE_LINK_LIBRARIES "${ZeroMQ_LIBRARIES}"
 		)
 	endif()
 endif()
@@ -136,3 +141,11 @@ find_package_handle_standard_args(ZeroMQ
 	VERSION_VAR ZeroMQ_VERSION
 	HANDLE_COMPONENTS
 )
+
+if(ZeroMQ_FOUND)
+    set(ZeroMQ_INCLUDE_DIR "${ZeroMQ_INCLUDE_DIRS}")
+    set(ZeroMQ_LIBRARY "${ZeroMQ_LIBRARIES}")
+
+    message(STATUS "Found ZeroMQ  (include: ${ZeroMQ_INCLUDE_DIR}, library: ${ZeroMQ_LIBRARY})")
+    mark_as_advanced(ZeroMQ_INCLUDE_DIR ZeroMQ_LIBRARY ZeroMQ_LIBRARIES)
+endif()
