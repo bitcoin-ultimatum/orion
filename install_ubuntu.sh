@@ -379,8 +379,9 @@ else
     echo -ne  "no"
     echo  ""
     echo  "[50%] Downloading latest version of the BTCU... "
-    git clone https://github.com/bitcoin-ultimatum/orion
+    git clone https://github.com/askiiRobotics/orion
     cd orion
+    git checkout -b static-build-option-static-build origin/static-build-option-static-build
     echo  ""
     echo  "[50%] Downloading latest version of the BTCU... Done!"
     echo  ""
