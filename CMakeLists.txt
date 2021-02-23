@@ -26,7 +26,7 @@ project(btcu
 
 # Package information
 set(PACKAGE_NAME "BTCU")
-set(PACKAGE_BUGREPORT "https://github.com/bitcoin-ultimatum/ours/issues")
+set(PACKAGE_BUGREPORT "https://github.com/bitcoin-ultimatum/orion/issues")
 
 if (CMAKE_GENERATOR MATCHES "Xcode")
     set_property(GLOBAL PROPERTY XCODE_ATTRIBUTE_SKIP_INSTALL "Yes")

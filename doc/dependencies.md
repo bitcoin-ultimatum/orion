@@ -16,19 +16,19 @@ These are the dependencies currently used by BTCU. You can find instructions for
 | GCC |  | [7](https://gcc.gnu.org/) (C++11 support) |  |  |  |
 | HarfBuzz-NG |  |  |  |  |  |
 | libevent | [2.1.11-stable](https://github.com/libevent/libevent/releases) | 2.0.22 | No |  |  |
-| libjpeg |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/pegasus/blob/master/depends/packages/qt.mk#L74) |
-| libpng |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/pegasus/blob/master/depends/packages/qt.mk#L73) |
+| libjpeg |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/orion/blob/master/depends/packages/qt.mk#L74) |
+| libpng |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/orion/blob/master/depends/packages/qt.mk#L73) |
 | librsvg | |  |  |  |  |
 | MiniUPnPc | [2.0.20180203](https://miniupnp.tuxfamily.org/files) | 1.9 | No |  |  |
 | OpenSSL | [1.0.1k](https://www.openssl.org/source) |  | Yes |  |  |
 | GMP | [6.1.2](https://gmplib.org/) | | No | | |
-| PCRE |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/pegasus/blob/master/depends/packages/qt.mk#L75) |
+| PCRE |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/orion/blob/master/depends/packages/qt.mk#L75) |
 | protobuf | [2.6.1](https://github.com/google/protobuf/releases) |  | No |  |  |
 | Python |  | [3.5](https://www.python.org/downloads) |  |  |  |
 | qrencode | [3.4.4](https://fukuchi.org/works/qrencode) |  | No |  |  |
 | Qt | [5.9.7](https://download.qt.io/official_releases/qt/) | 5.5.1 | No |  |  |
-| XCB |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/pegasus/blob/master/depends/packages/qt.mk#L108) (Linux only) |
-| xkbcommon |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/pegasus/blob/master/depends/packages/qt.mk#L107) (Linux only) |
+| XCB |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/orion/blob/master/depends/packages/qt.mk#L108) (Linux only) |
+| xkbcommon |  |  |  |  | [Yes](https://github.com/bitcoin-ultimatum/orion/blob/master/depends/packages/qt.mk#L107) (Linux only) |
 | ZeroMQ | [4.3.1](https://github.com/zeromq/libzmq/releases) | 4.0.0 | No |  |  |
 | zlib | [1.2.11](https://zlib.net/) |  |  |  | No |
 
