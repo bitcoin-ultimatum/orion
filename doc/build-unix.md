@@ -81,7 +81,7 @@ You can build the BTCU project from scratch by using a special bash script:
 ```bash
     mkdir btcu
     cd btcu
-    wget https://raw.githubusercontent.com/bitcoin-ultimatum/ours/master/install_ubuntu.sh
+    wget https://raw.githubusercontent.com/bitcoin-ultimatum/pegasus/master/install_ubuntu.sh
     sudo bash install_ubuntu.sh
 ```
 
@@ -130,7 +130,7 @@ Then update the package list and install `cmake`:
     sudo apt install cmake
 ```
 
-Also you can build cmake by yourself:
+Also you can build cmake by ypegasuself:
 ```bash
     version=3.14
     build=1
@@ -287,7 +287,7 @@ turned off by default.  See the cmake options for upnp behavior desired:
 
 Berkeley DB
 -----------
-It is recommended to use Berkeley DB 18.1.32. If you have to build it yourself,
+It is recommended to use Berkeley DB 18.1.32. If you have to build it ypegasuself,
 use commands:
 
 ```bash
