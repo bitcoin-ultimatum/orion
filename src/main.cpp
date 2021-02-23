@@ -2635,7 +2635,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
        uint256 hashPrevBlock = pindex->pprev == NULL ? uint256(0): pindex->pprev->GetBlockHash();
        if (hashPrevBlock != view.GetBestBlock())
           LogPrintf("%s: hashPrev=%s view=%s\n", __func__, hashPrevBlock.GetHex(), view.GetBestBlock().GetHex());
-       //assert(hashPrevBlock == view.GetBestBlock());
+       assert(hashPrevBlock == view.GetBestBlock());
     }
 
     // Special case for the genesis block, skipping connection of its transactions
