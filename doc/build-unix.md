@@ -130,7 +130,7 @@ Then update the package list and install `cmake`:
     sudo apt install cmake
 ```
 
-Also you can build cmake by ypegasuself:
+Also you can build cmake by yourself:
 ```bash
     version=3.14
     build=1
@@ -287,7 +287,7 @@ turned off by default.  See the cmake options for upnp behavior desired:
 
 Berkeley DB
 -----------
-It is recommended to use Berkeley DB 18.1.32. If you have to build it ypegasuself,
+It is recommended to use Berkeley DB 18.1.32. If you have to build it yourself,
 use commands:
 
 ```bash

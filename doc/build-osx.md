@@ -300,7 +300,7 @@ Before running, it's recommended that you create an RPC configuration file:
     chmod 600 "/Users/${USER}/Library/Application Support/BTCU/btcu.conf"
 ```
 
-The first time you run btcud, it will start downloading the blockchain. This process could take many hpegasus, or even days on slower than average systems.
+The first time you run btcud, it will start downloading the blockchain. This process could take many hours, or even days on slower than average systems.
 
 You can monitor the download process by looking at the debug.log file:
 ```shell
