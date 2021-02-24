@@ -151,6 +151,30 @@ echo  ""
 echo  "[23%] Installing dependency: libminiupnpc-dev... Done!"
 
 echo  ""
+echo  "[23%] Installing dependency: liblz4-dev... "
+
+install_package liblz4-dev
+
+echo  ""
+echo  "[23%] Installing dependency: liblz4-dev... Done!"
+
+echo  ""
+echo  "[23%] Installing dependency: libzstd-dev... "
+
+install_package libzstd-dev
+
+echo  ""
+echo  "[23%] Installing dependency: libzstd-dev... Done!"
+
+echo  ""
+echo  "[23%] Installing dependency: libbz2-dev... "
+
+install_package libbz2-dev
+
+echo  ""
+echo  "[23%] Installing dependency: libbz2-dev... Done!"
+
+echo  ""
 echo  "[23%] Installing dependency: libzmq3-dev... "
 
 install_package libzmq3-dev

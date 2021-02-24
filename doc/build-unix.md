@@ -93,6 +93,11 @@ You can build the BTCU project from scratch by using a special bash script:
     sudo apt-get install git build-essential libtool bsdmainutils autotools-dev autoconf pkg-config automake python3 libzmq3-dev libevent-dev libjsonrpccpp-dev libsnappy-dev libbenchmark-dev libgtest-dev 
 ```
 
+(Optional) If you need to build in a static mode (-DSTATIC_BUILD=ON as a cmake parameter) you will have to install:
+```bash
+    sudo apt-get install liblz4-dev libzstd-dev libbz2-dev
+```
+
 2. Cmake installing:
 
 On Debian Buster (10), `cmake` should be installed from the backports repository:
