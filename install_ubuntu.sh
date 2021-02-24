@@ -292,7 +292,10 @@ echo  "[34%] Installing dependency: protobuf-compiler... Done!"
 echo  ""
 echo  "[35%] Installing dependency: libqrencode-dev... "
 
-install_package libqrencode-dev
+git clone https://github.com/fukuchi/libqrencode.git
+cd libqrencode
+./autogen.sh && ./configure --prefix=/usr --enable-static --enable-shared && make && make install
+cd -
 
 echo  ""
 echo  "[35%] Installing dependency: libqrencode-dev... Done!"

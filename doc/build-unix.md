@@ -232,8 +232,22 @@ To build without GUI pass `-DENABLE_GUI=OFF` on the cmake command line.
 To build with Qt 5 you need the following:
 
 ```bash
-    sudo apt-get install libprotobuf-dev protobuf-compiler libqrencode-dev libpng-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5charts5-dev
-```  
+    sudo apt-get install libprotobuf-dev protobuf-compiler libpng-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5charts5-dev
+```
+
+If you need just a shared libraries build you can install libqrencode with just an apt-get command:
+```bash
+    sudo apt-get install libqrencode-dev
+```
+
+But if you need to build a static build (with a flag -DSTATIC_BUILD=ON) you will have to compile it from the sources:
+```bash
+    git clone https://github.com/fukuchi/libqrencode.git
+    cd libqrencode
+    ./autogen.sh && ./configure --prefix=/usr --enable-static --enable-shared && make && make install
+    cd -
+```
+
 
 **Note:** Ubuntu versions prior to Bionic (18.04), and Debian version prior to Buster, do not have the `libqt5charts5-dev` package. If you are compiling on one of these older versions, you will need to omit `libqt5charts5-dev` from the above command.
 
