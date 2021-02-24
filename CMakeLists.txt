@@ -1339,7 +1339,6 @@ target_link_libraries(SERVER_A
         ${CMAKE_DL_LIBS}
         Threads::Threads 
         ff 
-        Snappy::snappy
         Threads::Threads
         scrypt
         )
@@ -1349,11 +1348,14 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
         )
 else()
     target_link_libraries(SERVER_A 
-        ${ZeroMQ_LIBRARY} jsoncpp_lib cryptopp-shared ${BerkeleyDB_Cxx_LIBRARY}
+        ${ZeroMQ_LIBRARY} jsoncpp_lib cryptopp-shared ${BerkeleyDB_Cxx_LIBRARY} Snappy::snappy
         )
 endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    target_link_libraries(SERVER_A Snappy::snappy)
+endif()
 if(BUILD_STATIC)
-    target_link_libraries(SERVER_A ZLIB::ZLIB)
+    target_link_libraries(SERVER_A ZLIB::ZLIB Snappy::snappy-static)
 endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND CRYPT32_LIBRARY)
     target_link_libraries(SERVER_A 
