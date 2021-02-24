@@ -80,7 +80,7 @@ tar -xf boost_1_71_0.tar.gz
 
 cd boost_1_71_0
 ./bootstrap.sh --prefix=/usr --with-python=python3 &&
-sudo ./b2 stage -j$(nproc) threading=multi link=shared --with-regex --with-test --with-filesystem --with-date_time --with-random --with-system --with-thread --with-program_options --with-chrono --with-fiber --with-log --with-context --with-math && sudo ./b2 install --prefix=/usr
+sudo ./b2 stage -j$(nproc) threading=multi link=static,shared --with-regex --with-test --with-filesystem --with-date_time --with-random --with-system --with-thread --with-program_options --with-chrono --with-fiber --with-log --with-context --with-math && sudo ./b2 install --prefix=/usr
 cd -
 
 echo  ""
