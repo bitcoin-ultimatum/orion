@@ -119,7 +119,6 @@ if(ZeroMQ_INCLUDE_DIR)
 			find_library(LIBSODIUM_LIBRARY NAMES sodium libsodium)
 			list (APPEND ZeroMQ_LIBRARIES ${Qrcode_LIBRARIES})
 			list (APPEND ZeroMQ_LIBRARIES ${LIBSODIUM_LIBRARY})
-			# list (APPEND ZeroMQ_LIBRARIES "-stdlib=libc++")
 		endif()
 
 		find_component(

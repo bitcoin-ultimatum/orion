@@ -866,15 +866,11 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif()
 
 if(BUILD_STATIC)
-    add_definitions(-DZMQ_STATIC)
     if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
     endif()
 
     find_package(ZLIB)
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Bstatic -lc++ -stdlib=libc++ -lc++abi")
-    endif()
 endif()
 
 # Find Dependencies

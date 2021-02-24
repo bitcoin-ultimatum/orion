@@ -407,11 +407,6 @@ if (Qt5Charts_FOUND)
     target_link_libraries(btcu-qt Qt5::Charts)
 endif()
 
-if(BUILD_STATIC)
-	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_START_STATIC 1)
-	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_END_STATIC 1)
-endif()
-
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set(btcu_VERSION "${CLIENT_VERSION_MAJOR}.${CLIENT_VERSION_MINOR}.${CLIENT_VERSION_REVISION}")
 
