@@ -232,8 +232,41 @@ To build without GUI pass `-DENABLE_GUI=OFF` on the cmake command line.
 To build with Qt 5 you need the following:
 
 ```bash
-    sudo apt-get install libprotobuf-dev protobuf-compiler libpng-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5charts5-dev
+    sudo apt-get install libprotobuf-dev protobuf-compiler libpng-dev
 ```
+
+Modern Unix .deb packages doesn't include static libraries. If you won't build with -DBUILD_STATIC=OFF you can just run:
+```bash
+    sudo apt-get libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5 libqt5charts5
+```
+
+Additionally in a case if you want to build a static build you will have to build the QT5 from the sources:
+```bash
+    wget https://download.qt.io/archive/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz
+    tar xvf qt-everywhere-src-5.15.2.tar.xz -C ./
+    cd qt-everywhere-src-5.15.2
+
+    mkdir /opt/qt5
+    export QT5PREFIX=/opt/qt5
+
+    ./configure -prefix $QT5PREFIX                        \
+                -sysconfdir /etc/xdg                      \
+                -confirm-license                          \
+                -opensource                               \
+                -openssl-linked                           \
+                -nomake examples                          \
+                -no-rpath                                 \
+                -system-zlib                              \
+                -static                                   \
+                -skip qtwebengine                         &&
+    make
+    sudo make install
+    find $QT5PREFIX/ -name \*.prl \
+    -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+    cd -
+```
+
+You can change the build parameters according to your system configuration. Please read more about the parameters [here](https://doc.qt.io/qt-5/configure-options.html).
 
 If you need just a shared libraries build you can install libqrencode with just an apt-get command:
 ```bash
