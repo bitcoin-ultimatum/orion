@@ -191,6 +191,14 @@ echo  ""
 echo  "[24%] Installing dependency: librocksdb-dev... Done!"
 
 echo  ""
+echo  "[25%] Installing dependency: libsodium-dev... "
+
+install_package libsodium-dev
+
+echo  ""
+echo  "[25%] Installing dependency: libsodium-dev... Done!"
+
+echo  ""
 echo  "[25%] Installing dependency: libssl-dev... "
 
 install_package libssl-dev

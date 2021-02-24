@@ -95,7 +95,7 @@ You can build the BTCU project from scratch by using a special bash script:
 
 (Optional) If you need to build in a static mode (-DSTATIC_BUILD=ON as a cmake parameter) you will have to install:
 ```bash
-    sudo apt-get install liblz4-dev libzstd-dev libbz2-dev
+    sudo apt-get install liblz4-dev libzstd-dev libbz2-dev libsodium-dev
 ```
 
 2. Cmake installing:
