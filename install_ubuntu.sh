@@ -67,7 +67,7 @@ echo  "[12%] Installing dependency: git... Done!"
 echo  ""
 echo  "[12%] Installing dependency: python3... "
 
-install_package python3
+install_package python3-dev
 
 echo  ""
 echo  "[13%] Installing dependency: python3... Done!"
