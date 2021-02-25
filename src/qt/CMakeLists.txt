@@ -14,7 +14,6 @@ set(CMAKE_AUTOUIC ON)
 
 if(BUILD_STATIC)
     add_linker_flags(-Wl,-Bdynamic -lGL -static)
-	add_linker_flags(-lxcb)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR BUILD_STATIC)

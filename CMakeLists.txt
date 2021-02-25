@@ -305,6 +305,9 @@ include(AddCompilerFlags)
 
 if(BUILD_STATIC)
     add_linker_flags(-static)
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	    add_linker_flags(-lxcb)
+    endif()
 endif()
 
 if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
