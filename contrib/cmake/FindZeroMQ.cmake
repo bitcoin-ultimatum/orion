@@ -119,6 +119,12 @@ if(ZeroMQ_INCLUDE_DIR)
 			find_library(LIBSODIUM_LIBRARY NAMES sodium libsodium)
 			list (APPEND ZeroMQ_LIBRARIES ${Qrcode_LIBRARIES})
 			list (APPEND ZeroMQ_LIBRARIES ${LIBSODIUM_LIBRARY})
+			if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+				find_library(LIBNORM_LIBRARY NAMES libnorm norm)
+				find_library(LIBPGM_LIBRARY NAMES libpgm pgm)
+				list (APPEND ZeroMQ_LIBRARIES ${LIBNORM_LIBRARY})
+				list (APPEND ZeroMQ_LIBRARIES ${LIBPGM_LIBRARY})
+			endif()
 		endif()
 
 		find_component(
