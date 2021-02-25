@@ -693,7 +693,10 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib")
 	    list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake")
 
-        set( QT_SEARCH_PATH "/opt/qt5/lib" CACHE STRING "QT Search dir")
+        set(Qt5Core_DIR "/opt/qt5/lib")
+        set(Qt5_DIR "/opt/qt5")
+
+        set(qt5_ROOT_DIR "/opt/qt5")
 
         set( MOC_BIN_DIR "/opt/qt5/bin")
     endif()

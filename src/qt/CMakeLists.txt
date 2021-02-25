@@ -31,7 +31,7 @@ foreach(comp Widgets Core Gui Network LinguistTools DBus Svg Charts Test)
     if(Qt5${comp}_FOUND)
         message(STATUS "FOUND QT5${comp}")
     	message(STATUS "INCLUDE: ${Qt5${comp}_INCLUDE_DIRS}")
-    	message(STATUS "LIBRARIES: ${Qt5${comp}_LIBRARIES}")
+    	message(STATUS ${Qt5${comp}_LIBRARIES})
         include_directories(${include_directories} ${Qt5${comp}_INCLUDE_DIRS} ${QT_USE_FILE})
         add_definitions(${Qt5${comp}_DEFINITIONS})
         list(APPEND Qt5_LIBRARIES ${Qt5${comp}_LIBRARIES})
@@ -51,7 +51,7 @@ endif()
 find_brew_prefix(qt5_ROOT_DIR qt5)
 
 find_program(MOC_BIN NAMES moc moc-qt5 qt5-moc
-        PATHS /usr/lib/qt5/bin /usr/lib/x86_64-linux-gnu/qt5/bin ${qt5_ROOT_DIR}/bin ${MOC_BIN_DIR}
+        PATHS  ${MOC_BIN_DIR} /usr/lib/qt5/bin /usr/lib/x86_64-linux-gnu/qt5/bin ${qt5_ROOT_DIR}/bin
         NO_DEFAULT_PATH
         NO_SYSTEM_ENVIRONMENT_PATH)
 if (MOC_BIN)
