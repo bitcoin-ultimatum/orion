@@ -177,7 +177,12 @@ echo  "[30%] Installing dependency: libbz2-dev... Done!"
 echo  ""
 echo  "[30%] Installing dependency: libzmq3-dev and dependencies for a static build... "
 
-install_package libnorm-dev
+git clone --recurse-submodules https://github.com/USNavalResearchLaboratory/norm.git
+
+cd norm
+./waf configure --prefix=/usr --enable-static-library && ./waf install
+cd -
+
 install_package libpgm-dev
 install_package libzmq3-dev
 
