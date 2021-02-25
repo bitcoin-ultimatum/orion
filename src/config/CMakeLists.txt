@@ -538,8 +538,12 @@ if("${ATTR_NAME}" STREQUAL "${PTHREAD_CREATE_JOINABLE}")
 	set(PTHREAD_CREATE_JOINABLE "${ATTR_NAME}")
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+	find_package(Qt5Core PATHS ${qt5_ROOT_DIR} ${qt5_ROOT_DIR}/lib)
+else()
+	find_package(Qt5Core NO_SYSTEM_ENVIRONMENT_PATH)
+endif()
 # check is the minimal qt platform exists
-find_package(Qt5Core)
 if(Qt5Core_FOUND)
 	# check are qt plugins static
 	get_target_property(QT_CORE_TYPE Qt5::Core TYPE)
