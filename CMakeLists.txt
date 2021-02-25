@@ -697,7 +697,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     if(STATIC_BUILD)
         set(Qt5Core_DIR "/opt/qt5/lib")
-        set(Qt5_DIR "/opt/qt5")
+        set(Qt5_DIR "/opt/qt5/lib/cmake" CACHE PATH "Initial cahe" FORCE)
 
         set(qt5_ROOT_DIR "/opt/qt5")
 
