@@ -555,6 +555,13 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         message(FATAL_ERROR "The required Boost package is not installed. Please check installation instruction boost section!")
     endif()
 else()
+    # it is important to define all custom pathes before this
+    # sonce it affects the priority of the search
+    if(STATIC_BUILD)
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake")
+    endif()
 	list( APPEND CMAKE_PREFIX_PATH /usr/lib )
 	list( APPEND CMAKE_PREFIX_PATH /usr/lib/x86_64-linux-gnu )
     
@@ -689,10 +696,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     if(STATIC_BUILD)
-        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5")
-        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib")
-	    list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake")
-
         set(Qt5Core_DIR "/opt/qt5/lib")
         set(Qt5_DIR "/opt/qt5")
 
