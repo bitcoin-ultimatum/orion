@@ -557,7 +557,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 else()
     # it is important to define all custom pathes before this
     # sonce it affects the priority of the search
-    if(STATIC_BUILD)
+    if(BUILD_STATIC)
         list(APPEND CMAKE_PREFIX_PATH "/opt/qt5")
         list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib")
         list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake")
@@ -705,7 +705,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set( Qrcode_LIBRARY "${Qrcode_ROOT_DIR}/lib" )
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    if(STATIC_BUILD)
+    if(BUILD_STATIC)
         set(Qt5Core_DIR "/opt/qt5/lib")
         set(Qt5_DIR "/opt/qt5/lib/cmake/Qt5" CACHE PATH "QT configs dir" FORCE)
 
