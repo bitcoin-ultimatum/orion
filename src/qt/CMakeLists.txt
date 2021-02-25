@@ -12,6 +12,10 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+if(BUILD_STATIC)
+    add_linker_flags(-Wl,-Bdynamic -lGL -static)
+endif()
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR BUILD_STATIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 	add_compile_options("-fPIE")
@@ -27,7 +31,6 @@ endif ()
 unset(Qt5Enables)
 foreach(comp Widgets Core Gui Network LinguistTools DBus Svg Charts Test)
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
-		message(STATUS "Using a static qt from ${qt5_ROOT_DIR}")
 		find_package(
 						Qt5${comp}
 					PATHS 

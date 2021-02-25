@@ -539,7 +539,21 @@ if("${ATTR_NAME}" STREQUAL "${PTHREAD_CREATE_JOINABLE}")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
-	find_package(Qt5Core PATHS ${qt5_ROOT_DIR} ${qt5_ROOT_DIR}/lib)
+		find_package(
+				Qt5${comp}
+			PATHS 
+				${qt5_ROOT_DIR}
+				${qt5_ROOT_DIR}/lib
+				${qt5_ROOT_DIR}/lib/cmake
+			PATH_SUFFIXES
+				Qt5${comp}
+			NO_SYSTEM_ENVIRONMENT_PATH
+			NO_DEFAULT_PATH
+			NO_CMAKE_PATH
+			NO_CMAKE_ENVIRONMENT_PATH
+			NO_CMAKE_SYSTEM_PATH
+			NO_CMAKE_FIND_ROOT_PATH
+		)
 else()
 	find_package(Qt5Core NO_SYSTEM_ENVIRONMENT_PATH)
 endif()

@@ -308,7 +308,7 @@ if(BUILD_STATIC)
 endif()
 
 if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib"  CACHE STRING "CMake search suffix" FORCE)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" CACHE STRING "CMake search suffix" FORCE)
 endif()
 if (BUILD_STATIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
