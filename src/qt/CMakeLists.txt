@@ -29,13 +29,19 @@ foreach(comp Widgets Core Gui Network LinguistTools DBus Svg Charts Test)
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
 		message(STATUS "Using a static qt from ${qt5_ROOT_DIR}")
 		find_package(
-			Qt5${comp}
-				PATHS 
-					${qt5_ROOT_DIR}
-					${qt5_ROOT_DIR}/lib 
-				NO_SYSTEM_ENVIRONMENT_PATH
-				NO_DEFAULT_PATH
-				NO_CMAKE_PATH
+						Qt5${comp}
+					PATHS 
+						${qt5_ROOT_DIR}
+						${qt5_ROOT_DIR}/lib
+						${qt5_ROOT_DIR}/lib/cmake
+					PATH_SUFFIXES
+						Qt5${comp}
+					NO_SYSTEM_ENVIRONMENT_PATH
+					NO_DEFAULT_PATH
+					NO_CMAKE_PATH
+					NO_CMAKE_ENVIRONMENT_PATH
+					NO_CMAKE_SYSTEM_PATH
+					NO_CMAKE_FIND_ROOT_PATH
 				)
 	else()
     	find_package(Qt5${comp} NO_SYSTEM_ENVIRONMENT_PATH)
