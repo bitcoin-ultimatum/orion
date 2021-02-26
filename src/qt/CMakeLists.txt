@@ -435,7 +435,7 @@ if(BUILD_STATIC)
 
 	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_END_STATIC 0)
 
-	target_link_libraries(btcu-qt GRAPHITE2_LIBRARY)
+	target_link_libraries(btcu-qt ${GRAPHITE2_LIBRARY})
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
