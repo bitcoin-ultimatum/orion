@@ -433,8 +433,6 @@ if(BUILD_STATIC)
 	find_library(GRAPHITE2_LIBRARY NAMES graphite2 libgraphite2)
 	message(STATUS "GRAPHITE2_LIBRARY: ${GRAPHITE2_LIBRARY}")
 
-	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_END_STATIC 0)
-
 	target_link_libraries(btcu-qt ${GRAPHITE2_LIBRARY})
 endif()
 

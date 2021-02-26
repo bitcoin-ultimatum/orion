@@ -240,6 +240,14 @@ If you want to build bitcoin-qt, make sure that the required packages for Qt dev
 are installed. Qt 5 is necessary to build the GUI.
 To build without GUI pass `-DENABLE_GUI=OFF` on the cmake command line.
 
+(Optional) If you need to perform a static build you will have to build a static version of the libgraphite2 as well:
+```bash
+    git clone https://github.com/silnrsi/graphite
+    cd graphite
+    cmake . -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH=/usr && sudo cmake --build . --target install --config Release
+    cd -
+```
+
 To build with Qt 5 you need the following:
 
 ```bash

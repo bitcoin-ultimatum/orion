@@ -175,6 +175,17 @@ echo  ""
 echo  "[30%] Installing dependency: libbz2-dev... Done!"
 
 echo  ""
+echo  "[30%] Installing dependency: graphite2... "
+
+git clone https://github.com/silnrsi/graphite
+cd graphite
+cmake . -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH=/usr && sudo cmake --build . --target install --config Release
+cd -
+
+echo  ""
+echo  "[30%] Installing dependency: graphite2... Done!"
+
+echo  ""
 echo  "[30%] Installing dependency: libzmq3-dev and dependencies for a static build... "
 
 git clone --recurse-submodules https://github.com/USNavalResearchLaboratory/norm.git
