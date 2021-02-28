@@ -26,6 +26,8 @@ endif ()
 
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
 
+# you can remove check for the Darwin if you'd build 
+# a static QT version by yourself
 if (BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set(Qt5_USE_STATIC_LIBS ON)
 	set(Qt5_USE_STATIC_RUNTIME ON)

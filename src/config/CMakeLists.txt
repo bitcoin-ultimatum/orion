@@ -557,6 +557,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
 else()
 	find_package(Qt5Core NO_SYSTEM_ENVIRONMENT_PATH)
 endif()
+# you can remove check for the Darwin if you'd build 
+# a static QT version by yourself
 if(Qt5Core_FOUND AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set(QT_STATICPLUGIN 1)
 endif()
