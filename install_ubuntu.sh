@@ -365,6 +365,7 @@ export QT5PREFIX=/opt/qt5
             -no-rpath                                 \
             -system-zlib                              \
             -static                                   \
+            -bundled-xcb-xinput                       \
             -skip qtwebengine                         &&
 make
 echo  ""
