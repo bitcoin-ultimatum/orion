@@ -540,13 +540,13 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
 		find_package(
-				Qt5${comp}
+				Qt5Core
 			PATHS 
 				${qt5_ROOT_DIR}
 				${qt5_ROOT_DIR}/lib
 				${qt5_ROOT_DIR}/lib/cmake
 			PATH_SUFFIXES
-				Qt5${comp}
+				Qt5Core
 			NO_SYSTEM_ENVIRONMENT_PATH
 			NO_DEFAULT_PATH
 			NO_CMAKE_PATH
@@ -557,11 +557,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
 else()
 	find_package(Qt5Core NO_SYSTEM_ENVIRONMENT_PATH)
 endif()
-# check is the minimal qt platform exists
-if(Qt5Core_FOUND AND BUILD_STATIC)
-	set(QT_STATICPLUGIN 1)
-endif()
-if(Qt5Core_FOUND AND ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(Qt5Core_FOUND AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set(QT_STATICPLUGIN 1)
 endif()
 

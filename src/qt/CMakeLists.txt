@@ -26,7 +26,7 @@ endif ()
 
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+if (BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set(Qt5_USE_STATIC_LIBS ON)
 	set(Qt5_USE_STATIC_RUNTIME ON)
 endif ()
@@ -102,8 +102,6 @@ endif()
 if (Qt5Charts_FOUND)
     add_compile_options("-DUSE_QTCHARTS")
 endif()
-
-find_brew_prefix(qt5_ROOT_DIR qt5)
 
 find_program(MOC_BIN NAMES moc moc-qt5 qt5-moc
         PATHS  ${MOC_BIN_DIR} /usr/lib/qt5/bin /usr/lib/x86_64-linux-gnu/qt5/bin ${qt5_ROOT_DIR}/bin
