@@ -361,6 +361,7 @@ export QT5PREFIX=/opt/qt5
             -opensource                               \
             -openssl-linked                           \
             -nomake examples                          \
+            -nomake tests                             \
             -no-rpath                                 \
             -system-zlib                              \
             -static                                   \

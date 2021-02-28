@@ -13,13 +13,6 @@ set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_C_COMPILER_TARGET ${TOOLCHAIN_PREFIX})
 set(CMAKE_CXX_COMPILER_TARGET ${TOOLCHAIN_PREFIX})
 
-# Target environment on the build host system
-# Set 1st to directory with the cross compiler's C/C++ headers/libs
-set(CMAKE_FIND_ROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/depends/${TOOLCHAIN_PREFIX}")
-
-# We also may have built dependencies for the native platform.
-set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/depends/${TOOLCHAIN_PREFIX}/native")
-
 # Modify default behavior of FIND_XXX() commands to:
 #  - search for headers in the target environment,
 #  - search the libraries in the target environment first then the host (to find

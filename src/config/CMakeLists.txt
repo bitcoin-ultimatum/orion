@@ -558,12 +558,11 @@ else()
 	find_package(Qt5Core NO_SYSTEM_ENVIRONMENT_PATH)
 endif()
 # check is the minimal qt platform exists
-if(Qt5Core_FOUND)
-	# check are qt plugins static
-	get_target_property(QT_CORE_TYPE Qt5::Core TYPE)
-	if(QT_CORE_TYPE MATCHES STATIC)
-		set(QT_STATICPLUGIN 1)
-	endif()
+if(Qt5Core_FOUND AND BUILD_STATIC)
+	set(QT_STATICPLUGIN 1)
+endif()
+if(Qt5Core_FOUND AND ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	set(QT_STATICPLUGIN 1)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

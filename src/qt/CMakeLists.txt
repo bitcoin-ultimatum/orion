@@ -12,14 +12,16 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-if(BUILD_STATIC)
-    add_linker_flags(-Wl,-Bdynamic -lGL -static)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+	add_linker_flags(-Wl,-Bdynamic -lGL)
 	add_linker_flags(-Wl,--copy-dt-needed-entries)
-endif()
+	add_linker_flags(-lxcb)
+	add_linker_flags(-lqxcb -lxcb-static)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR BUILD_STATIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 	add_compile_options("-fPIE")
+
+	FIND_PACKAGE( X11 REQUIRED )
 endif ()
 
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
@@ -29,8 +31,17 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
 	set(Qt5_USE_STATIC_RUNTIME ON)
 endif ()
 if(BUILD_STATIC)
+	cmake_policy(SET CMP0022 NEW)
+
 	find_library(GRAPHITE2_LIBRARY NAMES graphite2 libgraphite2)
 	message(STATUS "GRAPHITE2_LIBRARY: ${GRAPHITE2_LIBRARY}")
+
+	set(TMP_CMAKE_CXX_STANDARD_LIBRARIES ${CMAKE_CXX_STANDARD_LIBRARIES})
+	
+	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+		# This is required to fix libm.a incorrect import in QT
+		list(APPEND CMAKE_CXX_STANDARD_LIBRARIES "m")
+	endif()
 endif()
 
 unset(Qt5Enables)
@@ -69,6 +80,20 @@ foreach(comp Widgets Core Gui Network LinguistTools DBus Svg Charts Test)
         MESSAGE(WARNING "Cant find Qt5${comp}")
     endif()
 endforeach(comp)
+
+if(BUILD_STATIC)
+	set(CMAKE_CXX_STANDARD_LIBRARIES ${TMP_CMAKE_CXX_STANDARD_LIBRARIES})
+
+	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+		find_package( X11 REQUIRED )
+		set(OS_SPECIFIC_STATIC_LIBS
+			xcb
+			X11-xcb
+			${X11_LIBRARIES}
+		)
+        list(APPEND Qt5_LIBRARIES ${OS_SPECIFIC_STATIC_LIBS})
+	endif()
+endif()
 
 if (Qt5DBus_FOUND)
     add_compile_options("-DUSE_DBUS")
@@ -313,6 +338,10 @@ QT5_ADD_RESOURCES(QRC_RESOURCE btcu.qrc)
 QT5_ADD_RESOURCES(QRC_LOCALE_RESOURCE btcu_locale.qrc)
 
 add_executable(btcu-qt btcu.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/btcu.qrc)
+if(BUILD_STATIC)
+	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_START_STATIC 1)
+	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_END_STATIC 1)
+endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	include(WindowsVersionInfo)
 	generate_windows_version_info(btcu-qt
@@ -366,6 +395,7 @@ endif()
 
 # Linux support
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	set(CMAKE_AUTOMOC_MOC_OPTIONS "-DQ_OS_LINUX")
 	list(APPEND QT_PLUGIN_COMPONENTS QXcbIntegrationPlugin)
 	list(APPEND QT_PLUGIN_PLATFORM_DEFINITIONS -DQT_QPA_PLATFORM_XCB=1)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -425,7 +455,7 @@ if(MINIUPNP_FOUND)
     target_include_directories(btcu-qt PUBLIC ${MINIUPNP_INCLUDE_DIR})
 endif()
 
-target_link_libraries(btcu-qt Qt5::Gui Qt5::Core Qt5::Widgets Qt5::Network Qt5::Svg ${Qt5_LIBRARIES})
+target_link_libraries(btcu-qt Qt5::Gui Qt5::Widgets Qt5::Network Qt5::Svg ${Qt5_LIBRARIES})
 if (Qt5DBus_FOUND)
     target_link_libraries(btcu-qt Qt5::DBus)
 endif()
