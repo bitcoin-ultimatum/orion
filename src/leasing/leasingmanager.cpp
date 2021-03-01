@@ -21,6 +21,7 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/tag.hpp>
 #include <boost/multi_index/composite_key.hpp>
+#include <main.h>
 
 #ifdef  _WIN32
 #include <boost/thread/interruption.hpp>
@@ -514,6 +515,7 @@ private:
       leasingDB.Flush();
 
       auto pCursor = leasingDB.NewIterator();
+      pCursor->SeekToFirst();
       while (pCursor->Valid()) {
          boost::this_thread::interruption_point();
          try {
@@ -528,7 +530,7 @@ private:
 
                   ssKey >> leasingOutput.nTrxHash;
                   ssKey >> leasingOutput.nPosition;
-                  if (leasingOutput.nSpendingHeight != _nonRewardHeight) {
+                  if (leasingOutput.nSpendingHeight == _nonRewardHeight) {
                      if (!mapOutputs.insert(leasingOutput).second) {
                         LeasingError("duplicate of leasing for %s:%d",
                            leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
@@ -841,6 +843,7 @@ void CLeasingManager::UpdatedBlockTip(const CBlockIndex* pIndex) {
 }
 
 void CLeasingManager::SyncTransaction(const CTransaction& tx, const CBlock* pBlock) {
+   LOCK(cs_main);
    if (tx.IsCoinBase() || tx.IsCoinStake()) {
       // there is no P2L or LR transactions
       return;
