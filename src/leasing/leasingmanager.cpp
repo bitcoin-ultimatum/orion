@@ -342,6 +342,8 @@ public:
          return LeasingError("duplicate leasing on reading from DB for %s:%d", leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
       }
 
+      leasingDB.WriteLeasingOutput(leasingOutput);
+
       IncLeasingSupply(leasingOutput.kLeaserID, leasingOutput.nValue);
 
       return true;
