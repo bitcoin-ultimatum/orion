@@ -14,14 +14,11 @@ set(CMAKE_AUTOUIC ON)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
 	add_linker_flags(-Wl,-Bdynamic -lGL)
+	add_linker_flags(-Wl,-Bdynamic -lX11)
 	add_linker_flags(-Wl,--copy-dt-needed-entries)
-	add_linker_flags(-lxcb)
-	add_linker_flags(-lqxcb -lxcb-static)
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 	add_compile_options("-fPIE")
-
-	FIND_PACKAGE( X11 REQUIRED )
 endif ()
 
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
@@ -41,6 +38,12 @@ if(BUILD_STATIC)
 	set(TMP_CMAKE_CXX_STANDARD_LIBRARIES ${CMAKE_CXX_STANDARD_LIBRARIES})
 	
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+		# we don't want tp link qt5 statically since it is quite unstable
+		set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" CACHE STRING "CMake search suffix" FORCE)
+		find_package( X11 REQUIRED )
+		message(STATUS "X11_LIBRARIES: ${X11_LIBRARIES}")
+		message(STATUS "X11_Xdmcp_LIB: ${X11_Xdmcp_LIB}")
+	
 		# This is required to fix libm.a incorrect import in QT
 		list(APPEND CMAKE_CXX_STANDARD_LIBRARIES "m")
 	endif()
@@ -71,6 +74,11 @@ foreach(comp Widgets Core Gui Network LinguistTools DBus Svg Charts Test)
     if(Qt5${comp}_FOUND)
 		if(BUILD_STATIC AND NOT ${comp} MATCHES "LinguistTools")
 			target_link_libraries(Qt5::${comp} INTERFACE ${GRAPHITE2_LIBRARY})
+			if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+				target_link_libraries(Qt5::${comp} INTERFACE ${X11_LIBRARIES})
+				target_link_libraries(Qt5::${comp} INTERFACE ${X11_Xau_LIB})
+				target_link_libraries(Qt5::${comp} INTERFACE ${X11_Xdmcp_LIB})
+			endif()
 		endif()
         message(STATUS "FOUND QT5${comp}")
     	message(STATUS "INCLUDE: ${Qt5${comp}_INCLUDE_DIRS}")
@@ -85,16 +93,7 @@ endforeach(comp)
 
 if(BUILD_STATIC)
 	set(CMAKE_CXX_STANDARD_LIBRARIES ${TMP_CMAKE_CXX_STANDARD_LIBRARIES})
-
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-		find_package( X11 REQUIRED )
-		set(OS_SPECIFIC_STATIC_LIBS
-			xcb
-			X11-xcb
-			${X11_LIBRARIES}
-		)
-        list(APPEND Qt5_LIBRARIES ${OS_SPECIFIC_STATIC_LIBS})
-	endif()
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" CACHE STRING "CMake search suffix" FORCE)
 endif()
 
 if (Qt5DBus_FOUND)

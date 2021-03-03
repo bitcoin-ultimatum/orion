@@ -304,6 +304,7 @@ endif(CCACHE)
 include(AddCompilerFlags)
 
 if(BUILD_STATIC)
+    cmake_policy(SET CMP0060 NEW)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	    add_linker_flags(-Wl,--no-as-needed -ldl)
         add_linker_flags(-lm -lc)
