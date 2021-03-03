@@ -791,6 +791,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	endif()
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+	include(CPackConfig)
+	install(TARGETS btcu-qt DESTINATION bin)
+endif()
 
 if(ENABLE_TESTS)
 	set(QT_TEST_SOURCES
