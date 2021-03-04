@@ -469,6 +469,7 @@ echo  ""
 echo  "[68%] Running CMake configuring... "
 
 if [ "$2" = "static" ]
+then
     cmake -G "CodeBlocks - Unix Makefiles" . -DBUILD_STATIC=ON
 else
     cmake -G "CodeBlocks - Unix Makefiles" .
