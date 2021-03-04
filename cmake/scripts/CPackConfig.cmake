@@ -112,7 +112,6 @@ elseif(EXISTS /etc/debian_version)
                 OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif ()
-    set(CPACK_GENERATOR "DEB")
     # ZIP WIX NSIS etc is currently unsupported
     # PackageMake is unsused since we use macdeployqt already
     #set(CPACK_DEBIAN_PACKAGE_DEBUG ON)
@@ -127,6 +126,6 @@ else()
     message(FATAL "Can't recognize your system.")
 endif()
 
-set(CPACK_SOURCE_GENERATOR "TGZ")
+set(CPACK_SOURCE_GENERATOR "${CPACK_GENERATOR}")
 
 include(CPack)
