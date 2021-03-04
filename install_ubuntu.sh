@@ -330,128 +330,75 @@ echo  ""
 echo  "[50%] Installing QT Components. "
 
 echo  ""
-echo  "[50%] Downloading QT package: qt-5.15... "
-
-wget https://download.qt.io/archive/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz
-
+echo  "[51%] Installing QT Components. "
 
 echo  ""
-echo  "[51%] Downloading QT package: qt-5.15... Done!"
-
-
-echo  ""
-echo  "[51%] Extracting QT package: qt-5.15... "
-
-tar xvf qt-everywhere-src-5.15.2.tar.xz -C ./
-cd qt-everywhere-src-5.15.2
-
-echo  ""
-echo  "[52%] Extracting QT package: qt-5.15... Done!"
-
-
-echo  ""
-echo  "[52%] Building QT package: qt-5.15... "
-
-mkdir /opt/qt5
-export QT5PREFIX=/opt/qt5
-
-./configure -prefix $QT5PREFIX                        \
-            -sysconfdir /etc/xdg                      \
-            -confirm-license                          \
-            -opensource                               \
-            -openssl-linked                           \
-            -nomake examples                          \
-            -nomake tests                             \
-            -no-rpath                                 \
-            -system-zlib                              \
-            -static                                   \
-            -bundled-xcb-xinput                       \
-            -skip qtwebengine                         &&
-make
-echo  ""
-echo  "[55%] Building QT package: qt-5.15... Done!"
-
-echo  ""
-echo  "[55%] Installing QT package: qt-5.15... "
-
-sudo make install
-find $QT5PREFIX/ -name \*.prl \
-   -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
-cd -
-
-echo  ""
-echo  "[56%] Installing QT package: qt-5.15... Done!"
-
-echo  ""
-echo  "[56%] Installing QT Components. "
-
-echo  ""
-echo  "[56%] Installing QT dependency: libqt5gui5... "
+echo  "[51%] Installing QT dependency: libqt5gui5... "
 
 install_package libqt5gui5
 
 echo  ""
-echo  "[57%] Installing QT dependency: libqt5gui5... Done!"
+echo  "[52%] Installing QT dependency: libqt5gui5... Done!"
 
 echo  ""
-echo  "[57%] Installing QT dependency: libqt5core5a... "
+echo  "[52%] Installing QT dependency: libqt5core5a... "
 
 install_package libqt5core5a
 
 echo  ""
-echo  "[58%] Installing QT dependency: libqt5core5a... Done!"
+echo  "[53%] Installing QT dependency: libqt5core5a... Done!"
 
 echo  ""
-echo  "[58%] Installing QT dependency: libqt5dbus5... "
+echo  "[53%] Installing QT dependency: libqt5dbus5... "
 
 install_package libqt5dbus5
 
 echo  ""
-echo  "[59%] Installing QT dependency: libqt5dbus5... Done!"
+echo  "[54%] Installing QT dependency: libqt5dbus5... Done!"
 
 echo  ""
-echo  "[59%] Installing QT dependency: qttools5-dev... "
+echo  "[54%] Installing QT dependency: qttools5-dev... "
 
 install_package qttools5-dev
 
 echo  ""
-echo  "[60%] Installing QT dependency: qttools5-dev... Done!"
+echo  "[55%] Installing QT dependency: qttools5-dev... Done!"
 
 echo  ""
-echo  "[60%] Installing QT dependency: qttools5-dev-tools... "
+echo  "[55%] Installing QT dependency: qttools5-dev-tools... "
 
 install_package qttools5-dev-tools
 
 echo  ""
-echo  "[61%] Installing QT dependency: qttools5-dev-tools... Done!"
+echo  "[56%] Installing QT dependency: qttools5-dev-tools... Done!"
 
 echo  ""
-echo  "[61%] Installing QT dependency: libqt5svg5... "
+echo  "[56%] Installing QT dependency: libqt5svg5... "
 
 install_package libqt5svg5
 
 echo  ""
-echo  "[62%] Installing QT dependency: libqt5svg5... Done!"
+echo  "[57%] Installing QT dependency: libqt5svg5... Done!"
 
 echo  ""
-echo  "[62%] Installing QT dependency: libqt5charts5... "
+echo  "[57%] Installing QT dependency: libqt5charts5... "
 
 install_package libqt5charts5
 
 echo  ""
-echo  "[63%] Installing QT dependency: libqt5charts5... Done!"
+echo  "[58%] Installing QT dependency: libqt5charts5... Done!"
 
 echo  ""
-echo  "[63%] All QT Components has been installed. "
+echo  "[58%] All QT Components has been installed. "
 
 echo  ""
-echo  "[63%] Checking is folder the git repository... "
+echo  "[59%] Checking is folder the git repository... "
 if [ -d .git ]; then
 echo -ne  "yes"
     if [ "$1" = "update" ]
     then
     echo  ""
-    echo  "[63%] Updating current version of the BTCU... "
+    echo  "[60%] Updating current version of the BTCU... "
     git checkout master 
 
     if [ -s "versions.txt" ]
@@ -466,43 +413,43 @@ echo -ne  "yes"
 
             my_var="$( cut -d ' ' -f 2 <<< "$l" )";
             echo  ""
-            echo  "[64%] Working branch: release_$my_var"
+            echo  "[61%] Working branch: release_$my_var"
             git checkout "release_$my_var"
         else
             echo  ""
-            echo  "[64%] Working branch: master"
+            echo  "[61%] Working branch: master"
         fi
 
     git pull
     echo  ""
-    echo  "[63%] Updating current version of the BTCU... Done!"
+    echo  "[61%] Updating current version of the BTCU... Done!"
     echo  ""
     
     else 
     
     echo  ""
-    echo  "[63%] Updating current version of the BTCU"
+    echo  "[61%] Updating current version of the BTCU"
     
     fi
 else
     echo -ne  "no"
     echo  ""
-    echo  "[63%] Downloading latest version of the BTCU... "
+    echo  "[60%] Downloading latest version of the BTCU... "
     git clone https://github.com/askiiRobotics/orion
     cd orion
     git checkout -b static-build-option-static-build origin/static-build-option-static-build
     echo  ""
-    echo  "[63%] Downloading latest version of the BTCU... Done!"
+    echo  "[61%] Downloading latest version of the BTCU... Done!"
     echo  ""
 fi;
 
 echo  ""
-echo  "[65%] Installing Berkeley DB... "
+echo  "[62%] Installing Berkeley DB... "
 
 
 if [ -f /opt/lib/libdb-18.1.a ]
 then
-    echo  "[65%] Berkeley DB is already installed."
+    echo  "[62%] Berkeley DB is already installed."
 else
     # Since as of 5th March 2020 the Oracle moved Barkeley DB 
     # to login-protected tarball for 18.1.32 version 
@@ -521,7 +468,11 @@ echo  "[68%] Installing Berkeley DB... Done!"
 echo  ""
 echo  "[68%] Running CMake configuring... "
 
-cmake -G "CodeBlocks - Unix Makefiles" .
+if [ "$2" = "static" ]
+    cmake -G "CodeBlocks - Unix Makefiles" . -DBUILD_STATIC=ON
+else
+    cmake -G "CodeBlocks - Unix Makefiles" .
+fi
 
 echo  ""
 echo  "[71%] Running CMake configuring... Done!"
