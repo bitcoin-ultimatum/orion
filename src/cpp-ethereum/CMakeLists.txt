@@ -52,6 +52,7 @@ set(UTILS_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/utils")
 
 configure_project()
 
+option(TESTS "Build ethash tests" ${ENABLE_TESTS})
 if(TESTS)
     # Import binaryen library for testeth.
     # TODO: remove this once testeth uses binaryen as a CLI tool.

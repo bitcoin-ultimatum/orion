@@ -49,7 +49,7 @@ add_subdirectory(lib/ethash)
 
 # Disable tests for Windows
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    option(ETHASH_BUILD_TESTS "Build unit tests" ON)
+    option(ETHASH_BUILD_TESTS "Build unit tests" ${ENABLE_TESTS})
     if(ETHASH_BUILD_TESTS)
         add_subdirectory(test)
     endif()

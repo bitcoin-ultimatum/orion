@@ -10,10 +10,11 @@ project(cryptopp)
 
 # In order to make XCode correct build this
 # we need to simplify the process
+option(BUILD_TESTING "Build library tests" ${ENABLE_TESTS})
+
 if (CMAKE_GENERATOR MATCHES "Xcode")
 	set(CRYPTOPP_CROSS_COMPILE 0)
 	option(BUILD_SHARED "Build shared library" ON)
-	option(BUILD_TESTING "Build library tests" ON)
 	# Library headers
 	file(GLOB cryptopp_HEADERS *.h)
 
@@ -104,10 +105,8 @@ else()
 
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 		option(BUILD_SHARED "Build shared library" OFF)
-		option(BUILD_TESTING "Build library tests" OFF)
 	else()
 		option(BUILD_SHARED "Build shared library" ON)
-		option(BUILD_TESTING "Build library tests" ON)
 	endif()
 
 	option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)

@@ -9,7 +9,7 @@ if(TARGET evmc)
     return()
 endif()
 
-option(EVMC_TESTING "Build EVMC tests and test tools" OFF)
+option(EVMC_TESTING "Build EVMC tests and test tools" ${ENABLE_TESTS})
 option(EVMC_EXAMPLES "Build EVMC examples" ${EVMC_TESTING})
 
 include(${CMAKE_SOURCE_DIR}/cmake/cable/bootstrap.cmake)
