@@ -32,7 +32,7 @@ set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSIO
 
 set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 set(CPACK_PACKAGE_CONTACT "BTCU Developers <info@@btcu.io>")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "nfo@@btcu.io")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "ifo@@btcu.io")
 set(CPACK_PACKAGE_HOMEPAGE "https://btcu.io/")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "BTCU is a free open source peer-to-peer electronic cash system that is completely decentralized, without the need for a central server or trusted parties.  Users hold the crypto keys to their own money and transact directly with each other, with the help of a P2P network to check for double-spending.")
 set(CPACK_PACKAGE_VENDOR "BTCU Developers")
