@@ -867,6 +867,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY /home/$ENV{USER}/btcu-run)
         message(WARNING "WSL Runtime support requires VcXsrv to be installed and running")
     endif()
+    if(BUILD_STATIC)
+        if(ENABLE_GUI OR ENABLE_DAEMON OR BUILD_UTILS)
+            include(CPackConfig)
+        endif()
+    endif()
 endif()
  
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -1686,7 +1691,6 @@ if(BUILD_UTILS)
                     ${LibEvent_INCLUDE_DIR}
             )
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
-        include(CPackConfig)
         install(TARGETS btcu-cli 
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -1725,7 +1729,6 @@ if(BUILD_UTILS)
         target_link_libraries(btcu-tx ${GMP_LIBRARIES})
     endif()
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
-        include(CPackConfig)
         install(TARGETS btcu-tx
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -1805,7 +1808,6 @@ if(ENABLE_DAEMON)
     endif()
 
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
-        include(CPackConfig)
         install(TARGETS btcud
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
