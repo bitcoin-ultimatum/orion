@@ -150,6 +150,7 @@ endif()
 # enable_werror --enable-werror
 # USE_COVERAGE --coverage  --  ENABLE_COVERAGE, configure flag, no cmake
 
+option(ENABLE_DAEMON "Build btcud" ON)
 option(ENABLE_GUI "Build btcu-qt" ON)
 option(ENABLE_QTCHARTS "Enable qtcharts support (default is yes if qt is enabled and qtchartview is found)" ON)
 option(ENABLE_ASM "Enable assembly routines (default is yes)" ON)
@@ -204,8 +205,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 endif()
 option(ENABLE_DBUS_NOTIFICATIONS "Enable DBus desktop notifications. Linux only." ${DEFAULT_ENABLE_DBUS_NOTIFICATIONS})
 
-# collect config flags
-set(PROJECT_CONFIGURE_FLAGS "")
+if(ENABLE_DAEMON)
+    message(STATUS "Enabled option: Build btcud")
+else()
+    message(STATUS "Disabled option: Build btcud")
+endif()
 if(ENABLE_GUI)
     message(STATUS "Enabled option: Build btcu-qt")
 else()
@@ -1653,121 +1657,173 @@ target_link_libraries(CLI_A
             Threads::Threads
         )
 
-set(btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli.cpp)
-add_executable(btcu-cli ${btcu-cli_SOURCES})
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    generate_windows_version_info(btcu-cli
-        DESCRIPTION "CLI BTCU transaction editor utility"
-    )
-    list(APPEND btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli-res.rc)
-    if(CRYPT32_LIBRARY)
-        target_link_libraries(btcu-cli
-            ${CRYPT32_LIBRARY}
+if(BUILD_UTILS)
+    set(btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli.cpp)
+    add_executable(btcu-cli ${btcu-cli_SOURCES})
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        generate_windows_version_info(btcu-cli
+            DESCRIPTION "CLI BTCU transaction editor utility"
         )
+        list(APPEND btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli-res.rc)
+        if(CRYPT32_LIBRARY)
+            target_link_libraries(btcu-cli
+                ${CRYPT32_LIBRARY}
+            )
+        endif()
+    endif()
+    target_link_libraries(btcu-cli
+            CLI_A
+            univalue
+            UTIL_A
+            BITCOIN_CRYPTO_A
+            ${Boost_LIBRARIES} 
+            ${OPENSSL_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            Threads::Threads
+            )
+    target_include_directories(btcu-cli 
+                PUBLIC 
+                    ${LibEvent_INCLUDE_DIR}
+            )
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        include(CPackConfig)
+        install(TARGETS btcu-cli 
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+        # this will be replaced with svg in next versions
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/16x16/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/24x24/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/32x32/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/48x48/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/64x64/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/128x128/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-cli.desktop DESTINATION share/applications)
+    endif()
+
+    set(btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx.cpp)
+    add_executable(btcu-tx ${btcu-tx_SOURCES})
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        generate_windows_version_info(btcu-tx
+            DESCRIPTION "JSON-RPC client for ${PACKAGE_NAME}"
+        )
+        list(APPEND btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx-res.rc)
+    endif()
+    target_link_libraries(btcu-tx
+            univalue
+            COMMON_A
+            SERVER_A
+            ZEROCOIN_A
+            UTIL_A
+            BITCOIN_CRYPTO_A
+            secp256k1
+            ${Boost_LIBRARIES} 
+            ${OPENSSL_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            )
+    if(GMP_FOUND)
+        target_link_libraries(btcu-tx ${GMP_LIBRARIES})
+    endif()
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        include(CPackConfig)
+        install(TARGETS btcu-tx
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+        # this will be replaced with svg in next versions
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/16x16/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/24x24/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/32x32/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/48x48/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/64x64/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/128x128/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tx.desktop DESTINATION share/applications)
     endif()
 endif()
-target_link_libraries(btcu-cli
-        CLI_A
-        univalue
-        UTIL_A
-        BITCOIN_CRYPTO_A
-        ${Boost_LIBRARIES} 
-        ${OPENSSL_LIBRARIES}
-        ${LibEvent_LIBRARIES}
-        Threads::Threads
-        )
-target_include_directories(btcu-cli 
-            PUBLIC 
-                ${LibEvent_INCLUDE_DIR}
-        )
 
-set(btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx.cpp)
-add_executable(btcu-tx ${btcu-tx_SOURCES})
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	generate_windows_version_info(btcu-tx
-		DESCRIPTION "JSON-RPC client for ${PACKAGE_NAME}"
-	)
-    list(APPEND btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx-res.rc)
-endif()
-target_link_libraries(btcu-tx
-        univalue
-        COMMON_A
-        SERVER_A
-        ZEROCOIN_A
-        UTIL_A
-        BITCOIN_CRYPTO_A
-        secp256k1
-        ${Boost_LIBRARIES} 
-        ${OPENSSL_LIBRARIES}
-        ${LibEvent_LIBRARIES}
+if(ENABLE_DAEMON)
+    set(btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud.cpp ${Boost_INCLUDE_DIRS})
+    add_executable(btcud ${btcud_SOURCES} ${BitcoinHeaders})
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        generate_windows_version_info(btcud
+            DESCRIPTION "BTCU node with a JSON-RPC server"
         )
-if(GMP_FOUND)
-    target_link_libraries(btcu-tx ${GMP_LIBRARIES})
-endif()
-
-set(btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud.cpp ${Boost_INCLUDE_DIRS})
-add_executable(btcud ${btcud_SOURCES} ${BitcoinHeaders})
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	generate_windows_version_info(btcud
-		DESCRIPTION "BTCU node with a JSON-RPC server"
-	)
-    list(APPEND btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud-res.rc)
-endif()
-add_dependencies(btcud leveldb leveldb_sse42 memenv)
-target_include_directories(btcud PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/helpers/memenv
-        ${btcud_SOURCES}
-        ${LibEvent_INCLUDE_DIR}
-        ${Boost_INCLUDE_DIRS})
-target_link_libraries(btcud
-        Threads::Threads
-        SERVER_A
-        WALLET_A
-        univalue
-        COMMON_A
-        ZEROCOIN_A
-        UTIL_A
-        BITCOIN_CRYPTO_A
-        leveldb
-        leveldb_sse42
-        memenv
-        secp256k1
-        ${BerkeleyDB_Cxx_LIBRARY}
-        ${OPENSSL_LIBRARIES}
-        ${Boost_LIBRARIES}
-        ${LibEvent_LIBRARIES}
-        )
-if(GMP_FOUND)
-    target_link_libraries(btcud ${GMP_LIBRARIES})
-    target_include_directories(btcud PUBLIC ${GMP_INCLUDE_DIR})
-endif()
-if(ZeroMQ_FOUND)
-    target_link_libraries(btcud ZMQ_A)
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
-        target_link_libraries(btcud 
-            ZeroMQ::zmq
-            )
-    else()
-        target_link_libraries(btcud 
-            ${ZeroMQ_LIBRARY}
-            )
+        list(APPEND btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud-res.rc)
     endif()
-    target_include_directories(btcud PUBLIC ${ZeroMQ_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/)
-endif()
-if(MINIUPNP_FOUND)
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
-		target_compile_definitions(btcud
-			PUBLIC -DSTATICLIB
-			PUBLIC -DMINIUPNP_STATICLIB
-		)
-	endif()
-    target_link_libraries(btcud ${MINIUPNP_LIBRARY})
-    target_include_directories(btcud PUBLIC ${MINIUPNP_INCLUDE_DIR})
+    add_dependencies(btcud leveldb leveldb_sse42 memenv)
+    target_include_directories(btcud PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/helpers/memenv
+            ${btcud_SOURCES}
+            ${LibEvent_INCLUDE_DIR}
+            ${Boost_INCLUDE_DIRS})
+    target_link_libraries(btcud
+            Threads::Threads
+            SERVER_A
+            WALLET_A
+            univalue
+            COMMON_A
+            ZEROCOIN_A
+            UTIL_A
+            BITCOIN_CRYPTO_A
+            leveldb
+            leveldb_sse42
+            memenv
+            secp256k1
+            ${BerkeleyDB_Cxx_LIBRARY}
+            ${OPENSSL_LIBRARIES}
+            ${Boost_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            )
+    if(GMP_FOUND)
+        target_link_libraries(btcud ${GMP_LIBRARIES})
+        target_include_directories(btcud PUBLIC ${GMP_INCLUDE_DIR})
+    endif()
+    if(ZeroMQ_FOUND)
+        target_link_libraries(btcud ZMQ_A)
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+            target_link_libraries(btcud 
+                ZeroMQ::zmq
+                )
+        else()
+            target_link_libraries(btcud 
+                ${ZeroMQ_LIBRARY}
+                )
+        endif()
+        target_include_directories(btcud PUBLIC ${ZeroMQ_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/)
+    endif()
+    if(MINIUPNP_FOUND)
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+            target_compile_definitions(btcud
+                PUBLIC -DSTATICLIB
+                PUBLIC -DMINIUPNP_STATICLIB
+            )
+        endif()
+        target_link_libraries(btcud ${MINIUPNP_LIBRARY})
+        target_include_directories(btcud PUBLIC ${MINIUPNP_INCLUDE_DIR})
+    endif()
+
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        include(CPackConfig)
+        install(TARGETS btcud
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+        # this will be replaced with svg in next versions
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/16x16/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/24x24/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/32x32/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/48x48/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/64x64/apps)
+        install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/qt/res/icons/bitcoin.png DESTINATION share/icons/hicolor/128x128/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcud.desktop DESTINATION share/applications)
+    endif()
 endif()
 
-add_subdirectory(src/qt)
+if(ENABLE_GUI)
+    add_subdirectory(src/qt)
+endif()
 
 if(ENABLE_TESTS)
     add_subdirectory(test)

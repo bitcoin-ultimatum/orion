@@ -775,7 +775,18 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
 	include(CPackConfig)
-	install(TARGETS btcu-qt DESTINATION bin)
+	install(TARGETS btcu-qt
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	)
+	# this will be replaced with svg in next versions
+	install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/icons/bitcoin.png DESTINATION share/icons/hicolor/16x16/apps)
+	install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/icons/bitcoin.png DESTINATION share/icons/hicolor/24x24/apps)
+	install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/icons/bitcoin.png DESTINATION share/icons/hicolor/32x32/apps)
+	install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/icons/bitcoin.png DESTINATION share/icons/hicolor/48x48/apps)
+	install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/icons/bitcoin.png DESTINATION share/icons/hicolor/64x64/apps)
+	install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/icons/bitcoin.png DESTINATION share/icons/hicolor/128x128/apps)
+	install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-qt.desktop DESTINATION share/applications)
 endif()
 
 if(ENABLE_TESTS)
