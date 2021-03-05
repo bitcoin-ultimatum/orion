@@ -468,7 +468,6 @@ else()
 	if (BUILD_STATIC)
 		install(TARGETS cryptopp-static EXPORT ${export_name} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 	endif()
-	install(FILES ${cryptopp_HEADERS} DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})
 
 	# CMake Package
 	if(NOT CMAKE_VERSION VERSION_LESS 2.8.8 AND NOT BUILD_STATIC)	# CMakePackageConfigHelpers is supported from 2.8.8
