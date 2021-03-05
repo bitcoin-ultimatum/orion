@@ -358,6 +358,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
             throw JSONRPCError(RPC_WALLET_ERROR, "Private key not available");
         }
         std::vector<unsigned char> scriptSig;
+        scriptSig.push_back(0);
         scriptPubKey = (CScript() << CScriptNum(addresstype::PUBKEYHASH) << ToByteVector(key_id) << ToByteVector(scriptSig) << OP_SENDER) + scriptPubKey;
     }
     else
@@ -375,7 +376,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
     // make our change address
     CReserveKey reservekey(pwalletMain);
     CWalletTx wtx;
-    if (!pwalletMain->CreateTransaction(scriptPubKey, 0, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+    if (!pwalletMain->CreateTransaction(scriptPubKey, 500, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
