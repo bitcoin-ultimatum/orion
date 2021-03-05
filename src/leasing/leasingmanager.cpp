@@ -723,6 +723,9 @@ private:
       int64_t aResAmount = leasingOut.nValue * nPct / _100pct;
       int64_t nRewardAge = (GetBlockHeight() - leasingOut.nLastRewardHeight);
 
+      LeasingLogPrint("nHeight=%d", GetBlockHeight());
+      LeasingLogPrint("nLastRewardHeight=%d", leasingOut.nLastRewardHeight);
+
       aResAmount = aResAmount * nRewardAge / (365 * 24 * 60); // 1 year
 
       auto outPoint = COutPoint(leasingOut.nTrxHash, leasingOut.nPosition);
@@ -731,6 +734,7 @@ private:
       LeasingLogPrint("nPct=%d, aResAmount=%d, nRewardAge=%d", nPct, aResAmount, nRewardAge);
       LeasingLogPrint("outPoint=%s", outPoint.ToString());
       LeasingLogPrint("outScript=%s", outScript.ToString());
+
 
       return CTxOut(aResAmount, outScript);
    }
@@ -841,6 +845,7 @@ CLeasingManager::~CLeasingManager() {
 }
 
 void CLeasingManager::UpdatedBlockTip(const CBlockIndex* pIndex) {
+   LeasingLogPrint("block=%s, height=%d", pIndex->GetBlockHash().ToString(), pIndex->nHeight);
    pImpl->SetBlock(pIndex->nHeight, pIndex->GetBlockHash());
 }
 
