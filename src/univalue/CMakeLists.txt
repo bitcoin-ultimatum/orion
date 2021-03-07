@@ -4,8 +4,7 @@ cmake_minimum_required(VERSION 3.14)
 project(univalue
 	VERSION 1.0.3
 	)
-
-option(UNIVALUE_BUILD_TESTS "Build univalue's unit tests" ON)
+option(UNIVALUE_BUILD_TESTS "Build univalue's unit tests" ${ENABLE_TESTS})
 
 if (MSVC OR BUILD_STATIC)
     set(BUILD_SHARED_LIBS OFF)
