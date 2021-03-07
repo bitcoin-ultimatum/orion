@@ -538,7 +538,25 @@ if("${ATTR_NAME}" STREQUAL "${PTHREAD_CREATE_JOINABLE}")
 	set(PTHREAD_CREATE_JOINABLE "${ATTR_NAME}")
 endif()
 
-find_package(Qt5Core NO_SYSTEM_ENVIRONMENT_PATH)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+		find_package(
+				Qt5Core
+			PATHS 
+				${qt5_ROOT_DIR}
+				${qt5_ROOT_DIR}/lib
+				${qt5_ROOT_DIR}/lib/cmake
+			PATH_SUFFIXES
+				Qt5Core
+			NO_SYSTEM_ENVIRONMENT_PATH
+			NO_DEFAULT_PATH
+			NO_CMAKE_PATH
+			NO_CMAKE_ENVIRONMENT_PATH
+			NO_CMAKE_SYSTEM_PATH
+			NO_CMAKE_FIND_ROOT_PATH
+		)
+else()
+	find_package(Qt5Core NO_SYSTEM_ENVIRONMENT_PATH)
+endif()
 # you can remove check for the Darwin if you'd build 
 # a static QT version by yourself
 if(Qt5Core_FOUND AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
