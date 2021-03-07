@@ -274,6 +274,8 @@ if(ENABLE_TESTS)
     message(STATUS "Enabled option: Build tests")
 else()
     message(STATUS "Disabled option: Build tests")
+    # sometimes this value will be missed for some reasons
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 endif()
 if(BUILD_STATIC)
     message(STATUS "Enabled option: Build static dependencies")
