@@ -354,7 +354,7 @@ public:
 
       COutPoint point;
 
-      if (txout.IsEmpty()) {
+      if (txout.IsEmpty() || !txout.IsLeasingReward()) {
          return true;
       }
 
@@ -388,6 +388,10 @@ public:
       LOCK(cs_leasing);
 
       COutPoint point;
+
+      if (txout.IsEmpty() || !txout.IsLeasingReward()) {
+         return true;
+      }
 
       if (!ExtractLeasingPoint(txout, point)) {
          return LeasingError("can't extract leasing reward point for %s:%d", txout.GetHash().ToString(), n);
