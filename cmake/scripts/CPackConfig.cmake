@@ -104,10 +104,36 @@ set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "BTCU is a free open source peer-to-peer el
  check for double-spending.
  .
  Full transaction history is stored locally at each client.  This
- requires 10+ GB of space, slowly growing.
- .
- This package provides the daemon, btcud, and the CLI tool
- btcu-cli to interact with the daemon.")
+ requires 10+ GB of space, slowly growing.")
+
+if(ENABLE_GUI AND ENABLE_DAEMON AND BUILD_UTILS)
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_DEBIAN_PACKAGE_DESCRIPTION}
+    .
+    This package provides the daemon, btcud, CLI tool, and the GUI Wallet.
+    btcu-cli to interact with the daemon.")
+elseif(ENABLE_GUI AND ENABLE_DAEMON)
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_DEBIAN_PACKAGE_DESCRIPTION}
+    .
+    This package provides the daemon, btcud, and the GUI Wallet.")
+elseif(ENABLE_DAEMON AND BUILD_UTILS)
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_DEBIAN_PACKAGE_DESCRIPTION}
+    .
+    This package provides the daemon, btcud, and the CLI tool.
+    btcu-cli to interact with the daemon.")
+elseif(ENABLE_GUI)
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_DEBIAN_PACKAGE_DESCRIPTION}
+    .
+    This package provides the GUI Wallet.")
+elseif(ENABLE_DAEMON)
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_DEBIAN_PACKAGE_DESCRIPTION}
+    .
+    This package provides the daemon")
+elseif(BUILD_UTILS)
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_DEBIAN_PACKAGE_DESCRIPTION}
+    .
+    This package provides the CLI tool.
+    btcu-cli to interact with the daemon so it is required to install also btcud.")
+endif()
 set(CPACK_DEBIAN_PACKAGE_SECTION "net")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6-dev, libglvnd-dev, libx11-dev, libssl-dev, libxcb-glx0-dev, libdrm-dev, libx11-xcb-dev, libxcb-icccm4-dev, libxcb-image0-dev, libxcb-shm0-dev, libxcb-util-dev, libxcb-keysyms1-dev, libxcb-randr0-dev, libxcb-render-util0-dev, libxcb-render0-dev, libxcb-shape0-dev, libxcb-sync-dev, libxcb-xfixes0-dev, libxcb-xinerama0-dev, libxcb-xkb-dev, libxcb1-dev, libxkbcommon-x11-dev, libegl1-mesa-dev, libwayland-dev, libxkbcommon-dev, libpng-dev, libharfbuzz-dev, zlib1g-dev, libicu-dev, libzstd-dev, libglib2.0-dev, libsm-dev, libice-dev, libxext-dev, libxau-dev, libxdmcp-dev, libffi-dev, libfreetype6-dev, libgraphite2-dev, libpcre3-dev, uuid-dev, libbsd-dev, libqt5gui5, libqt5core5a, libqt5dbus5, qttools5-dev, qttools5-dev-tools, libqt5svg5, libqt5charts5")
 if (NOT DEFINED CPACK_DEBIAN_PACKAGE_SHLIBDEPS)
