@@ -854,7 +854,7 @@ void CLeasingManager::UpdatedBlockTip(const CBlockIndex* pIndex) {
 }
 
 void CLeasingManager::SyncTransaction(const CTransaction& tx, const CBlock* pBlock) {
-   LOCK(cs_main);
+
    if (tx.IsCoinBase() || tx.IsCoinStake()) {
       // there is no P2L or LR transactions
       return;
