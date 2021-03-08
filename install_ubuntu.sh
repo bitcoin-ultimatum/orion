@@ -195,7 +195,11 @@ cd norm
 cd -
 
 install_package libpgm-dev
-install_package libzmq3-dev
+
+git clone https://github.com/zeromq/libzmq.git
+cd libzmq
+cmake -G "CodeBlocks - Unix Makefiles" -DWITH_PERF_TOOL=OFF -DZMQ_BUILD_TESTS=OFF -DENABLE_CPACK=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr &&
+make && sudo make install
 
 echo  ""
 echo  "[31%] Installing dependency: libzmq3-dev and dependencies for a static build... Done!"
