@@ -304,9 +304,6 @@ if(SECP256K1_ECMULT_STATIC_PRECOMPUTATION)
 
 		add_custom_target(ecmult_static_context gen_context WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 		add_dependencies(secp256k1 ecmult_static_context)
-
-		install(TARGETS secp256k1 ARCHIVE DESTINATION lib)
-		install(DIRECTORY include/ DESTINATION include)
 	else()
 		include(NativeExecutable)
 		add_native_executable(gen_context src/gen_context.c)

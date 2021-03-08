@@ -37,7 +37,7 @@ elseif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 endif()
 
-option(ETHASH_INSTALL_CMAKE_CONFIG "Install CMake configuration scripts for find_package(CONFIG)" ON)
+option(ETHASH_INSTALL_CMAKE_CONFIG "Install CMake configuration scripts for find_package(CONFIG)" OFF)
 
 option(ETHASH_FUZZING "Build with fuzzer instrumentation" OFF)
 if(ETHASH_FUZZING)

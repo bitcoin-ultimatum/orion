@@ -29,9 +29,6 @@ set(include_dir ${PROJECT_SOURCE_DIR}/include)
 add_library(evmc INTERFACE)
 add_library(evmc::evmc ALIAS evmc)
 target_include_directories(evmc INTERFACE $<BUILD_INTERFACE:${include_dir}>$<INSTALL_INTERFACE:include>)
-install(TARGETS evmc EXPORT evmcTargets)
-
-install(DIRECTORY include/evmc DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 add_subdirectory(lib)
 
@@ -50,18 +47,6 @@ configure_package_config_file(
     cmake/Config.cmake.in
     evmcConfig.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/evmc
-)
-
-install(
-    EXPORT evmcTargets
-    NAMESPACE evmc::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/evmc
-)
-install(
-    FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/evmcConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/evmcConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/evmc
 )
 
 if(WIN32)
