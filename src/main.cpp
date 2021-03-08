@@ -3088,6 +3088,9 @@ void static UpdateTip(CBlockIndex* pindexNew)
               DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pChainTip->GetBlockTime()),
               Checkpoints::GuessVerificationProgress(pChainTip), (unsigned int)pcoinsTip->GetCacheSize());
 
+    // Notify external listeners about the new tip.
+    GetMainSignals().UpdatedBlockTip(pChainTip);
+
     // Check the version of the last 100 blocks to see if we need to upgrade:
     static bool fWarned = false;
     if (!IsInitialBlockDownload() && !fWarned) {
@@ -3551,8 +3554,7 @@ bool ActivateBestChain(CValidationState& state, CBlock* pblock, bool fAlreadyChe
                             (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
                             pnode->PushInventory(CInv(MSG_BLOCK, hashNewTip));
                 }
-                // Notify external listeners about the new tip.
-                GetMainSignals().UpdatedBlockTip(pindexNewTip);
+
 
                 unsigned size = 0;
                 if (pblock)
