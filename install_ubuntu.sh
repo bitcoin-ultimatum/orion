@@ -198,7 +198,7 @@ install_package libpgm-dev
 
 git clone https://github.com/zeromq/libzmq.git
 cd libzmq
-cmake -G "CodeBlocks - Unix Makefiles" -DWITH_PERF_TOOL=OFF -DZMQ_BUILD_TESTS=OFF -DENABLE_CPACK=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr &&
+cmake -G "CodeBlocks - Unix Makefiles" -DWITH_PERF_TOOL=OFF -DWITH_NORM=ON -DWITH_LIBSODIUM_STATIC=ON -DZMQ_BUILD_TESTS=OFF -DENABLE_CPACK=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr &&
 make && sudo make install
 
 echo  ""
