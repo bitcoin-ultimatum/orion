@@ -1720,6 +1720,9 @@ if(BUILD_UTILS)
                     ${LibEvent_INCLUDE_DIR}
             )
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        # add_custom_target(btcu-cli_deb_package
+        #     COMMAND "${CMAKE_CPACK_COMMAND}" 
+        #     "--config" "${CMAKE_SOURCE_DIR}/cmake/scripts/CPackConfig.cmake")
         install(TARGETS btcu-cli 
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -1758,6 +1761,10 @@ if(BUILD_UTILS)
         target_link_libraries(btcu-tx ${GMP_LIBRARIES})
     endif()
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        # TODO: add custom deb command
+        # add_custom_target(btcu-tx_deb_package
+        #     COMMAND "${CMAKE_CPACK_COMMAND}" 
+        #     "--config" "${CMAKE_SOURCE_DIR}/cmake/scripts/CPackConfig.cmake")
         install(TARGETS btcu-tx
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -1837,6 +1844,10 @@ if(ENABLE_DAEMON)
     endif()
 
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        # TODO: add custom deb command
+        # add_custom_target(btcud_deb_package
+        #     COMMAND "${CMAKE_CPACK_COMMAND}" 
+        #     "--config" "${CMAKE_SOURCE_DIR}/cmake/scripts/CPackConfig.cmake")
         install(TARGETS btcud
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

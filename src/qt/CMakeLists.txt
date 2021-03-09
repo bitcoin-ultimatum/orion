@@ -792,6 +792,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        # TODO: add custom deb command
+        # add_custom_target(btcu-qt_deb_package
+        #     COMMAND "${CMAKE_CPACK_COMMAND}" 
+        #     "--config" "${CMAKE_SOURCE_DIR}/cmake/scripts/CPackConfig.cmake")
 	install(TARGETS btcu-qt
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
