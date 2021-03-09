@@ -317,7 +317,9 @@ bool CCoinsViewDB::Upgrade(const uint256& hashBestBlock) {
           sExcludedAddresses.insert(scriptPubKey);
        }
        else
-          return error("%s : Excluded addresses preparation error", __func__);
+       {
+          LogPrintf("%s : Invalid excluded addresses preparation error: %s\n", __func__, a.c_str());
+       }
     }
 
     //prepare recharged address

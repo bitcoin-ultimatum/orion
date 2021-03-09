@@ -170,11 +170,11 @@ option(ENABLE_TESTS "Build tests" ON)
 option(BUILD_STATIC "Build dependencies as static libs" OFF)
 option(EXTRA_WARNINGS "Enable extra warnings" OFF)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" ON)
+    option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" OFF)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    option(SIGN_DMG "Sign the application and frameworks with codesign" ON)
+    option(SIGN_DMG "Sign the application and frameworks with codesign" OFF)
 
     if(SIGN_DMG)
         message(STATUS "Enabled option: Sign btcu-qt")
