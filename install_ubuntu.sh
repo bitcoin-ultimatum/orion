@@ -7,6 +7,8 @@ sudo apt-get upgrade --assume-yes --force-yes
 echo  "[5%] Upgrading apt-get... Done!"
 echo  "[6%] Finished."
 
+OSVersion=$(grep -oP 'VERSION_ID="\K[\d.]+' /etc/os-release)
+
 install_package () {
     REQUIRED_PKG="$1"
     PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
@@ -68,6 +70,10 @@ echo  ""
 echo  "[13%] Installing dependency: python3... "
 
 install_package python3-dev
+if [ $OSVersion  = "20.04" ]
+then
+    install_package python-is-python3
+fi
 
 echo  ""
 echo  "[13%] Installing dependency: python3... Done!"
@@ -316,7 +322,7 @@ echo  "[46%] Installing dependency: libqrencode-dev... "
 
 git clone https://github.com/fukuchi/libqrencode.git
 cd libqrencode
-./autogen.sh && ./configure --prefix=/usr --enable-static --enable-shared && make && make install
+./autogen.sh && ./configure --prefix=/usr --enable-static --enable-shared && make && sudo make install
 cd -
 
 echo  ""
@@ -326,6 +332,13 @@ echo  ""
 echo  "[49%] Installing dependency: libpng-dev... "
 
 install_package libpng-dev
+install_package libfontconfig1-dev 
+
+if [ $OSVersion  = "20.04" ]
+then
+    wget http://security.ubuntu.com/ubuntu/pool/main/i/icu/libicu60_60.2-3ubuntu3.1_amd64.deb
+    sudo apt-get --assume-yes --force-yes -y install ./libicu60_60.2-3ubuntu3.1_amd64.deb
+fi
 
 echo  ""
 echo  "[50%] Installing dependency: libpng-dev... Done!"
@@ -358,7 +371,7 @@ then
     echo  ""
     echo  "[52%] Building QT package: qt-5.15... "
 
-    mkdir /opt/qt5
+    sudo -p mkdir /opt/qt5
     export QT5PREFIX=/opt/qt5
 
     ./configure -prefix $QT5PREFIX                        \
@@ -372,6 +385,7 @@ then
                 -system-zlib                              \
                 -static                                   \
                 -bundled-xcb-xinput                       \
+                -qt-freetype                              \
                 -skip qtwebengine                         &&
     make
     echo  ""

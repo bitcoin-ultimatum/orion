@@ -63,6 +63,11 @@ Build requirements:
     sudo apt-get install git build-essential libtool bsdmainutils autotools-dev autoconf pkg-config automake python3-dev libzmq3-dev libevent-dev libjsonrpccpp-dev libsnappy-dev libbenchmark-dev libnorm-dev libpgm-dev
 ```
 
+Note: In order to build it on Ubuntu 20.04 you may need to instal additionally:
+```bash
+    sudo apt-get install python-is-python3
+```
+
 Additionally if you need to perform a static build (-DSTATIC_BUILD=ON) you will have to build a static version of libnorm from the sources by the followed commands:
 ```bash
     git clone --recurse-submodules https://github.com/USNavalResearchLaboratory/norm.git
@@ -256,7 +261,7 @@ To build with Qt 5 you need the following:
 
 Modern Unix .deb packages doesn't include static libraries. If you won't build with -DBUILD_STATIC=OFF you can just run:
 ```bash
-    sudo apt-get libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5 libqt5charts5
+    sudo apt-get libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5charts5 libfontconfig1-dev 
 ```
 
 Additionally in a case if you want to build a static build you will have to build the QT5 from the sources:
@@ -265,7 +270,7 @@ Additionally in a case if you want to build a static build you will have to buil
     tar xvf qt-everywhere-src-5.15.2.tar.xz -C ./
     cd qt-everywhere-src-5.15.2
 
-    mkdir /opt/qt5
+    sudo mkdir /opt/qt5
     export QT5PREFIX=/opt/qt5
 
     ./configure -prefix $QT5PREFIX                        \
