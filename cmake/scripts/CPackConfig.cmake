@@ -136,6 +136,8 @@ elseif(BUILD_UTILS)
 endif()
 set(CPACK_DEBIAN_PACKAGE_SECTION "net")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6-dev, libglvnd-dev, libx11-dev, libssl-dev, libxcb-glx0-dev, libdrm-dev, libx11-xcb-dev, libxcb-icccm4-dev, libxcb-image0-dev, libxcb-shm0-dev, libxcb-util-dev, libxcb-keysyms1-dev, libxcb-randr0-dev, libxcb-render-util0-dev, libxcb-render0-dev, libxcb-shape0-dev, libxcb-sync-dev, libxcb-xfixes0-dev, libxcb-xinerama0-dev, libxcb-xkb-dev, libxcb1-dev, libxkbcommon-x11-dev, libegl1-mesa-dev, libwayland-dev, libxkbcommon-dev, libpng-dev, libharfbuzz-dev, zlib1g-dev, libicu-dev, libzstd-dev, libglib2.0-dev, libsm-dev, libice-dev, libxext-dev, libxau-dev, libxdmcp-dev, libffi-dev, libfreetype6-dev, libgraphite2-dev, libpcre3-dev, uuid-dev, libbsd-dev, libqt5gui5, libqt5core5a, libqt5dbus5, qttools5-dev, qttools5-dev-tools, libqt5svg5, libqt5charts5")
+
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA, "${CMAKE_SOURCE_DIR}/share/deb/postinst;")
 if (NOT DEFINED CPACK_DEBIAN_PACKAGE_SHLIBDEPS)
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 endif ()
