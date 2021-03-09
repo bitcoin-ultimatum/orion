@@ -279,9 +279,12 @@ Additionally in a case if you want to build a static build you will have to buil
                 -opensource                               \
                 -openssl-linked                           \
                 -nomake examples                          \
+                -nomake tests                             \
                 -no-rpath                                 \
                 -system-zlib                              \
                 -static                                   \
+                -bundled-xcb-xinput                       \
+                -qt-freetype                              \
                 -skip qtwebengine                         &&
     make
     sudo make install
