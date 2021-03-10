@@ -210,10 +210,6 @@ CKeyID GetKeyForDestination(const CCryptoKeyStore& store, const CTxDestination& 
 
 UniValue createcontract(const UniValue& params, bool fHelp){
 
-    //std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    //CWallet* const pwallet = wallet.get();
-
-
     auto locked_chain = nullptr;//pwalletMain->chain().lock();
     LOCK2(cs_main, pwalletMain->cs_wallet);
     //QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
@@ -376,7 +372,13 @@ UniValue createcontract(const UniValue& params, bool fHelp){
     // make our change address
     CReserveKey reservekey(pwalletMain);
     CWalletTx wtx;
-    if (!pwalletMain->CreateTransaction(scriptPubKey, BUDGET_FEE_TX, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+    if (!pwalletMain->CreateTransaction(scriptPubKey, 0, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+        if (nFeeRequired > pwalletMain->GetBalance())
+            strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+
+    if (!pwalletMain->CreateTransaction(scriptPubKey, nFeeRequired, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
