@@ -372,13 +372,12 @@ UniValue createcontract(const UniValue& params, bool fHelp){
     // make our change address
     CReserveKey reservekey(pwalletMain);
     CWalletTx wtx;
-    if (!pwalletMain->CreateTransaction(scriptPubKey, 0, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
-        if (nFeeRequired > pwalletMain->GetBalance())
-            strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
 
-    if (!pwalletMain->CreateTransaction(scriptPubKey, nFeeRequired, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+    if (nGasFee > 0) nValue = nGasFee;
+    std::vector<std::pair<CScript, CAmount> > vecSend;
+    vecSend.push_back(std::make_pair(scriptPubKey, nValue));
+
+    if (!pwalletMain->CreateTransactionSC(vecSend, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
