@@ -261,7 +261,7 @@ To build with Qt 5 you need the following:
 
 Modern Unix .deb packages doesn't include static libraries. If you won't build with -DBUILD_STATIC=OFF you can just run:
 ```bash
-    sudo apt-get libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5charts5 libfontconfig1-dev 
+    sudo apt-get libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5charts5 libfontconfig1-dev libfreetype6-dev
 ```
 
 Additionally in a case if you want to build a static build you will have to build the QT5 from the sources:
@@ -284,8 +284,12 @@ Additionally in a case if you want to build a static build you will have to buil
                 -system-zlib                              \
                 -static                                   \
                 -bundled-xcb-xinput                       \
-                -qt-freetype                              \
-                -skip qtwebengine                         &&
+                -system-freetype                          \
+                -fontconfig                               \
+                -skip qtwebengine                         \
+                -I "/usr/include/freetype2"               \
+                -I "/usr/include/fontconfig"              \
+                -L "/usr/lib/x86_64-linux-gnu"            &&
     make
     sudo make install
     find $QT5PREFIX/ -name \*.prl \

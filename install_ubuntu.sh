@@ -333,6 +333,7 @@ echo  "[49%] Installing dependency: libpng-dev... "
 
 install_package libpng-dev
 install_package libfontconfig1-dev 
+install_package libfreetype6-dev
 
 if [ $OSVersion  = "20.04" ]
 then
@@ -374,6 +375,8 @@ then
     sudo -p mkdir /opt/qt5
     export QT5PREFIX=/opt/qt5
 
+    sudo ldconfig
+
     ./configure -prefix $QT5PREFIX                        \
                 -sysconfdir /etc/xdg                      \
                 -confirm-license                          \
@@ -385,8 +388,12 @@ then
                 -system-zlib                              \
                 -static                                   \
                 -bundled-xcb-xinput                       \
-                -qt-freetype                              \
-                -skip qtwebengine                         &&
+                -system-freetype                          \
+                -fontconfig                               \
+                -skip qtwebengine                         \
+                -I "/usr/include/freetype2"               \
+                -I "/usr/include/fontconfig"              \
+                -L "/usr/lib/x86_64-linux-gnu"            &&
     make
     echo  ""
     echo  "[55%] Building QT package: qt-5.15... Done!"
