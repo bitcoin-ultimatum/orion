@@ -2635,7 +2635,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
        uint256 hashPrevBlock = pindex->pprev == NULL ? uint256(0): pindex->pprev->GetBlockHash();
        if (hashPrevBlock != view.GetBestBlock())
           LogPrintf("%s: hashPrev=%s view=%s\n", __func__, hashPrevBlock.GetHex(), view.GetBestBlock().GetHex());
-       //assert(hashPrevBlock == view.GetBestBlock());
+       assert(hashPrevBlock == view.GetBestBlock());
     }
 
     // Special case for the genesis block, skipping connection of its transactions
@@ -2648,8 +2648,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
        if (Params().NetworkID() == CBaseChainParams::MAIN)
        {
           if(block.hashChainstate != g_hashChainstate)
-             LogPrintf("%s: block.hashChainstate=%s HashDir=%s\n", __func__, block.hashChainstate.GetHex(), g_hashChainstate.GetHex());
-                      
+             LogPrintf("%s: block.hashChainstate=%s g_hashChainstate=%s\n", __func__, block.hashChainstate.GetHex(), g_hashChainstate.GetHex());
+
 #ifndef TEST_BTCU
             assert(block.hashChainstate == g_hashChainstate);
 #endif
@@ -3087,6 +3087,9 @@ void static UpdateTip(CBlockIndex* pindexNew)
             pChainTip->GetBlockHash().GetHex(), pChainTip->nHeight, pChainTip->nVersion, log(pChainTip->nChainWork.getdouble()) / log(2.0), (unsigned long)pChainTip->nChainTx,
               DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pChainTip->GetBlockTime()),
               Checkpoints::GuessVerificationProgress(pChainTip), (unsigned int)pcoinsTip->GetCacheSize());
+
+    // Notify external listeners about the new tip.
+    GetMainSignals().UpdatedBlockTip(pChainTip);
 
     // Check the version of the last 100 blocks to see if we need to upgrade:
     static bool fWarned = false;
@@ -3551,8 +3554,7 @@ bool ActivateBestChain(CValidationState& state, CBlock* pblock, bool fAlreadyChe
                             (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
                             pnode->PushInventory(CInv(MSG_BLOCK, hashNewTip));
                 }
-                // Notify external listeners about the new tip.
-                GetMainSignals().UpdatedBlockTip(pindexNewTip);
+
 
                 unsigned size = 0;
                 if (pblock)

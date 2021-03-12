@@ -21,6 +21,7 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/tag.hpp>
 #include <boost/multi_index/composite_key.hpp>
+#include <main.h>
 
 #ifdef  _WIN32
 #include <boost/thread/interruption.hpp>
@@ -341,6 +342,8 @@ public:
          return LeasingError("duplicate leasing on reading from DB for %s:%d", leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
       }
 
+      leasingDB.WriteLeasingOutput(leasingOutput);
+
       IncLeasingSupply(leasingOutput.kLeaserID, leasingOutput.nValue);
 
       return true;
@@ -351,7 +354,7 @@ public:
 
       COutPoint point;
 
-      if (txout.IsEmpty()) {
+      if (txout.IsEmpty() || !txout.IsLeasingReward()) {
          return true;
       }
 
@@ -385,6 +388,10 @@ public:
       LOCK(cs_leasing);
 
       COutPoint point;
+
+      if (txout.IsEmpty() || !txout.IsLeasingReward()) {
+         return true;
+      }
 
       if (!ExtractLeasingPoint(txout, point)) {
          return LeasingError("can't extract leasing reward point for %s:%d", txout.GetHash().ToString(), n);
@@ -514,6 +521,7 @@ private:
       leasingDB.Flush();
 
       auto pCursor = leasingDB.NewIterator();
+      pCursor->SeekToFirst();
       while (pCursor->Valid()) {
          boost::this_thread::interruption_point();
          try {
@@ -528,7 +536,7 @@ private:
 
                   ssKey >> leasingOutput.nTrxHash;
                   ssKey >> leasingOutput.nPosition;
-                  if (leasingOutput.nSpendingHeight != _nonRewardHeight) {
+                  if (leasingOutput.nSpendingHeight == _nonRewardHeight) {
                      if (!mapOutputs.insert(leasingOutput).second) {
                         LeasingError("duplicate of leasing for %s:%d",
                            leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
@@ -719,6 +727,9 @@ private:
       int64_t aResAmount = leasingOut.nValue * nPct / _100pct;
       int64_t nRewardAge = (GetBlockHeight() - leasingOut.nLastRewardHeight);
 
+      LeasingLogPrint("nHeight=%d", GetBlockHeight());
+      LeasingLogPrint("nLastRewardHeight=%d", leasingOut.nLastRewardHeight);
+
       aResAmount = aResAmount * nRewardAge / (365 * 24 * 60); // 1 year
 
       auto outPoint = COutPoint(leasingOut.nTrxHash, leasingOut.nPosition);
@@ -727,6 +738,7 @@ private:
       LeasingLogPrint("nPct=%d, aResAmount=%d, nRewardAge=%d", nPct, aResAmount, nRewardAge);
       LeasingLogPrint("outPoint=%s", outPoint.ToString());
       LeasingLogPrint("outScript=%s", outScript.ToString());
+
 
       return CTxOut(aResAmount, outScript);
    }
@@ -837,10 +849,12 @@ CLeasingManager::~CLeasingManager() {
 }
 
 void CLeasingManager::UpdatedBlockTip(const CBlockIndex* pIndex) {
+   LeasingLogPrint("block=%s, height=%d", pIndex->GetBlockHash().ToString(), pIndex->nHeight);
    pImpl->SetBlock(pIndex->nHeight, pIndex->GetBlockHash());
 }
 
 void CLeasingManager::SyncTransaction(const CTransaction& tx, const CBlock* pBlock) {
+
    if (tx.IsCoinBase() || tx.IsCoinStake()) {
       // there is no P2L or LR transactions
       return;

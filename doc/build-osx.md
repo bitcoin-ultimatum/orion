@@ -180,7 +180,7 @@ If the brew installed a different version run the followed command:
 
 1. Clone the BTCU source code:
 ```shell
-    git clone https://github.com/bitcoin-ultimatum/ours
+    git clone https://github.com/bitcoin-ultimatum/pegasus
     cd btcu
 ```
 

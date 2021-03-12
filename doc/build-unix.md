@@ -81,7 +81,7 @@ You can build the BTCU project from scratch by using a special bash script:
 ```bash
     mkdir btcu
     cd btcu
-    wget https://raw.githubusercontent.com/bitcoin-ultimatum/ours/master/install_ubuntu.sh
+    wget https://raw.githubusercontent.com/bitcoin-ultimatum/pegasus/master/install_ubuntu.sh
     sudo bash install_ubuntu.sh
 ```
 

@@ -1579,9 +1579,9 @@ int CWallet::ScanBitcoinStateForWalletTransactions(std::unique_ptr<CCoinsViewIte
         wtx.nIndex = ret;
     };
 
-    LogPrintf("Scanning the Bitcoin state for wallet transactions ...\n");
+    LogPrintf("Scanning chainstate for wallet transactions ...\n");
     LogPrintf("[0%%]..."); /* Continued */
-    ShowProgress(_("Rescanning the Bitcoin state..."), 0);
+    ShowProgress(_("Rescanning the chainstate state..."), 0);
 
     for (; pCursor->Valid(); pCursor->Next()) {
         if (fromStartup && ShutdownRequested()) {
@@ -1607,7 +1607,7 @@ int CWallet::ScanBitcoinStateForWalletTransactions(std::unique_ptr<CCoinsViewIte
             }
 
             pCursor->GetCoins(coins, true);
-            if (coins.nVersion != CTransaction::BITCOIN_VERSION) {
+            if (coins.nVersion != CTransaction::BITCOIN_VERSION && coins.nVersion != CTransaction::BTCU_START_VERSION) {
                 continue;
             }
 
