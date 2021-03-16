@@ -43,6 +43,19 @@ static const int MAX_PUBKEYS_PER_MULTISIG = 20;
 // Maximum number of values on script interpreter stack
 static const int MAX_STACK_SIZE = 1000;
 
+
+// Tag for input annex. If there are at least two witness elements for a transaction input,
+// and the first byte of the last element is 0x50, this last element is called annex, and
+// has meanings independent of the script
+static constexpr unsigned int ANNEX_TAG = 0x50;
+
+// Validation weight per passing signature (Tapscript only, see BIP 342).
+static constexpr uint64_t VALIDATION_WEIGHT_PER_SIGOP_PASSED = 50;
+
+// How much weight budget is added to the witness size (Tapscript only, see BIP 342).
+static constexpr uint64_t VALIDATION_WEIGHT_OFFSET = 50;
+
+
 template <typename T>
 std::vector<unsigned char> ToByteVector(const T& in)
 {
@@ -185,6 +198,9 @@ enum opcodetype
     OP_NOP8 = 0xb7,
     OP_NOP9 = 0xb8,
     OP_NOP10 = 0xb9,
+
+    // Opcode added by BIP 342 (Tapscript)
+    OP_CHECKSIGADD = 0xba,
 
     // zerocoin
     OP_ZEROCOINMINT = 0xc1,
@@ -765,4 +781,8 @@ struct CScriptWitness
 
     std::string ToString() const;
 };
+
+/** Test for OP_SUCCESSx opcodes as defined by BIP342. */
+bool IsOpSuccess(const opcodetype& opcode);
+
 #endif // BITCOIN_SCRIPT_SCRIPT_H
