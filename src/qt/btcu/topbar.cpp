@@ -777,12 +777,18 @@ bool TopBar::eventFilter(QObject *obj, QEvent *event)
 {
    QEvent::Type type = event->type();
    if (obj ==  ui->lineEditTocens) {
-      if  (type == QEvent::HoverLeave) {
+       if(type == QEvent::KeyPress)
+       {
+           if(!menuTocen || !menuTocen->isVisible()) onTocensClicked();
+           else
+                QTimer::singleShot(100, this, SLOT(hideMenuTocen()));
+       }
+      /*if  (type == QEvent::HoverLeave) {
          QTimer::singleShot(100, this, SLOT(hideMenuTocen()));
       } else if (type == QEvent::HoverEnter)
       {
          if(!menuTocen || !menuTocen->isVisible()) onTocensClicked();
-      }
+      }*/
    }/*else if(menuTocen && menuTocen->isVisible() && obj ==  menuTocen)
    {
       if  (type == QEvent::HoverLeave) {
