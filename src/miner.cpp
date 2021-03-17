@@ -639,11 +639,11 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
             }
         }
 
-        for (CTransaction tx: pblock->vtx){
+        /*for (CTransaction tx: pblock->vtx){
             if(tx.HasCreateOrCall()){
                 AttemptToAddContractToBlock(mempool.mapTx.begin()->second, tx,pblock,40);
             }
-        }
+        }*/
 
         CValidationState state;
         if (!TestBlockValidity(state, *pblock, pindexPrev, false, false)) {
