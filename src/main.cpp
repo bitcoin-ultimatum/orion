@@ -783,7 +783,7 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
             reason = "bare-multisig";
             return false;
 
-        } else if (txout.IsDust(::minRelayTxFee)) {
+        } else if (txout.IsDust(::minRelayTxFee) && !txout.scriptPubKey.HasOpCreate() && !txout.scriptPubKey.HasOpCall()) {
             reason = "dust";
             return false;
         }
