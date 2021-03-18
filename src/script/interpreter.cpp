@@ -2338,6 +2338,55 @@ namespace BTC
                   }
                      break;
 
+                  case OP_CHECKCOLDSTAKEVERIFY:
+                  {
+                     // check it is used in a valid cold stake transaction.
+                     if(!checker.CheckColdStake(script)) {
+                        return set_error(serror, SCRIPT_ERR_CHECKCOLDSTAKEVERIFY);
+                     }
+                  }
+                     break;
+
+                     //////////////////////////////////////////////////////// qtum
+                  case OP_SENDER:
+                  {
+                     if(!(flags & SCRIPT_OUTPUT_SENDER))
+                        return set_error(serror, SCRIPT_ERR_BAD_OPCODE);
+                  }
+                     break;
+                  case OP_SPEND:
+                  {
+                     return true; // temp
+                  }
+                     break;
+                  case OP_CREATE:
+                  case OP_CALL:
+                  {
+                     valtype scriptRest(pc - 1, pend);
+                     stack.push_back(scriptRest);
+                     return true; // temp
+                  }
+                     break;
+                     ////////////////////////////////////////////////////////
+
+                  case OP_CHECKLEASEVERIFY:
+                  {
+                     // there is no way to transfer coins by leaser
+                     return set_error(serror, SCRIPT_ERR_CHECKLEASEVERIFY);
+                  }
+                     break;
+
+                  case OP_LEASINGREWARD:
+                  {
+                     if (stack.size() < 2)
+                        return set_error(serror, SCRIPT_ERR_INVALID_STACK_OPERATION);
+
+                     // Do nothing, only popping of trx:n of the leasing transaction
+                     popstack(stack);
+                     popstack(stack);
+                  }
+                     break;
+
                   default:
                      return set_error(serror, SCRIPT_ERR_BAD_OPCODE);
                }
