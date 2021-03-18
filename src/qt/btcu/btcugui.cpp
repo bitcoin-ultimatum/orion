@@ -139,7 +139,7 @@ BTCUGUI::BTCUGUI(const NetworkStyle* networkStyle, QWidget* parent) :
         coldStakingWidget = new ColdStakingWidget(this);
         leasingWidget = new LeasingWidget(this);
         validatorWidget = new ValidatorWidget(this);
-        //contractWidget = new CreateContract(this);
+        contractWidget = new CreateContract(this);
         settingsWidget = new SettingsWidget(this);
         //createMasterNode= new CreateMasterNodeWidget(this);
         //createValidator = new CreateValidatorWidget(this);
@@ -155,7 +155,7 @@ BTCUGUI::BTCUGUI(const NetworkStyle* networkStyle, QWidget* parent) :
         stackedContainer->addWidget(coldStakingWidget);
         stackedContainer->addWidget(leasingWidget);
         stackedContainer->addWidget(validatorWidget);
-        //stackedContainer->addWidget(contractWidget);
+        stackedContainer->addWidget(contractWidget);
         stackedContainer->addWidget(settingsWidget);
         //stackedContainer->addWidget(createMasterNode);
         //stackedContainer->addWidget(createValidator);
@@ -233,8 +233,8 @@ void BTCUGUI::connectActions() {
     connect(leasingWidget, &LeasingWidget::execDialog, this, &BTCUGUI::execDialog);
     connect(validatorWidget, &ValidatorWidget::showHide, this, &BTCUGUI::showHide);
     connect(validatorWidget, &ValidatorWidget::execDialog, this, &BTCUGUI::execDialog);
-    //connect(contractWidget, &CreateContract::showHide, this, &BTCUGUI::showHide);
-    //connect(contractWidget, &CreateContract::execDialog, this, &BTCUGUI::execDialog);
+    connect(contractWidget, &CreateContract::showHide, this, &BTCUGUI::showHide);
+    connect(contractWidget, &CreateContract::execDialog, this, &BTCUGUI::execDialog);
     connect(settingsWidget, &SettingsWidget::execDialog, this, &BTCUGUI::execDialog);
 }
 
@@ -545,7 +545,7 @@ void BTCUGUI::goToValidator(){
 }
 
 void BTCUGUI::goToContract(){
-    //showTop(contractWidget);
+    showTop(contractWidget);
 }
 
 void BTCUGUI::goToSettings(){
@@ -663,7 +663,7 @@ bool BTCUGUI::addWallet(const QString& name, WalletModel* walletModel)
     coldStakingWidget->setWalletModel(walletModel);
     leasingWidget->setWalletModel(walletModel);
     validatorWidget->setWalletModel(walletModel);
-    //contractWidget->setWalletModel(walletModel);
+    contractWidget->setWalletModel(walletModel);
     settingsWidget->setWalletModel(walletModel);
 
     // Connect actions..
@@ -672,7 +672,7 @@ bool BTCUGUI::addWallet(const QString& name, WalletModel* walletModel)
     connect(coldStakingWidget, &MasterNodesWidget::message, this, &BTCUGUI::message);
     connect(leasingWidget, &MasterNodesWidget::message, this, &BTCUGUI::message);
     connect(validatorWidget, &ValidatorWidget::message, this, &BTCUGUI::message);
-    //connect(contractWidget, &CreateContract::message, this, &BTCUGUI::message);
+    connect(contractWidget, &CreateContract::message, this, &BTCUGUI::message);
     connect(topBar, &TopBar::message, this, &BTCUGUI::message);
     connect(sendWidget, &SendWidget::message,this, &BTCUGUI::message);
     connect(receiveWidget, &ReceiveWidget::message,this, &BTCUGUI::message);

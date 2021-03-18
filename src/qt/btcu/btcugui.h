@@ -26,7 +26,7 @@
 #include "qt/btcu/leasingwidget.h"
 #include "qt/btcu/masternodeswidget.h"
 #include "qt/btcu/validatorwidget.h"
-//#include "qt/btcu/createcontract.h"
+#include "qt/btcu/createcontract.h"
 #include "qt/btcu/snackbar.h"
 #include "qt/btcu/settings/settingswidget.h"
 #include "qt/rpcconsole.h"
@@ -152,7 +152,7 @@ private:
     ColdStakingWidget *coldStakingWidget = nullptr;
     LeasingWidget *leasingWidget = nullptr;
     ValidatorWidget *validatorWidget = nullptr;
-    //CreateContract *contractWidget = nullptr;
+    CreateContract *contractWidget = nullptr;
     SettingsWidget* settingsWidget = nullptr;
     //CreateMasterNodeWidget* createMasterNode = nullptr;
     //CreateValidatorWidget * createValidator = nullptr;
