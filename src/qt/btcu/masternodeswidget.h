@@ -9,8 +9,11 @@
 #include <QWidget>
 #include "qt/btcu/pwidget.h"
 #include "qt/btcu/furabstractlistitemdelegate.h"
+#include "qt/btcu/addressfilterproxymodel.h"
+#include "qt/btcu/mnrow.h"
 #include "qt/btcu/mnmodel.h"
 #include "qt/btcu/tooltipmenu.h"
+#include "addresstablemodel.h"
 #include <QTimer>
 #include <atomic>
 #include <QSpacerItem>
@@ -30,7 +33,6 @@ class MasterNodesWidget : public PWidget
     Q_OBJECT
 
 public:
-
     explicit MasterNodesWidget(BTCUGUI *parent = nullptr);
     ~MasterNodesWidget();
 
@@ -41,8 +43,11 @@ public:
 
     void showEvent(QShowEvent *event) override;
     void hideEvent(QHideEvent *event) override;
-Q_SIGNALS:
 
+private:
+    void clearScrollWidget();
+
+Q_SIGNALS:
    void CreateMasternode();
 
 private Q_SLOTS:
@@ -60,18 +65,21 @@ private Q_SLOTS:
    void onTempADD();
    void onpbnMasternodeClicked();
    void onpbnValidatorClicked();
-   void onpbnMyClicked();
-   void onpbnGlobalClicked();
+   void onpbnMyMasternodesClicked();
+   void onpbnGlobalMasternodesClicked();
 
 private:
     Ui::MasterNodesWidget *ui;
     FurAbstractListItemDelegate *delegate;
+    AddressTableModel* addressTableModel = nullptr;
+    AddressFilterProxyModel *filter = nullptr;
     MNModel *mnModel = nullptr;
     TooltipMenu* menu = nullptr;
    TooltipMenu* menuMy = nullptr;
     QModelIndex index;
     QTimer *timer = nullptr;
 
+    QVector<QSharedPointer<MNRow>> MNRows;
     std::atomic<bool> isLoading;
 
     bool checkMNsNetwork();

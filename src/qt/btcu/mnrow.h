@@ -20,7 +20,7 @@ public:
     explicit MNRow(QWidget *parent = nullptr);
     ~MNRow();
 
-    void updateView(QString address, QString label, QString status, bool wasCollateralAccepted);
+    void updateView(std::string name, std::string address, double leasing, int blockHeight, QString type, double profit);
 
 Q_SIGNALS:
     void onMenuClicked();
