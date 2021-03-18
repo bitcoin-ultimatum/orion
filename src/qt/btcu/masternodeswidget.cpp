@@ -447,7 +447,6 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
                     {
                         pwalletMain->pLeasingManager->GetAllAmountsLeasedTo(pubKey, leasingAmount);
                         CTxOut reward1 = pwalletMain->pLeasingManager->CalcLeasingReward(LeaserType::MasterNode, key, leasingAmount);
-                        std::cout << reward1.nValue << std::endl;
                         reward = pwalletMain->pLeasingManager->CalcLeasingReward(pubKey);
                     }
 #endif
