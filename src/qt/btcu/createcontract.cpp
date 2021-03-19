@@ -6,8 +6,8 @@
 //#include "../src/utilstrencodings.h"
 //#include "contract.h"
 #include <univalue.h>
-//#include <qtum/qtumtransaction.h>
-//#include "core_io.h"
+#include <qtum/qtumtransaction.h>
+#include "core_io.h"
 
 CreateContract::CreateContract(BTCUGUI *parent) :
     PWidget(parent),
@@ -201,7 +201,7 @@ void CreateContract::onCreateContract()
         return;
     }*/
 
-    /*std::unique_ptr<CCoinControl> coinControl;
+    std::unique_ptr<CCoinControl> coinControl;
     CTxDestination signSenderAddress = CNoDestination();
 
     if(fHasSender)
@@ -290,7 +290,7 @@ void CreateContract::onCreateContract()
     // make our change address
     CReserveKey reservekey(pwalletMain);
     CWalletTx wtx;
-    if (!pwalletMain->CreateTransaction(scriptPubKey, 0, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+    if (!pwalletMain->CreateTransaction(scriptPubKey, curBalance, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         informError(tr(strError.c_str()));
@@ -346,7 +346,8 @@ void CreateContract::onCreateContract()
         std::string strHex = EncodeHexTx(wtx);
         result.pushKV("raw transaction", strHex);
     }
-    std::cout << result.get_str() << std::endl;*/
+    informWarning(QString::fromStdString(result.get_str()));
+    std::cout << result.get_str() << std::endl;
 }
 
 bool CreateContract::SetDefaultSignSenderAddress(CWallet* const pwallet, CTxDestination& destAddress)
@@ -442,15 +443,21 @@ void CreateContract::contacts()
     /*pos = ui->lineEditSenderAddress->rect().bottomLeft();
     QPoint parPos = this->mapToParent(ui->lineEditSenderAddress->pos());
     QPoint globPos = this->mapToGlobal(ui->lineEditSenderAddress->pos());
-    pos = parPos;
+    std::cout << parPos.x() << " : " << parPos.y() << std::endl;
+    std::cout << globPos.x() << " : " << globPos.y() << std::endl;
+    /*pos = parPos;
     pos.setX(pos.x() - 20);
     pos.setY(pos.y() + globPos.y() );*/
     pos = ui->lineEditSenderAddress->pos();
     QPoint point = ui->lineEditSenderAddress->rect().bottomRight();
-    pos.setY(window->height()/2 + point.y() - window->height()/10);
-    pos.setX(window->width()/2 - point.x()/2);
-    height = 45;
-    height = (contactsSize < 4) ? height * contactsSize + 25 : height * 4 + 25;
+    QPoint parPos = this->mapToParent(point);
+    //QPoint globPos = this->mapToGlobal(point);
+    //std::cout << parPos.x() << " : " << parPos.y() << std::endl;
+    //std::cout << globPos.x() << " : " << globPos.y() << std::endl;
+    pos.setX(window->width()/2 - parPos.x()/2 + 25);
+    pos.setY(window->height()/2);
+    height = 40;
+    height = (contactsSize < 4) ? height * contactsSize + 25 : height * 4;
     if(!menuContacts){
         menuContacts = new ContactsDropdown(
                 width,

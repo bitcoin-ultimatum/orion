@@ -3,6 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 set(PACKAGE_NAME "btcu qt")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/scripts)
+list(APPEND CMAKE_PREFIX_PATH ./src/cpp-ethereum/ethash)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/forms ${CMAKE_CURRENT_SOURCE_DIR}/btcu/forms ${CMAKE_CURRENT_SOURCE_DIR}/btcu/settings/forms)
@@ -204,6 +205,81 @@ SET(QT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/cbtocendropdown.cpp
         )
 
+set(SERVER_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccak.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/ethash.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccakf1600.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/primes.c
+
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/ethash.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccak.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccakf800.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccakf1600.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/managed.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/primes.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/progpow.cpp
+        )
+add_library(SERVER_B STATIC ${BitcoinHeaders} ${SERVER_SOURCES})
+
+target_include_directories(SERVER_B
+    PUBLIC 
+        ${ZeroMQ_INCLUDE_DIRS}
+        ${LibEvent_INCLUDE_DIR}
+        ${BerkeleyDB_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}/filesystem
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+        ${CMAKE_SOURCE_DIR}/src/qtum
+        )
+
+set(BITCOIN_CRYPTO_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/crypto/keccak.c
+        )
+add_library(BITCOIN_CRYPTO_B ${BITCOIN_CRYPTO_SOURCES})
+
+target_link_libraries(BITCOIN_CRYPTO_B
+            univalue
+            ${Boost_LIBRARIES} 
+            ${OPENSSL_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            Threads::Threads
+            )
+target_include_directories(BITCOIN_CRYPTO_B PUBLIC 
+        ${CMAKE_SOURCE_DIR}/src
+        ${OPENSSL_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+        )
+
+set(COMMON_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal/Ethash.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal/EthashCPUMiner.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal/EthashProofOfWork.cpp
+
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal/GenesisInfo.cpp
+        )
+
+add_library(COMMON_B STATIC ${BitcoinHeaders} ${COMMON_SOURCES})
+
+target_include_directories(COMMON_B 
+    PUBLIC 
+        ${OPENSSL_INCLUDE_DIR}
+        ${BerkeleyDB_INCLUDE_DIRS}
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+        ${CMAKE_SOURCE_DIR}/src/qtum
+        )
+target_link_libraries(COMMON_B
+            BITCOIN_CRYPTO_B
+            ${Boost_LIBRARIES} 
+            ${OPENSSL_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            SERVER_B
+            )
+
 # Workaround until the old rpcconsole UI window is fully removed
 set_property(SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/btcu/settings/settingsconsolewidget.cpp PROPERTY SKIP_AUTOMOC ON)
 execute_process(
@@ -223,15 +299,18 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     list(APPEND QT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/macos_appnap.mm)
 endif()
 
-
-
-add_library(qt_stuff STATIC ${BitcoinHeaders} ${QtHeaders} ${QT_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(qt_stuff STATIC ${BitcoinHeaders} ${QtHeaders} ${QT_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS} ${SERVER_SOURCES} ${COMMON_SOURCES} ${BITCOIN_CRYPTO_SOURCES})
 target_include_directories(qt_stuff 
 		PUBLIC 
 			${CMAKE_SOURCE_DIR}/src
 			${CMAKE_SOURCE_DIR}/src/leveldb/include
 			${CMAKE_SOURCE_DIR}/src/univalue/include
 			${CMAKE_SOURCE_DIR}/src/secp256k1/include
+            ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash
+            ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal
+            ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+            ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+            ${CMAKE_SOURCE_DIR}/src/qtum
 			${CMAKE_CURRENT_SOURCE_DIR}
 			${CMAKE_CURRENT_SOURCE_DIR}/btcu
 			${CMAKE_CURRENT_SOURCE_DIR}/btcu/settings
@@ -285,7 +364,7 @@ target_include_directories(btcu-qt PUBLIC ${ENDIAN_INCLUDES} ${CMAKE_SOURCE_DIR}
 target_link_libraries(btcu-qt
         qt_stuff
         univalue
-        SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A
+        SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A COMMON_B BITCOIN_CRYPTO_B SERVER_B
         leveldb leveldb_sse42 memenv secp256k1
         ${BerkeleyDB_Cxx_LIBRARY}
         ${OPENSSL_LIBRARIES}
@@ -745,7 +824,7 @@ if(ENABLE_TESTS)
 	target_link_libraries(test_btcu-qt PUBLIC
 			qt_stuff
 			univalue
-			SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A
+			SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A COMMON_B BITCOIN_CRYPTO_B SERVER_B
 			leveldb leveldb_sse42 memenv secp256k1
 			${BerkeleyDB_Cxx_LIBRARY}
 			${OPENSSL_LIBRARIES}
