@@ -252,7 +252,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, unsigne
 namespace BTC
 {
    bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness,
-                        unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror);
+                        unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror = nullptr);
 }
 
 #endif // BITCOIN_SCRIPT_INTERPRETER_H
