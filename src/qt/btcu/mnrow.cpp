@@ -27,10 +27,10 @@ MNRow::MNRow(QWidget *parent) :
 void MNRow::updateView(std::string name, std::string address, double leasing, int blockHeight, QString type, double profit){
     ui->labelName->setText(QString::fromStdString(name));
     ui->labelAddress->setText(QString::fromStdString(address));
-    ui->labelLeasing->setText(QString::number(leasing, 'G', 10));
+    ui->labelLeasing->setText(QString::number(leasing, 'g', 12));
     ui->labelBlockHeight->setText(blockHeight != -1 ? QString::number(blockHeight) : "-");
     ui->labelType->setText(type);
-    ui->labelProfit->setText(profit > 0 ? QString::number(profit, 'G', 10) : "0");
+    ui->labelProfit->setText(profit > 0 ? QString::number(profit, 'g', 12) : "-");
 }
 void MNRow::onPbnMenuClicked()
 {
