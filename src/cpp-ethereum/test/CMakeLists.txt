@@ -121,7 +121,6 @@ find_package(yaml-cpp CONFIG REQUIRED)
 add_executable(testeth ${sources})
 target_include_directories(testeth PRIVATE ${UTILS_INCLUDE_DIR})
 target_link_libraries(testeth PRIVATE ethereum ethashseal web3jsonrpc devcrypto devcore cpp-ethereum-buildinfo cryptopp yaml-cpp::yaml-cpp binaryen::binaryen libjson-rpc-cpp::client)
-install(TARGETS testeth DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 set_property(SOURCE tools/libtesteth/TestHelper.cpp PROPERTY COMPILE_DEFINITIONS BINARYEN_VERSION=${BINARYEN_VERSION})
 
