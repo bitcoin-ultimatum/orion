@@ -26,7 +26,7 @@ project(btcu
 
 # Package information
 set(PACKAGE_NAME "BTCU")
-set(PACKAGE_BUGREPORT "https://github.com/bitcoin-ultimatum/ours/issues")
+set(PACKAGE_BUGREPORT "https://github.com/bitcoin-ultimatum/pegasus/issues")
 
 if (CMAKE_GENERATOR MATCHES "Xcode")
     set_property(GLOBAL PROPERTY XCODE_ATTRIBUTE_SKIP_INSTALL "Yes")
@@ -41,13 +41,21 @@ IF( NOT CMAKE_BUILD_TYPE )
     SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
 ENDIF()
 
+set(CMAKE_USER_MAKE_RULES_OVERRIDE
+	"${CMAKE_SOURCE_DIR}/cmake/scripts/OverrideInitFlags.cmake"
+)
+
+message(STATUS "CMAKE_TOOLCHAIN_FILE ${CMAKE_TOOLCHAIN_FILE}")
 # Trying to set toolchain if not presented
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    include(${CMAKE_SOURCE_DIR}/cmake/cable/bootstrap.cmake)
+    include(CableToolchains)
+
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-        set(CMAKE_TOOLCHAIN_FILE ./cmake/platforms/OSX.cmake)
+        cable_configure_toolchain(DEFAULT OSX)
         set(ENV{target} "Mac")
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        set(CMAKE_TOOLCHAIN_FILE ./cmake/platforms/Linux64.cmake)
+        cable_configure_toolchain(DEFAULT Linux64)
         set(ENV{target} "Linux")
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -55,10 +63,6 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
         endif()
     endif()
 endif()
-
-set(CMAKE_USER_MAKE_RULES_OVERRIDE
-	"${CMAKE_SOURCE_DIR}/cmake/scripts/OverrideInitFlags.cmake"
-)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -146,6 +150,7 @@ endif()
 # enable_werror --enable-werror
 # USE_COVERAGE --coverage  --  ENABLE_COVERAGE, configure flag, no cmake
 
+option(ENABLE_DAEMON "Build btcud" ON)
 option(ENABLE_GUI "Build btcu-qt" ON)
 option(ENABLE_QTCHARTS "Enable qtcharts support (default is yes if qt is enabled and qtchartview is found)" ON)
 option(ENABLE_ASM "Enable assembly routines (default is yes)" ON)
@@ -162,6 +167,7 @@ option(START_WITH_UPNP "If UPNP is enabled, turn it on at startup" OFF)
 option(ENABLE_GPROF "Use gprof profiling compiler flags " OFF)
 option(ENABLE_LEASING_MANAGER "Enable leasing manager" ON)
 option(ENABLE_TESTS "Build tests" ON)
+option(BUILD_STATIC "Build dependencies as static libs" OFF)
 option(EXTRA_WARNINGS "Enable extra warnings" OFF)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" OFF)
@@ -199,8 +205,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 endif()
 option(ENABLE_DBUS_NOTIFICATIONS "Enable DBus desktop notifications. Linux only." ${DEFAULT_ENABLE_DBUS_NOTIFICATIONS})
 
-# collect config flags
-set(PROJECT_CONFIGURE_FLAGS "")
+if(ENABLE_DAEMON)
+    message(STATUS "Enabled option: Build btcud")
+else()
+    message(STATUS "Disabled option: Build btcud")
+endif()
 if(ENABLE_GUI)
     message(STATUS "Enabled option: Build btcu-qt")
 else()
@@ -265,6 +274,13 @@ if(ENABLE_TESTS)
     message(STATUS "Enabled option: Build tests")
 else()
     message(STATUS "Disabled option: Build tests")
+    # sometimes this value will be missed for some reasons
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+endif()
+if(BUILD_STATIC)
+    message(STATUS "Enabled option: Build static dependencies")
+else()
+    message(STATUS "Disabled option: Build static dependencies")
 endif()
 if(EXTRA_WARNINGS)
     message(STATUS "Enabled option: Extra build warnings")
@@ -292,6 +308,22 @@ endif(CCACHE)
 
 # flags
 include(AddCompilerFlags)
+
+if(BUILD_STATIC)
+    cmake_policy(SET CMP0060 NEW)
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	    add_linker_flags(-Wl,--no-as-needed -ldl)
+        add_linker_flags(-lm -lc)
+    endif()
+endif()
+
+if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib" ".dylib" ".so" CACHE STRING "CMake search suffix" FORCE)
+endif()
+if (BUILD_STATIC)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+	add_compile_options("-fPIE")
+endif ()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	# Ensure that WINDRES_PREPROC is enabled when using windres.
@@ -474,6 +506,9 @@ if (MSVC)
     # warning LNK4099: pdb was not found with lib
     # stack size 16MB
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099,4075 /STACK:16777216 /NODEFAULTLIB:MSVCRT -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00")
+elseif(BUILD_STATIC)
+    set(BUILD_SHARED_LIBS OFF)
+    set(BUILD_STATIC_LIBS ON)
 else()
     set(BUILD_SHARED_LIBS ON)
     set(BUILD_STATIC_LIBS ON)
@@ -530,14 +565,36 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         message(FATAL_ERROR "The required Boost package is not installed. Please check installation instruction boost section!")
     endif()
 else()
+    # it is important to define all custom pathes before this
+    # sonce it affects the priority of the search
+    if(BUILD_STATIC)
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5Core")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5Widgets")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5Gui")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5Network")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5LinguistTools")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5DBus")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5Svg")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5Charts")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/qt5/lib/cmake/Qt5Test")    
+    endif()
 	list( APPEND CMAKE_PREFIX_PATH /usr/lib )
 	list( APPEND CMAKE_PREFIX_PATH /usr/lib/x86_64-linux-gnu )
     
     set( BOOST_ROOT "usr" )
     set( Boost_INCLUDE_DIR "/usr/include" )
     set( Boost_NO_BOOST_CMAKE ON )
-    set( Boost_USE_STATIC_LIBS  OFF )
-    set( Boost_USE_STATIC_RUNTIME OFF )
+    if(BUILD_STATIC)
+        set( Boost_USE_STATIC_LIBS ON )
+        set( Boost_USE_STATIC_RUNTIME ON )
+    else()
+        set( Boost_USE_STATIC_LIBS  OFF )
+        set( Boost_USE_STATIC_RUNTIME OFF )
+    endif()
 endif()
 
 set( Boost_USE_MULTITHREADED ON )
@@ -562,6 +619,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         BOOST_LOG_BUILDING_THE_LIB=1
         BOOST_THREAD_USE_LIB=1
 	)
+elseif(BUILD_STATIC)
+    add_definitions(-DBOOST_ALL_STATIC_LINK=1)
+    add_definitions(-DBOOST_LOG_STATIC_LINK=1)
 else()
     add_definitions(-DBOOST_LOG_DYN_LINK=1)
     add_definitions(-DBOOST_ALL_DYN_LINK=1)
@@ -593,10 +653,13 @@ list(APPEND CMAKE_PREFIX_PATH ./src/cryptopp)
 list(APPEND CMAKE_PREFIX_PATH ./src/cpp-ethereum/ethash)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    cmake_policy(SET CMP0074 NEW)
+
 	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/rocksdb)
 	list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/opt/rocksdb)
 
 	find_brew_prefix(qt5_ROOT_DIR qt5)
+	find_brew_prefix(sodium_DIR libsodium)
 	find_brew_prefix(libjsonrpccpp_ROOT_DIR libjson-rpc-cpp)
 	find_brew_prefix(GBenchmark_ROOT_DIR google-benchmark)
 	find_brew_prefix(snappy_ROOT_DIR snappy)    
@@ -609,8 +672,15 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	find_brew_prefix(OPENSSL_ROOT_DIR openssl)
 	find_brew_prefix(ZMQ_ROOT_DIR zmq)
 	find_brew_prefix(Qrcode_ROOT_DIR qrencode)
+	find_brew_prefix(ZLIB_ROOT zlib)
+	find_brew_prefix(BZIP2_ROOT_DIR bzip2)
+	find_brew_prefix(GFLAGS_ROOT_DIR gflags)
+
+    set(ZLIB_ROOT "${ZLIB_ROOT}" CACHE STRING "")
+    set(ZLIB_INCLUDE_DIR "${ZLIB_ROOT}/include" CACHE STRING "")
 
 	list(APPEND CMAKE_PREFIX_PATH ${qt5_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${sodium_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${libjsonrpccpp_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${GBenchmark_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${snappy_ROOT_DIR})
@@ -623,15 +693,14 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	list(APPEND CMAKE_PREFIX_PATH ${OPENSSL_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${ZMQ_ROOT_DIR})
 	list(APPEND CMAKE_PREFIX_PATH ${Qrcode_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${BZIP2_ROOT_DIR})
+	list(APPEND CMAKE_PREFIX_PATH ${GFLAGS_ROOT_DIR})
 
 	set( CURL_INCLUDE_DIR "${CURL_ROOT_DIR}/include" )
 	set( CURL_LIBRARY "${CURL_ROOT_DIR}/lib" )
 
 	set( MHD_INCLUDE_DIR "${MHD_ROOT_DIR}/include" )
 	set( MHD_LIBRARY "${MHD_ROOT_DIR}/lib" )
-
-	set( BerkeleyDB_INCLUDE_DIR "${BerkeleyDB_ROOT_DIR}/include" )
-	set( BerkeleyDB_LIBRARY "${BerkeleyDB_ROOT_DIR}/lib" )
 
 	set( LibEvent_INCLUDE_DIR "${LibEvent_ROOT_DIR}/include" )
 	set( LibEvent_LIBRARY "${LibEvent_ROOT_DIR}/lib" )
@@ -646,11 +715,21 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set( Qrcode_LIBRARY "${Qrcode_ROOT_DIR}/lib" )
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    if(BUILD_STATIC)
+        set(Qt5Core_DIR "/opt/qt5/lib")
+        set(Qt5_DIR "/opt/qt5/lib/cmake/Qt5" CACHE PATH "QT configs dir" FORCE)
+
+        set(qt5_ROOT_DIR "/opt/qt5" CACHE PATH "QT root dir" FORCE)
+
+        set( MOC_BIN_DIR "/opt/qt5/bin")
+    endif()
 	set( GTest_DIR "/usr/src/googletest" CACHE PATH "Path to googletest")
 	set( GTEST_ROOT "/usr/src/googletest" CACHE PATH "Path to googletest")
 	set( GMP_INCLUDE_DIR "/usr/include/x86_64-linux-gnu" CACHE STRING "")
 	set( RocksDB_INCLUDE_DIR "/usr/include" )
 	set( ZeroMQ_INCLUDE_DIR "/usr/include" CACHE STRING "")
+	set( Qt5Charts_DIR "/usr/lib/x86_64-linux-gnu" CACHE PATH "Path to Qt5Charts")
+	set( Qt5Svg_DIR "/usr/lib/x86_64-linux-gnu" CACHE PATH "Path to Qt5Svg")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/Qt5Core")
 	list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/rocksdb")
@@ -817,11 +896,30 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY /home/$ENV{USER}/btcu-run)
         message(WARNING "WSL Runtime support requires VcXsrv to be installed and running")
     endif()
+    if(BUILD_STATIC)
+        if(ENABLE_GUI OR ENABLE_DAEMON OR BUILD_UTILS)
+            include(CPackConfig)
+        endif()
+    endif()
 endif()
  
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     find_package(PkgConfig REQUIRED) 
 endif()
+
+if(BUILD_STATIC)
+    if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+        add_linker_flags(-static-libstdc++ -static-libgcc -lstdc++ -fno-builtin)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc -lstdc++")
+    else()
+        add_linker_flags(-static)
+    endif()
+
+    find_package(ZLIB)
+endif()
+
+# Find Dependencies
+find_package(Qrcode REQUIRED)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     find_package(ZeroMQ CONFIG)
@@ -842,12 +940,21 @@ if(ZeroMQ_FOUND)
     
     message(STATUS ZeroMQ_LIBRARY:)
     message (STATUS ${ZeroMQ_LIBRARY})
-    
-    message(STATUS ZeroMQ_STATIC_LIBRARY:)
-    message (STATUS ${ZeroMQ_STATIC_LIBRARY})
 else()
     message(WARNING "ZeroMQ not found!")
 endif()
+
+find_package(Snappy CONFIG REQUIRED)
+if(Snappy_FOUND)
+    message(STATUS "Found Snappy")
+    message(STATUS Snappy_LIBRARIES:)
+    message (STATUS ${Snappy_LIBRARIES})
+    message(STATUS Snappy_INCLUDE_DIRS:)
+    message (STATUS ${Snappy_INCLUDE_DIRS})
+else()
+    message(WARNING "Snappy not found! BTCU requires this functionality")
+endif()
+
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     find_package(RocksDB CONFIG REQUIRED)
@@ -868,18 +975,6 @@ else()
     message(WARNING "RocksDB not found! BTCU requires this functionality")
 endif()
 
-find_package(Snappy CONFIG REQUIRED)
-if(Snappy_FOUND)
-    message(STATUS "Found Snappy")
-    message(STATUS Snappy_LIBRARIES:)
-    message (STATUS ${Snappy_LIBRARIES})
-    message(STATUS Snappy_INCLUDE_DIRS:)
-    message (STATUS ${Snappy_INCLUDE_DIRS})
-else()
-    message(WARNING "Snappy not found! BTCU requires this functionality")
-endif()
-
-# Find Dependencies
 find_package(BerkeleyDB REQUIRED)
 if(BerkeleyDB_FOUND)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -1289,23 +1384,33 @@ target_link_libraries(SERVER_A
         ${CMAKE_DL_LIBS}
         Threads::Threads 
         ff 
-        Snappy::snappy
         Threads::Threads
         scrypt
         )
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
     target_link_libraries(SERVER_A 
-        ${ZeroMQ_STATIC_LIBRARY} jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB
+        ZeroMQ::zmq jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB
         )
-    if(CRYPT32_LIBRARY)
-        target_link_libraries(SERVER_A 
-            ${CRYPT32_LIBRARY}
-        )
-    endif()
 else()
     target_link_libraries(SERVER_A 
-        ${ZeroMQ_LIBRARY} jsoncpp_lib cryptopp-shared ${BerkeleyDB_Cxx_LIBRARY}
+        ${ZeroMQ_LIBRARY} jsoncpp_lib cryptopp-shared ${BerkeleyDB_Cxx_LIBRARY} Snappy::snappy
         )
+endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    target_link_libraries(SERVER_A Snappy::snappy)
+endif()
+if(BUILD_STATIC)
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+        target_link_libraries(SERVER_A ZLIB::ZLIB Snappy::snappy-static)
+    else()
+        target_link_libraries(SERVER_A ZLIB::ZLIB Snappy::snappy)
+    endif()
+    target_link_libraries(SERVER_A ZLIB::ZLIB)
+endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND CRYPT32_LIBRARY)
+    target_link_libraries(SERVER_A 
+        ${CRYPT32_LIBRARY}
+    )
 endif()
 
 
@@ -1357,9 +1462,9 @@ if(ZeroMQ_FOUND)
         ${OPENSSL_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
         )
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
         target_link_libraries(ZMQ_A 
-            ${ZeroMQ_STATIC_LIBRARY}
+            ZeroMQ::zmq
             )
     else()
         target_link_libraries(ZMQ_A 
@@ -1486,7 +1591,7 @@ target_link_libraries(COMMON_A
             UTIL_A
             SERVER_A
         )
-if (MSVC)
+if (MSVC OR BUILD_STATIC)
     target_link_libraries(COMMON_A jsoncpp_lib_static)
 else()
     target_link_libraries(COMMON_A jsoncpp_lib)
@@ -1521,7 +1626,7 @@ target_link_libraries(ZEROCOIN_A
             COMMON_A
             secp256k1
         )
-if (MSVC)
+if (MSVC OR BUILD_STATIC)
     target_link_libraries(ZEROCOIN_A jsoncpp_lib_static cryptopp-static)
 else()
     target_link_libraries(ZEROCOIN_A jsoncpp_lib cryptopp-shared)
@@ -1586,121 +1691,181 @@ target_link_libraries(CLI_A
             Threads::Threads
         )
 
-set(btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli.cpp)
-add_executable(btcu-cli ${btcu-cli_SOURCES})
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    generate_windows_version_info(btcu-cli
-        DESCRIPTION "CLI BTCU transaction editor utility"
-    )
-    list(APPEND btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli-res.rc)
-    if(CRYPT32_LIBRARY)
-        target_link_libraries(btcu-cli
-            ${CRYPT32_LIBRARY}
-        )
-    endif()
-endif()
-target_link_libraries(btcu-cli
-        CLI_A
-        univalue
-        UTIL_A
-        BITCOIN_CRYPTO_A
-        ${Boost_LIBRARIES} 
-        ${OPENSSL_LIBRARIES}
-        ${LibEvent_LIBRARIES}
-        Threads::Threads
-        )
-target_include_directories(btcu-cli 
-            PUBLIC 
-                ${LibEvent_INCLUDE_DIR}
-        )
-
-set(btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx.cpp)
-add_executable(btcu-tx ${btcu-tx_SOURCES})
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	generate_windows_version_info(btcu-tx
-		DESCRIPTION "JSON-RPC client for ${PACKAGE_NAME}"
-	)
-    list(APPEND btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx-res.rc)
-endif()
-target_link_libraries(btcu-tx
-        univalue
-        COMMON_A
-        SERVER_A
-        ZEROCOIN_A
-        UTIL_A
-        BITCOIN_CRYPTO_A
-        secp256k1
-        ${Boost_LIBRARIES} 
-        ${OPENSSL_LIBRARIES}
-        ${LibEvent_LIBRARIES}
-        )
-if(GMP_FOUND)
-    target_link_libraries(btcu-tx ${GMP_LIBRARIES})
-endif()
-
-set(btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud.cpp ${Boost_INCLUDE_DIRS})
-add_executable(btcud ${btcud_SOURCES} ${BitcoinHeaders})
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	generate_windows_version_info(btcud
-		DESCRIPTION "BTCU node with a JSON-RPC server"
-	)
-    list(APPEND btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud-res.rc)
-endif()
-add_dependencies(btcud leveldb leveldb_sse42 memenv)
-target_include_directories(btcud PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/helpers/memenv
-        ${btcud_SOURCES}
-        ${LibEvent_INCLUDE_DIR}
-        ${Boost_INCLUDE_DIRS})
-target_link_libraries(btcud
-        Threads::Threads
-        SERVER_A
-        WALLET_A
-        univalue
-        COMMON_A
-        ZEROCOIN_A
-        UTIL_A
-        BITCOIN_CRYPTO_A
-        leveldb
-        leveldb_sse42
-        memenv
-        secp256k1
-        ${BerkeleyDB_Cxx_LIBRARY}
-        ${OPENSSL_LIBRARIES}
-        ${Boost_LIBRARIES}
-        ${LibEvent_LIBRARIES}
-        )
-if(GMP_FOUND)
-    target_link_libraries(btcud ${GMP_LIBRARIES})
-    target_include_directories(btcud PUBLIC ${GMP_INCLUDE_DIR})
-endif()
-if(ZeroMQ_FOUND)
-    target_link_libraries(btcud ZMQ_A)
+if(BUILD_UTILS)
+    set(btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli.cpp)
+    add_executable(btcu-cli ${btcu-cli_SOURCES})
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-        target_link_libraries(btcud 
-            ${ZeroMQ_STATIC_LIBRARY}
+        generate_windows_version_info(btcu-cli
+            DESCRIPTION "CLI BTCU transaction editor utility"
+        )
+        list(APPEND btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli-res.rc)
+        if(CRYPT32_LIBRARY)
+            target_link_libraries(btcu-cli
+                ${CRYPT32_LIBRARY}
             )
-    else()
-        target_link_libraries(btcud 
-            ${ZeroMQ_LIBRARY}
-            )
+        endif()
     endif()
-    target_include_directories(btcud PUBLIC ${ZeroMQ_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/)
-endif()
-if(MINIUPNP_FOUND)
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-		target_compile_definitions(btcud
-			PUBLIC -DSTATICLIB
-			PUBLIC -DMINIUPNP_STATICLIB
-		)
-	endif()
-    target_link_libraries(btcud ${MINIUPNP_LIBRARY})
-    target_include_directories(btcud PUBLIC ${MINIUPNP_INCLUDE_DIR})
+    target_link_libraries(btcu-cli
+            CLI_A
+            univalue
+            UTIL_A
+            BITCOIN_CRYPTO_A
+            ${Boost_LIBRARIES} 
+            ${OPENSSL_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            Threads::Threads
+            )
+    target_include_directories(btcu-cli 
+                PUBLIC 
+                    ${LibEvent_INCLUDE_DIR}
+            )
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        # add_custom_target(btcu-cli_deb_package
+        #     COMMAND "${CMAKE_CPACK_COMMAND}" 
+        #     "--config" "${CMAKE_SOURCE_DIR}/cmake/scripts/CPackConfig.cmake")
+        install(TARGETS btcu-cli 
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+        # this will be replaced with svg in next versions
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/16x16/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/24x24/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/32x32/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/48x48/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/64x64/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/128x128/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-cli.desktop DESTINATION share/applications)
+    endif()
+
+    set(btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx.cpp)
+    add_executable(btcu-tx ${btcu-tx_SOURCES})
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        generate_windows_version_info(btcu-tx
+            DESCRIPTION "JSON-RPC client for ${PACKAGE_NAME}"
+        )
+        list(APPEND btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx-res.rc)
+    endif()
+    target_link_libraries(btcu-tx
+            univalue
+            COMMON_A
+            SERVER_A
+            ZEROCOIN_A
+            UTIL_A
+            BITCOIN_CRYPTO_A
+            secp256k1
+            ${Boost_LIBRARIES} 
+            ${OPENSSL_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            )
+    if(GMP_FOUND)
+        target_link_libraries(btcu-tx ${GMP_LIBRARIES})
+    endif()
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        # TODO: add custom deb command
+        # add_custom_target(btcu-tx_deb_package
+        #     COMMAND "${CMAKE_CPACK_COMMAND}" 
+        #     "--config" "${CMAKE_SOURCE_DIR}/cmake/scripts/CPackConfig.cmake")
+        install(TARGETS btcu-tx
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+        # this will be replaced with svg in next versions
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/16x16/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/24x24/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/32x32/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/48x48/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/64x64/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tools.png DESTINATION share/icons/hicolor/128x128/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcu-tx.desktop DESTINATION share/applications)
+    endif()
 endif()
 
-add_subdirectory(src/qt)
+if(ENABLE_DAEMON)
+    set(btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud.cpp ${Boost_INCLUDE_DIRS})
+    add_executable(btcud ${btcud_SOURCES} ${BitcoinHeaders})
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        generate_windows_version_info(btcud
+            DESCRIPTION "BTCU node with a JSON-RPC server"
+        )
+        list(APPEND btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud-res.rc)
+    endif()
+    add_dependencies(btcud leveldb leveldb_sse42 memenv)
+    target_include_directories(btcud PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/helpers/memenv
+            ${btcud_SOURCES}
+            ${LibEvent_INCLUDE_DIR}
+            ${Boost_INCLUDE_DIRS})
+    target_link_libraries(btcud
+            Threads::Threads
+            SERVER_A
+            WALLET_A
+            univalue
+            COMMON_A
+            ZEROCOIN_A
+            UTIL_A
+            BITCOIN_CRYPTO_A
+            leveldb
+            leveldb_sse42
+            memenv
+            secp256k1
+            ${BerkeleyDB_Cxx_LIBRARY}
+            ${OPENSSL_LIBRARIES}
+            ${Boost_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            )
+    if(GMP_FOUND)
+        target_link_libraries(btcud ${GMP_LIBRARIES})
+        target_include_directories(btcud PUBLIC ${GMP_INCLUDE_DIR})
+    endif()
+    if(ZeroMQ_FOUND)
+        target_link_libraries(btcud ZMQ_A)
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+            target_link_libraries(btcud 
+                ZeroMQ::zmq
+                )
+        else()
+            target_link_libraries(btcud 
+                ${ZeroMQ_LIBRARY}
+                )
+        endif()
+        target_include_directories(btcud PUBLIC ${ZeroMQ_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/)
+    endif()
+    if(MINIUPNP_FOUND)
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+            target_compile_definitions(btcud
+                PUBLIC -DSTATICLIB
+                PUBLIC -DMINIUPNP_STATICLIB
+            )
+        endif()
+        target_link_libraries(btcud ${MINIUPNP_LIBRARY})
+        target_include_directories(btcud PUBLIC ${MINIUPNP_INCLUDE_DIR})
+    endif()
+
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
+        # TODO: add custom deb command
+        # add_custom_target(btcud_deb_package
+        #     COMMAND "${CMAKE_CPACK_COMMAND}" 
+        #     "--config" "${CMAKE_SOURCE_DIR}/cmake/scripts/CPackConfig.cmake")
+        install(TARGETS btcud
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+        # this will be replaced with svg in next versions
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcud.png DESTINATION share/icons/hicolor/16x16/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcud.png DESTINATION share/icons/hicolor/24x24/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcud.png DESTINATION share/icons/hicolor/32x32/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcud.png DESTINATION share/icons/hicolor/48x48/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcud.png DESTINATION share/icons/hicolor/64x64/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcud.png DESTINATION share/icons/hicolor/128x128/apps)
+        install (FILES ${CMAKE_SOURCE_DIR}/share/deb/btcud.desktop DESTINATION share/applications)
+    endif()
+endif()
+
+if(ENABLE_GUI)
+    add_subdirectory(src/qt)
+endif()
 
 if(ENABLE_TESTS)
     add_subdirectory(test)
@@ -1863,9 +2028,9 @@ if(ENABLE_TESTS)
     if(ZeroMQ_FOUND)
         target_link_libraries(test_btcu ZMQ_A)
         target_include_directories(test_btcu PUBLIC ${ZeroMQ_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/)
-        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
             target_link_libraries(test_btcu 
-                ${ZeroMQ_STATIC_LIBRARY}
+                ZeroMQ::zmq
                 )
         else()
             target_link_libraries(test_btcu 
@@ -1874,7 +2039,7 @@ if(ENABLE_TESTS)
         endif()
     endif()
     if(MINIUPNP_FOUND)
-        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
             target_compile_definitions(test_btcu
                 PUBLIC -DSTATICLIB
                 PUBLIC -DMINIUPNP_STATICLIB

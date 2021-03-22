@@ -21,8 +21,6 @@ else()
             )
 endif()
 
-install(TARGETS evmc-vmtester RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
 add_test(NAME vmtester-help
     COMMAND evmc-vmtester --help
 )
