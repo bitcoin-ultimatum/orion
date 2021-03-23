@@ -82,7 +82,7 @@ If you face with an error on `cmake` command like `No CMAKE_C_COMPILER could be 
 
 ## Dependencies
 ```shell
-    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp gflags
+    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp gflags zlib lz4 bzip2 zstd
     # libscrypt from local since we need a version with cmake support but you still can get it via brew
 ```
 
@@ -180,7 +180,7 @@ If the brew installed a different version run the followed command:
 
 1. Clone the BTCU source code:
 ```shell
-    git clone https://github.com/bitcoin-ultimatum/pegasus
+    git clone https://github.com/bitcoin-ultimatum/orion
     cd btcu
 ```
 

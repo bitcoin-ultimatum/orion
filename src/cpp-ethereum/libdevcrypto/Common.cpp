@@ -355,11 +355,7 @@ bool ecdh::agree(Secret const& _s, Public const& _r, Secret& o_s) noexcept
 	// FIXME: We should verify the public key when constructed, maybe even keep
 	//        secp256k1_pubkey as the internal data of Public.
 	std::array<byte, 33> compressedPoint;
-#ifdef QTUM_BUILD
 	if (!secp256k1_ecdh(ctx, compressedPoint.data(), &rawPubkey, _s.data(), nullptr, nullptr))
-#else
-	if (!secp256k1_ecdh_raw(ctx, compressedPoint.data(), &rawPubkey, _s.data()))
-#endif
 		return false;  // Invalid secret key.
 	std::copy(compressedPoint.begin() + 1, compressedPoint.end(), o_s.writable().data());
 	return true;
@@ -373,7 +369,7 @@ bytes ecies::kdf(Secret const& _z, bytes const& _s1, unsigned kdByteLen)
 	// the 4 bytes is okay. NIST specifies 4 bytes.
 	std::array<byte, 4> ctr{{0, 0, 0, 1}};
 	bytes k;
-	secp256k1_sha256_t ctx;
+	secp256k1_sha256 ctx;
 	for (unsigned i = 0; i <= reps; i++)
 	{
 		secp256k1_sha256_initialize(&ctx);
