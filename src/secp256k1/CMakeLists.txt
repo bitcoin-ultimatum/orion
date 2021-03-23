@@ -114,41 +114,6 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   	set(USE_ASM OFF)
 endif()
 
-# Enable ASM by default only if we are building for a compatible target.
-# The user can still enable/disable it manually if needed.
-option(SECP256K1_USE_ASM "Use assembly" ${SECP256K1_DEFAULT_USE_ASM})
-if(SECP256K1_USE_ASM)
-	macro(unsupported_asm_error)
-		message(FATAL_ERROR
-			"Assembly is enabled, but not supported for your target architecture."
-			"Re-run cmake with -DSECP256K1_USE_ASM=OFF to disable ASM support."
-		)
-	endmacro()
-
-	if(SECP256K1_ASM_BUILD_TARGET MATCHES "x86_64")
-		# We check if amd64 asm is supported.
-		check_c_source_compiles("
-			#include <stdint.h>
-			int main() {
-				uint64_t a = 11, tmp;
-				__asm__ __volatile__(\"movq \$0x100000000,%1; mulq %%rsi\" : \"+a\"(a) : \"S\"(tmp) : \"cc\", \"%rdx\");
-				return 0;
-			}
-		" USE_ASM_X86_64)
-
-		if(NOT USE_ASM_X86_64)
-			unsupported_asm_error()
-		endif()
-	elseif(SECP256K1_ASM_BUILD_TARGET MATCHES "arm-linux-gnueabihf" OR SECP256K1_ASM_BUILD_TARGET MATCHES "arm")
-		enable_language(ASM)
-		set(USE_EXTERNAL_ASM 1)
-		add_library(secp256k1_common src/asm/field_10x26_arm.s)
-		target_link_libraries(secp256k1 secp256k1_common)
-	else()
-		unsupported_asm_error()
-	endif()
-endif()
-
 set(SECP256K1_TEST_OVERRIDE_WIDE_MULTIPLY "" CACHE STRING "Test-only override of the (autodetected by the C code) \"widemul\" setting (can be int64 or int128)")
 if(SECP256K1_TEST_OVERRIDE_WIDE_MULTIPLY STREQUAL "int128")
 	message(STATUS "Force the use of the (unsigned) __int128 based wide multiplication implementation")
@@ -336,6 +301,43 @@ if(GMP_FOUND)
 	message(STATUS "GMP included into secp256k1")
 	target_link_libraries(secp256k1 ${GMP_LIBRARIES})
     target_include_directories(secp256k1 PUBLIC ${GMP_INCLUDE_DIR})
+endif()
+
+
+# Enable ASM by default only if we are building for a compatible target.
+# The user can still enable/disable it manually if needed.
+option(SECP256K1_USE_ASM "Use assembly" ${SECP256K1_DEFAULT_USE_ASM})
+if(SECP256K1_USE_ASM)
+	macro(unsupported_asm_error)
+		message(FATAL_ERROR
+			"Assembly is enabled, but not supported for your target architecture."
+			"Re-run cmake with -DSECP256K1_USE_ASM=OFF to disable ASM support."
+		)
+	endmacro()
+
+	if(SECP256K1_ASM_BUILD_TARGET MATCHES "x86_64")
+		# We check if amd64 asm is supported.
+		check_c_source_compiles("
+			#include <stdint.h>
+			int main() {
+				uint64_t a = 11, tmp;
+				__asm__ __volatile__(\"movq \$0x100000000,%1; mulq %%rsi\" : \"+a\"(a) : \"S\"(tmp) : \"cc\", \"%rdx\");
+				return 0;
+			}
+		" USE_ASM_X86_64)
+
+		if(NOT USE_ASM_X86_64)
+			unsupported_asm_error()
+		endif()
+	elseif(SECP256K1_ASM_BUILD_TARGET MATCHES "arm-linux-gnueabihf" OR SECP256K1_ASM_BUILD_TARGET MATCHES "arm")
+		set(CMAKE_ASM_CREATE_SHARED_LIBRARY ${CMAKE_C_CREATE_SHARED_LIBRARY})
+		enable_language(ASM)
+		set(USE_EXTERNAL_ASM 1)
+		add_library(secp256k1_common src/asm/field_10x26_arm.s)
+		target_link_libraries(secp256k1 secp256k1_common)
+	else()
+		unsupported_asm_error()
+	endif()
 endif()
 
 # Executable internal to secp256k1 need to have the HAVE_CONFIG_H define set.
