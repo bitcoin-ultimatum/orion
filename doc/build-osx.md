@@ -82,7 +82,7 @@ If you face with an error on `cmake` command like `No CMAKE_C_COMPILER could be 
 
 ## Dependencies
 ```shell
-    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp gflags
+    brew install automake libtool miniupnpc pkg-config python qt libevent qrencode protobuf snappy zeromq openssl libjson-rpc-cpp google-benchmark googletest cmake git gmp gflags zlib lz4 bzip2
     # libscrypt from local since we need a version with cmake support but you still can get it via brew
 ```
 

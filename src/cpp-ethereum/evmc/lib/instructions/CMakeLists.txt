@@ -16,4 +16,3 @@ if(BUILD_SHARED_LIBS)
     set_target_properties(instructions PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
-install(TARGETS instructions EXPORT evmcTargets DESTINATION ${CMAKE_INSTALL_LIBDIR})

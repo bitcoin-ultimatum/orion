@@ -10,7 +10,7 @@ set(CMAKE_C_STANDARD 90)
 include(TestBigEndian)
 include(CheckCSourceCompiles)
 
-if (MSVC)
+if (MSVC OR BUILD_STATIC)
     set(BUILD_SHARED_LIBS OFF)
     set(BUILD_STATIC_LIBS ON)
 else()
@@ -179,11 +179,11 @@ elseif(SECP256K1_TEST_OVERRIDE_WIDE_MULTIPLY STREQUAL "int64")
   	set(USE_FORCE_WIDEMUL_INT64 1)
 endif()
 
-option(SECP256K1_BUILD_TEST "Build secp256k1's unit tests" OFF)
+option(SECP256K1_BUILD_TEST "Build secp256k1's unit tests" ${ENABLE_TESTS})
 include(CMakeDependentOption)
 cmake_dependent_option(
-	SECP256K1_BUILD_OPENSSL_TESTS "Build the OpenSSL tests" OFF
-	SECP256K1_BUILD_TEST OFF
+	SECP256K1_BUILD_OPENSSL_TESTS "Build the OpenSSL tests" ${ENABLE_TESTS}
+	SECP256K1_BUILD_TEST ${ENABLE_TESTS}
 )
 if(SECP256K1_BUILD_OPENSSL_TESTS)
 	if(NOT OpenSSL_FOUND)
@@ -304,9 +304,6 @@ if(SECP256K1_ECMULT_STATIC_PRECOMPUTATION)
 
 		add_custom_target(ecmult_static_context gen_context WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 		add_dependencies(secp256k1 ecmult_static_context)
-
-		install(TARGETS secp256k1 ARCHIVE DESTINATION lib)
-		install(DIRECTORY include/ DESTINATION include)
 	else()
 		include(NativeExecutable)
 		add_native_executable(gen_context src/gen_context.c)
