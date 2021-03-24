@@ -28,6 +28,10 @@ enum
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
     SIGHASH_ANYONECANPAY = 0x80,
+
+    SIGHASH_DEFAULT = 0, //!< Taproot only; implied when sighash byte is missing, and equivalent to SIGHASH_ALL
+    SIGHASH_OUTPUT_MASK = 3,
+    SIGHASH_INPUT_MASK = 0x80,
 };
 
 /** Script verification flags */
@@ -224,9 +228,17 @@ private:
 
 protected:
     virtual bool VerifySignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const;
+    virtual bool VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const;
+    virtual bool VerifySchnorrSignature(Span<const unsigned char> sig, const XOnlyPubKey& pubkey, const uint256& sighash) const;
 
 public:
     TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn) : txTo(txToIn), nIn(nInIn) {}
+
+    //BTC
+    bool CheckECDSASignature(const std::vector<unsigned char>& vchSigIn, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
+    bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey_in, SigVersion sigversion, const ScriptExecutionData& execdata, ScriptError* serror) const override;
+    ///////
+
     bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode) const override;
     bool CheckLockTime(const CScriptNum& nLockTime) const override;
     bool CheckColdStake(const CScript& script) const override {
@@ -249,8 +261,10 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror);
 bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* error = NULL);
 
+
 namespace BTC
 {
+   int FindAndDelete(CScript& script, const CScript& b);
    bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness,
                         unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror = nullptr);
 }

@@ -306,6 +306,7 @@ bool static CheckMinimalPush(const valtype& data, opcodetype opcode) {
     }
     return true;
 }
+
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror)
 {
     static const CScriptNum bnZero(0);
@@ -1235,6 +1236,67 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     return ss.GetHash();
 }
 
+bool TransactionSignatureChecker::VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const
+{
+   return pubkey.Verify(sighash, vchSig);
+}
+
+bool TransactionSignatureChecker::VerifySchnorrSignature(Span<const unsigned char> sig, const XOnlyPubKey& pubkey, const uint256& sighash) const
+{
+   return pubkey.VerifySchnorr(sighash, sig);
+}
+
+bool TransactionSignatureChecker::CheckECDSASignature(const std::vector<unsigned char>& vchSigIn, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const
+{
+   CPubKey pubkey(vchPubKey);
+   if (!pubkey.IsValid())
+      return false;
+
+   // Hash type is one byte tacked on to the end of the signature
+   std::vector<unsigned char> vchSig(vchSigIn);
+   if (vchSig.empty())
+      return false;
+   int nHashType = vchSig.back();
+   vchSig.pop_back();
+
+   uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType);
+   //TODO export new btc method SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, this->txdata);
+
+   if (!VerifyECDSASignature(vchSig, pubkey, sighash))
+      return false;
+
+   return true;
+}
+
+
+bool TransactionSignatureChecker::CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey_in, SigVersion sigversion, const ScriptExecutionData& execdata, ScriptError* serror) const
+{
+   assert(sigversion == SigVersion::TAPROOT || sigversion == SigVersion::TAPSCRIPT);
+   // Schnorr signatures have 32-byte public keys. The caller is responsible for enforcing this.
+   assert(pubkey_in.size() == 32);
+   // Note that in Tapscript evaluation, empty signatures are treated specially (invalid signature that does not
+   // abort script execution). This is implemented in EvalChecksigTapscript, which won't invoke
+   // CheckSchnorrSignature in that case. In other contexts, they are invalid like every other signature with
+   // size different from 64 or 65.
+   if (sig.size() != 64 && sig.size() != 65) return set_error(serror, SCRIPT_ERR_SCHNORR_SIG_SIZE);
+
+   XOnlyPubKey pubkey{pubkey_in};
+
+   uint8_t hashtype = SIGHASH_DEFAULT;
+   if (sig.size() == 65) {
+      hashtype = SpanPopBack(sig);
+      if (hashtype == SIGHASH_DEFAULT) return set_error(serror, SCRIPT_ERR_SCHNORR_SIG_HASHTYPE);
+   }
+   uint256 sighash;
+   //assert(this->txdata);
+   //if (!SignatureHashSchnorr(sighash, execdata, *txTo, nIn, hashtype, sigversion, *this->txdata)) {
+   //   return set_error(serror, SCRIPT_ERR_SCHNORR_SIG_HASHTYPE);
+   //}
+   if (!VerifySchnorrSignature(sig, pubkey, sighash)) return set_error(serror, SCRIPT_ERR_SCHNORR_SIG);
+   return true;
+}
+
+
 bool TransactionSignatureChecker::VerifySignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const
 {
     return pubkey.Verify(sighash, vchSig);
@@ -1360,6 +1422,33 @@ namespace BTC
    static const CHashWriter HASHER_TAPBRANCH = TaggedHash("TapBranch");
    static const CHashWriter HASHER_TAPTWEAK = TaggedHash("TapTweak");
 
+   int FindAndDelete(CScript& script, const CScript& b)
+   {
+      int nFound = 0;
+      if (b.empty())
+         return nFound;
+      CScript result;
+      CScript::const_iterator pc = script.begin(), pc2 = script.begin(), end = script.end();
+      opcodetype opcode;
+      do
+      {
+         result.insert(result.end(), pc2, pc);
+         while (static_cast<size_t>(end - pc) >= b.size() && std::equal(b.begin(), b.end(), pc))
+         {
+            pc = pc + b.size();
+            ++nFound;
+         }
+         pc2 = pc;
+      }
+      while (script.GetOp(pc, opcode));
+
+      if (nFound > 0) {
+         result.insert(result.end(), pc2, end);
+         script = std::move(result);
+      }
+
+      return nFound;
+   }
 
    static bool
    EvalChecksigPreTapscript(const valtype& vchSig, const valtype& vchPubKey, CScript::const_iterator pbegincodehash,
@@ -1374,7 +1463,7 @@ namespace BTC
       // Drop the signature in pre-segwit scripts but not segwit scripts
       if (sigversion == SigVersion::BASE)
       {
-         int found = FindAndDelete(scriptCode, CScript() << vchSig);
+         int found = BTC::FindAndDelete(scriptCode, CScript() << vchSig);
          if (found > 0 && (flags & SCRIPT_VERIFY_CONST_SCRIPTCODE))
             return set_error(serror, SCRIPT_ERR_SIG_FINDANDDELETE);
       }
@@ -2263,7 +2352,7 @@ namespace BTC
                         valtype& vchSig = stacktop(-isig - k);
                         if (sigversion == SigVersion::BASE)
                         {
-                           int found = FindAndDelete(scriptCode, CScript() << vchSig);
+                           int found = BTC::FindAndDelete(scriptCode, CScript() << vchSig);
                            if (found > 0 && (flags & SCRIPT_VERIFY_CONST_SCRIPTCODE))
                               return set_error(serror, SCRIPT_ERR_SIG_FINDANDDELETE);
                         }

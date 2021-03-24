@@ -255,9 +255,10 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
     }
 
     CScriptWitness witness;
+    witness.stack.clear();
     // Test solution
-    bool bRes = BTC::VerifyScript(txin.scriptSig, fromPubKey, &witness, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&txTo, nIn));
-    return VerifyScript(txin.scriptSig, fromPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&txTo, nIn));
+    return BTC::VerifyScript(txin.scriptSig, fromPubKey, &witness, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&txTo, nIn));
+    //return VerifyScript(txin.scriptSig, fromPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&txTo, nIn));
 }
 
 bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CMutableTransaction& txTo, unsigned int nIn, int nHashType, bool fColdStake, bool fLeasing, bool fForceLeaserSign)
