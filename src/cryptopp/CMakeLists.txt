@@ -393,7 +393,11 @@ else()
 	enable_testing()
 	if(BUILD_TESTING)
 		add_executable(cryptest ${cryptopp_SOURCES_TEST})
-		target_link_libraries(cryptest cryptopp-static)
+		if (BUILD_STATIC)
+			target_link_libraries(cryptest cryptopp-static)
+		else()
+			target_link_libraries(cryptest cryptopp-shared)
+		endif()
 
 		# Setting "cryptest" binary name to "cryptest.exe"
 		if(NOT WIN32)
