@@ -1783,6 +1783,9 @@ endif()
 if(ENABLE_DAEMON)
     set(btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud.cpp ${Boost_INCLUDE_DIRS})
     add_executable(btcud ${btcud_SOURCES} ${BitcoinHeaders})
+    if(ENABLE_TESTS)
+        target_compile_definitions(btcud PUBLIC -DTEST_BTCU)
+    endif()
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         generate_windows_version_info(btcud
             DESCRIPTION "BTCU node with a JSON-RPC server"

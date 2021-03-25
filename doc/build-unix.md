@@ -293,7 +293,7 @@ Additionally in a case if you want to build a static build you will have to buil
                 -L "/usr/lib/x86_64-linux-gnu"            &&
     make
     sudo make install
-    find $QT5PREFIX/ -name \*.prl \
+    sudo find $QT5PREFIX/ -name \*.prl \
     -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
     cd -
 ```
@@ -309,7 +309,7 @@ But if you need to build a static build (with a flag -DSTATIC_BUILD=ON) you will
 ```bash
     git clone https://github.com/fukuchi/libqrencode.git
     cd libqrencode
-    ./autogen.sh && ./configure --prefix=/usr --enable-static --enable-shared && make && make install
+    ./autogen.sh && ./configure --prefix=/usr --enable-static --enable-shared && make && sudo make install
     cd -
 ```
 
