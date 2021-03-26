@@ -375,7 +375,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
 
     if (nGasFee > 0) nValue = nGasFee;
     std::vector<std::pair<CScript, CAmount> > vecSend;
-    vecSend.push_back(std::make_pair(scriptPubKey, nValue));
+    vecSend.push_back(std::make_pair(scriptPubKey, 0));
 
     if (!pwalletMain->CreateTransactionSC(vecSend, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
