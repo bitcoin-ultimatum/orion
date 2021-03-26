@@ -2954,7 +2954,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 }
             }
 
-            if (!fJustCheck) {
+            if (fAlreadyChecked) {
             
                 if (!exec.performByteCode()) {
                     return state.Error("ConnectBlock(): Unknown error during contract execution");
