@@ -348,7 +348,7 @@ add_custom_target(translations_target ALL DEPENDS ${QM})
 QT5_ADD_RESOURCES(QRC_RESOURCE btcu.qrc)
 QT5_ADD_RESOURCES(QRC_LOCALE_RESOURCE btcu_locale.qrc)
 
-add_executable(btcu-qt btcu.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/btcu.qrc)
+add_executable(btcu-qt btcu.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/btcu.qrc ../interfaces/node.h)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	include(WindowsVersionInfo)
 	generate_windows_version_info(btcu-qt

@@ -235,14 +235,16 @@ void CreateContract::onCreateContract()
             signSenderAddress = senderAddress;
         } else
             coinControl.reset();
+
     } else {
         coinControl.reset();
         SetDefaultSignSenderAddress(pwalletMain, signSenderAddress);
     }
 
+    //EnsureWalletIsUnlocked()
     if(pwalletMain->IsLocked() || pwalletMain->fWalletUnlockAnonymizeOnly)
     {
-        informError(tr("Error: Please enter the wallet passphrase with walletpassphrase first."));
+        informError(tr("Please enter the wallet passphrase with walletpassphrase first."));
         return;
     }
 
@@ -284,15 +286,20 @@ void CreateContract::onCreateContract()
     // Create and send the transaction
     CAmount nFeeRequired = 0;
     std::string strError;
-    //CAmount nValue = 0;
+    CAmount nValue = 0;
 
     //CTransactionRef tx;
     // make our change address
     CReserveKey reservekey(pwalletMain);
     CWalletTx wtx;
-    if (!pwalletMain->CreateTransaction(scriptPubKey, curBalance, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+
+    if (nGasFee > 0) nValue = nGasFee;
+    std::vector<std::pair<CScript, CAmount> > vecSend;
+    vecSend.push_back(std::make_pair(scriptPubKey, nValue));
+
+    if (!pwalletMain->CreateTransactionSC(vecSend, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
-            strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
+            strError = strprintf("This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         informError(tr(strError.c_str()));
         return;
     }
@@ -310,7 +317,7 @@ void CreateContract::onCreateContract()
         CValidationState state;
         if (!pwalletMain->CommitTransaction(wtx, reservekey))
         {
-            informError(tr("Error: The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of the wallet and coins were spent in the copy but not marked as spent here."));
+            informError(tr("The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of the wallet and coins were spent in the copy but not marked as spent here."));
             return;
         }
 
@@ -346,6 +353,7 @@ void CreateContract::onCreateContract()
         std::string strHex = EncodeHexTx(wtx);
         result.pushKV("raw transaction", strHex);
     }
+
     informWarning(QString::fromStdString(result.get_str()));
     std::cout << result.get_str() << std::endl;
 }

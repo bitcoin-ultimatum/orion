@@ -1581,7 +1581,7 @@ int CWallet::ScanBitcoinStateForWalletTransactions(std::unique_ptr<CCoinsViewIte
 
     LogPrintf("Scanning chainstate for wallet transactions ...\n");
     LogPrintf("[0%%]..."); /* Continued */
-    ShowProgress(_("Rescanning the chainstate state..."), 0);
+    m_node->showProgress(_("Rescanning the chainstate state..."), 0);
 
     for (; pCursor->Valid(); pCursor->Next()) {
         if (fromStartup && ShutdownRequested()) {
@@ -1596,7 +1596,7 @@ int CWallet::ScanBitcoinStateForWalletTransactions(std::unique_ptr<CCoinsViewIte
                 uint32_t high = 0x100 * *trxHash.begin() + *(trxHash.begin() + 1);
                 int pctDone = (int) (high * 100.0 / 65536.0 + 0.5);
                 if (pctDone != prevPctDone) {
-                    ShowProgress(_("Rescanning the Bitcoin state..."), pctDone);
+                    m_node->showProgress(_("Rescanning the Bitcoin state..."), pctDone);
                     prevPctDone = pctDone;
                 }
                 if (reportDone < pctDone / 10) {
@@ -4540,6 +4540,8 @@ void CWallet::SetNull()
     //Auto Combine Dust
     fCombineDust = false;
     nAutoCombineThreshold = 0;
+
+    m_node = new Node();
 }
 
 bool CWallet::isMultiSendEnabled()

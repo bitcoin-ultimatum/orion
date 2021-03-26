@@ -17,6 +17,7 @@
 #include <QTimer>
 #include <atomic>
 #include <QSpacerItem>
+#include <QSharedPointer>
 
 class BTCUGUI;
 

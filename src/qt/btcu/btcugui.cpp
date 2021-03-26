@@ -27,7 +27,6 @@
 #include <QShortcut>
 #include <QKeySequence>
 #include <QWindowStateChangeEvent>
-#include <QProgressDialog>
 
 #include "util.h"
 
@@ -42,7 +41,7 @@ void ForceActivation();
 #endif
 
 const QString BTCUGUI::DEFAULT_WALLET = "~Default";
-static QProgressDialog* pProgressDialog = nullptr;
+QProgressDialog* progressDialog = nullptr;
 
 BTCUGUI::BTCUGUI(const NetworkStyle* networkStyle, QWidget* parent) :
         QMainWindow(parent),
@@ -293,6 +292,8 @@ void BTCUGUI::setClientModel(ClientModel* clientModel) {
 
         // Get restart command-line parameters and handle restart
         connect(settingsWidget, &SettingsWidget::handleRestart, [this](QStringList arg){handleRestart(arg);});
+
+        connect(clientModel, SIGNAL(showProgress(const QString&, int)), this, SLOT(showProgress(const QString&, int)));
 
         if (rpcConsole) {
             rpcConsole->setClientModel(clientModel);
@@ -734,34 +735,58 @@ static bool ThreadSafeMessageBox(BTCUGUI* gui, const std::string& message, const
     return ret;
 }
 
-#ifdef ENABLE_WALLET
+void BTCUGUI::showProgress(const QString& title, int nProgress)
+{
+    if (!pProgressDialog)
+    {
+        if(nProgress == 100) return;
+        pProgressDialog = new QProgressDialog(QString(title.toStdString().c_str()), QString(), 0, 100);
+        pProgressDialog->setWindowModality(Qt::ApplicationModal);
+        pProgressDialog->setMinimumDuration(0);
+        pProgressDialog->setAutoClose(false);
+    }
+    if (nProgress == 0) {
+        pProgressDialog->setValue(0);
+        pProgressDialog->setWindowTitle(QString(title.toStdString().c_str()));
+    } else if (nProgress == 100) {
+        pProgressDialog->close();
+        pProgressDialog->deleteLater();
+        pProgressDialog = nullptr;
+    } else if (pProgressDialog) {
+        if(pProgressDialog->value()!= nProgress)
+        {
+            pProgressDialog->setValue(nProgress);
+        }
+    }
+}
+
+#ifdef ENABLE_WALLET/*
 static void ShowProgress(const std::string& title, int nProgress)
 {
-
-   if (!pProgressDialog)
+   if (!progressDialog)
    {
-      pProgressDialog = new QProgressDialog(QString(title.c_str()), QString(), 0, 100);
-      pProgressDialog->setWindowModality(Qt::ApplicationModal);
-      pProgressDialog->setMinimumDuration(0);
-      pProgressDialog->setAutoClose(false);
+      progressDialog = new QProgressDialog(QString(title.c_str()), QString(), 0, 100);
+      progressDialog->setWindowModality(Qt::ApplicationModal);
+      progressDialog->setMinimumDuration(0);
+      progressDialog->setAutoClose(false);
    }
     if (nProgress == 0) {
-       pProgressDialog->setValue(0);
-       pProgressDialog->setWindowTitle(QString(title.c_str()));
+       progressDialog->setValue(0);
+       progressDialog->setWindowTitle(QString(title.c_str()));
        //TODO: need resolve why without this sleep progressbar was crashed
-       std::this_thread::sleep_for(std::chrono::milliseconds(50));
+       //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     } else if (nProgress == 100) {
-        if (pProgressDialog) {
-            pProgressDialog->close();
-            pProgressDialog->deleteLater();
-            pProgressDialog = nullptr;
+        if (progressDialog) {
+            progressDialog->close();
+            progressDialog->deleteLater();
+            progressDialog = nullptr;
         }
-    } else if (pProgressDialog) {
-       if(pProgressDialog->value()!= nProgress)
+    } else if (progressDialog) {
+       if(progressDialog->value()!= nProgress)
        {
-          pProgressDialog->setValue(nProgress);
+          progressDialog->setValue(nProgress);
           //TODO: need resolve why without this sleep progressbar was crashed
-          std::this_thread::sleep_for(std::chrono::milliseconds(50));
+          //std::this_thread::sleep_for(std::chrono::milliseconds(50));
        }
     }
 }
@@ -769,7 +794,7 @@ static void ShowProgress(const std::string& title, int nProgress)
 static void ConnectWallet(CWallet* pWallet)
 {
     pWallet->ShowProgress.connect(boost::bind(ShowProgress, _1, _2));
-}
+}*/
 #endif
 
 
@@ -778,7 +803,7 @@ void BTCUGUI::subscribeToCoreSignals()
     // Connect signals to client
     uiInterface.ThreadSafeMessageBox.connect(boost::bind(ThreadSafeMessageBox, this, _1, _2, _3));
 #ifdef ENABLE_WALLET
-    uiInterface.LoadWallet.connect(boost::bind(ConnectWallet, _1));
+    //uiInterface.LoadWallet.connect(boost::bind(ConnectWallet, _1));
 #endif // ENABLE_WALLET
 }
 
@@ -788,9 +813,9 @@ void BTCUGUI::unsubscribeFromCoreSignals()
     uiInterface.ThreadSafeMessageBox.disconnect(boost::bind(ThreadSafeMessageBox, this, _1, _2, _3));
 
 #ifdef ENABLE_WALLET
-    ShowProgress("", 0);
-    if (pwalletMain) {
-        pwalletMain->ShowProgress.disconnect(boost::bind(ShowProgress, _1, _2));
-    }
+    //ShowProgress("", 0);
+    //if (pwalletMain) {
+    //     pwalletMain->ShowProgress.disconnect(boost::bind(ShowProgress, _1, _2));
+    //}
 #endif //ENABLE_WALLET
 }
