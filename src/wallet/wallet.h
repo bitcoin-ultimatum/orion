@@ -40,6 +40,7 @@
 #include <utility>
 #include <vector>
 #include <interfaces/chain.h>
+#include <interfaces/node.h>
 /**
  * Settings
  */
@@ -188,6 +189,7 @@ private:
     int64_t nLastResend;
 
     interfaces::Chain* m_chain;
+    Node* m_node;
 
     /**
      * Used to keep track of spent outpoints, and
@@ -598,6 +600,7 @@ public:
 
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { assert(m_chain); return *m_chain; }
+    Node* getNode() const { return m_node; }
 };
 
 struct CRecipient
