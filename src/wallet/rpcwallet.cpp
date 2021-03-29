@@ -212,10 +212,11 @@ UniValue createcontract(const UniValue& params, bool fHelp){
 
     auto locked_chain = nullptr;//pwalletMain->chain().lock();
     LOCK2(cs_main, pwalletMain->cs_wallet);
-    //QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
-    uint64_t blockGasLimit = 40000000;//= qtumDGP.getBlockGasLimit(::ChainActive().Height());
-    uint64_t minGasPrice = 40;//CAmount(qtumDGP.getMinGasPrice(::ChainActive().Height()));
-    CAmount nGasPrice = 40;//(minGasPrice>DEFAULT_GAS_PRICE)?minGasPrice:DEFAULT_GAS_PRICE;
+    QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
+    auto t = chainActive.Height();
+    uint64_t blockGasLimit = qtumDGP.getBlockGasLimit(chainActive.Height());
+    uint64_t minGasPrice = CAmount(qtumDGP.getMinGasPrice(chainActive.Height()));
+    CAmount nGasPrice = (minGasPrice>DEFAULT_GAS_PRICE)?minGasPrice:DEFAULT_GAS_PRICE;
 
     if (fHelp || params.size() < 1)
         throw std::runtime_error("createcontract"
@@ -433,9 +434,9 @@ UniValue sendtocontract(const UniValue& params, bool fHelp){
 
     LOCK2(cs_main, pwalletMain->cs_wallet);
     QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
-    uint64_t blockGasLimit = 40000000;//qtumDGP.getBlockGasLimit(::ChainActive().Height());
-    uint64_t minGasPrice = 40;//CAmount(qtumDGP.getMinGasPrice(::ChainActive().Height()));
-    CAmount nGasPrice = 40;// (minGasPrice>DEFAULT_GAS_PRICE)?minGasPrice:DEFAULT_GAS_PRICE;
+    uint64_t blockGasLimit = qtumDGP.getBlockGasLimit(chainActive.Height());
+    uint64_t minGasPrice = CAmount(qtumDGP.getMinGasPrice(chainActive.Height()));
+    CAmount nGasPrice = (minGasPrice>DEFAULT_GAS_PRICE)?minGasPrice:DEFAULT_GAS_PRICE;
 
     if (fHelp || params.size() < 2) {
         throw std::runtime_error(std::string("sendtocontract"
