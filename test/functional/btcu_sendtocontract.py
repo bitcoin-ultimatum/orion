@@ -144,8 +144,8 @@ class SendToContractTest(BtcuTestFramework):
         self.setup_contract()
         self.sendtocontract_verify_storage_test()
         self.sendtocontract_verify_storage_and_balance_test()
-        #self.sendtocontract_specify_sender_test()
-        #self.sendtocontract_no_broadcast()
+        self.sendtocontract_specify_sender_test()
+        self.sendtocontract_no_broadcast()
 
 if __name__ == '__main__':
     SendToContractTest().main()
