@@ -186,7 +186,8 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
 {
     assert(nIn < txTo.vin.size());
     CTxIn& txin = txTo.vin[nIn];
-
+   CScript subscript;
+   bool P2SH = false;
     // Leave out the signature from the hash, since a signature can't sign itself.
     // The checksig op will also drop the signatures from its hash.
     uint256 hash = SignatureHash(fromPubKey, txTo, nIn, nHashType);
@@ -201,7 +202,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
         // SignStep returns the subscript that need to be evaluated;
         // the final scriptSig is the signatures from that
         // and then the serialized subscript:
-        CScript subscript = txin.scriptSig;
+        subscript = txin.scriptSig;
 
         // Recompute txn hash using subscript in place of scriptPubKey:
         uint256 hash2 = SignatureHash(subscript, txTo, nIn, nHashType);
@@ -211,7 +212,8 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
                        && subType != TX_SCRIPTHASH;
 
         // Append serialized subscript whether or not it is completely signed:
-        txin.scriptSig << static_cast<valtype>(subscript);
+        P2SH = true;
+        txin.scriptSig = subscript;
         if (!fSolved) return false;
     }
 
@@ -229,7 +231,9 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
         bool fSolved = SignStep(keystore, subscript, hash2, nHashType, txin.scriptSig, subType);
 
         // Append serialized subscript whether or not it is completely signed:
-        txin.scriptSig << static_cast<valtype>(subscript);
+        //txin.scriptSig << static_cast<valtype>(subscript);
+        txin.scriptSig = subscript;
+
         if (!fSolved) return false;
     }
     else if (whichType == TX_WITNESS_V0_SCRIPTHASH)
@@ -246,7 +250,9 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
                        && subType != TX_WITNESS_V0_KEYHASH;
 
         // Append serialized subscript whether or not it is completely signed:
-        txin.scriptSig << static_cast<valtype>(subscript);
+        //txin.scriptSig << static_cast<valtype>(subscript);
+        txin.scriptSig = subscript;
+
         if (!fSolved) return false;
 
     } else if (whichType == TX_WITNESS_UNKNOWN) {
@@ -256,6 +262,12 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
 
     CScriptWitness witness;
     witness.stack.clear();
+    std::vector<valtype> result;
+    if(P2SH)
+    {
+       result.push_back(std::vector<unsigned char>(subscript.begin(), subscript.end()));
+       txin.scriptSig = PushAll(result);
+    }
     // Test solution
     return BTC::VerifyScript(txin.scriptSig, fromPubKey, &witness, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&txTo, nIn));
     //return VerifyScript(txin.scriptSig, fromPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&txTo, nIn));
@@ -271,12 +283,29 @@ bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CMutab
     return SignSignature(keystore, txout.scriptPubKey, txTo, nIn, nHashType, fColdStake, fLeasing, fForceLeaserSign);
 }
 
-static CScript PushAll(const std::vector<valtype>& values)
+/*static CScript PushAll(const std::vector<valtype>& values)
 {
     CScript result;
     for (const valtype& v : values)
         result << v;
     return result;
+}*/
+
+static CScript PushAll(const std::vector<valtype>& values)
+{
+   CScript result;
+   for (const valtype& v : values) {
+      if (v.size() == 0) {
+         result << OP_0;
+      } else if (v.size() == 1 && v[0] >= 1 && v[0] <= 16) {
+         result << CScript::EncodeOP_N(v[0]);
+      } else if (v.size() == 1 && v[0] == 0x81) {
+         result << OP_1NEGATE;
+      } else {
+         result << v;
+      }
+   }
+   return result;
 }
 
 static CScript CombineMultisig(const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn,
