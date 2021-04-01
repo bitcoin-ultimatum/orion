@@ -2023,7 +2023,7 @@ if(ENABLE_TESTS)
 
     if(BUILD_STATIC)
         target_link_libraries(test_btcu 
-            ZeroMQ::zmq jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB ZLIB::ZLIB
+            jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB ZLIB::ZLIB
             )
         if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
             target_link_libraries(SERVER_A Snappy::snappy-static)
