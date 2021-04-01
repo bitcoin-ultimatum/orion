@@ -29,9 +29,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
             GTest::GTest 
             GTest::Main
             )
-    if(BUILD_STATIC)
-        target_compile_definitions(ethash-test PRIVATE TESTS_SUITE_DEFINITION_REQUIRED)
-    endif()
 else()
     target_link_libraries(ethash-test PRIVATE
             GTest::gtest 
