@@ -207,9 +207,8 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
         // Recompute txn hash using subscript in place of scriptPubKey:
         uint256 hash2 = SignatureHash(subscript, txTo, nIn, nHashType);
 
-        txnouttype subType;
-        bool fSolved = SignStep(keystore, subscript, hash2, nHashType, txin.scriptSig, subType)
-                       && subType != TX_SCRIPTHASH;
+        bool fSolved = SignStep(keystore, subscript, hash2, nHashType, txin.scriptSig, whichType)
+                       && whichType != TX_SCRIPTHASH;
 
         // Append serialized subscript whether or not it is completely signed:
         P2SH = true;
@@ -219,39 +218,45 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
 
     if (whichType == TX_WITNESS_V0_KEYHASH)
     {
-        CKeyID keyID(uint160(txin.scriptSig));
+        //Temporary return false for any types of witness programs before full integration of bitcoin witness signature check
+        return false;
 
-        CScript subscript;
-        subscript << OP_DUP << OP_HASH160 << ToByteVector(keyID) << OP_EQUALVERIFY << OP_CHECKSIG;
+        //CKeyID keyID(uint160(txin.scriptSig));
+
+        CScript subscript2;
+        subscript2 << OP_DUP << OP_HASH160 << ToByteVector(txin.scriptSig) << OP_EQUALVERIFY << OP_CHECKSIG;
 
         // Recompute txn hash using subscript in place of scriptPubKey:
-        uint256 hash2 = SignatureHash(subscript, txTo, nIn, nHashType);
+        uint256 hash2 = SignatureHash(subscript2, txTo, nIn, nHashType);
 
         txnouttype subType;
-        bool fSolved = SignStep(keystore, subscript, hash2, nHashType, txin.scriptSig, subType);
+        bool fSolved = SignStep(keystore, subscript2, hash2, nHashType, txin.scriptSig, subType);
 
         // Append serialized subscript whether or not it is completely signed:
         //txin.scriptSig << static_cast<valtype>(subscript);
-        txin.scriptSig = subscript;
+        txin.scriptSig = subscript2;
 
         if (!fSolved) return false;
     }
     else if (whichType == TX_WITNESS_V0_SCRIPTHASH)
     {
-        CScript subscript = txin.scriptSig;
+        //Temporary return false for any types of witness programs before full integration of bitcoin witness signature check
+        return false;
+
+        CScript subscript2 = txin.scriptSig;
 
         // Recompute txn hash using subscript in place of scriptPubKey:
-        uint256 hash2 = SignatureHash(subscript, txTo, nIn, nHashType);
+        uint256 hash2 = SignatureHash(subscript2, txTo, nIn, nHashType);
 
         txnouttype subType;
-        bool fSolved = SignStep(keystore, subscript, hash2, nHashType, txin.scriptSig, subType)
+        bool fSolved = SignStep(keystore, subscript2, hash2, nHashType, txin.scriptSig, subType)
                        && subType != TX_SCRIPTHASH
                        && subType != TX_WITNESS_V0_SCRIPTHASH
                        && subType != TX_WITNESS_V0_KEYHASH;
 
         // Append serialized subscript whether or not it is completely signed:
         //txin.scriptSig << static_cast<valtype>(subscript);
-        txin.scriptSig = subscript;
+        txin.scriptSig = subscript2;
 
         if (!fSolved) return false;
 
@@ -423,9 +428,9 @@ CScript CombineSignatures(const CScript& scriptPubKey, const CTransaction& txTo,
     Solver(scriptPubKey, txType, vSolutions);
 
     std::vector<valtype> stack1;
-    EvalScript(stack1, scriptSig1, SCRIPT_VERIFY_STRICTENC, BaseSignatureChecker());
+    BTC::EvalScript(stack1, scriptSig1, SCRIPT_VERIFY_STRICTENC, BaseSignatureChecker(), SigVersion::BASE, nullptr);
     std::vector<valtype> stack2;
-    EvalScript(stack2, scriptSig2, SCRIPT_VERIFY_STRICTENC, BaseSignatureChecker());
+    BTC::EvalScript(stack2, scriptSig2, SCRIPT_VERIFY_STRICTENC, BaseSignatureChecker(), SigVersion::BASE, nullptr);
 
     return CombineSignatures(scriptPubKey, txTo, nIn, txType, vSolutions, stack1, stack2);
 }

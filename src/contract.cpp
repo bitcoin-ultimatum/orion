@@ -104,7 +104,7 @@ bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
 
             // Get the signature stack
             std::vector <std::vector<unsigned char> > stack;
-            if (!EvalScript(stack, senderSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker()))
+            if (!BTC::EvalScript(stack, senderSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker(), SigVersion::BASE, nullptr))
                 return false;
 
             // Check that the signature script contains only signature and public key (2 items)
@@ -511,7 +511,7 @@ bool QtumTxConverter::extractionQtumTransactions(ExtractQtumTX& qtumtx){
 bool QtumTxConverter::receiveStack(const CScript& scriptPubKey){
     sender = false;
     // FIX: hardcoded flag value
-    EvalScript(stack, scriptPubKey, 1610612736, BaseSignatureChecker(), nullptr);
+    BTC::EvalScript(stack, scriptPubKey, 1610612736, BaseSignatureChecker(), SigVersion::BASE, nullptr);
     if (stack.empty())
         return false;
 

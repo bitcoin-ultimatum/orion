@@ -2544,7 +2544,7 @@ namespace BTC
       }
 
       // Run the script interpreter.
-      if (!EvalScript(stack, scriptPubKey, flags, checker, sigversion, execdata, serror)) return false;
+      if (!BTC::EvalScript(stack, scriptPubKey, flags, checker, sigversion, execdata, serror)) return false;
 
       // Scripts inside witness implicitly require cleanstack behaviour
       if (stack.size() != 1) return set_error(serror, SCRIPT_ERR_CLEANSTACK);
@@ -2736,6 +2736,11 @@ namespace BTC
       std::vector<unsigned char> witnessprogram;
       if (flags & SCRIPT_VERIFY_WITNESS)
       {
+
+         //Temporary return false for any types of witness programs before full integration of bitcoin witness signature check
+         return false;
+
+
          if (scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram))
          {
             hadWitness = true;
@@ -2785,6 +2790,10 @@ namespace BTC
          // P2SH witness program
          if (flags & SCRIPT_VERIFY_WITNESS)
          {
+
+            //Temporary return false for any types of witness programs before full integration of bitcoin witness signature check
+            return false;
+
             if (pubKey2.IsWitnessProgram(witnessversion, witnessprogram))
             {
                hadWitness = true;
@@ -2823,6 +2832,9 @@ namespace BTC
 
       if (flags & SCRIPT_VERIFY_WITNESS)
       {
+         //Temporary return false for any types of witness programs before full integration of bitcoin witness signature check
+         return false;
+
          // We can't check for correct unexpected witness data if P2SH was off, so require
          // that WITNESS implies P2SH. Otherwise, going from WITNESS->P2SH+WITNESS would be
          // possible, which is not a softfork.
