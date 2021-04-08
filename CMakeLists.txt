@@ -1992,7 +1992,7 @@ if(ENABLE_TESTS)
     add_custom_target(test_btcu_hex ALL DEPENDS ${BTCU_HEX_TEST_FILES})
 
     add_executable(test_btcu ${BTCU_TEST_SOURCES})
-    target_compile_definitions(test_btcu PUBLIC -DTEST_BTCU)
+    target_compile_definitions(test_btcu PUBLIC TEST_BTCU)
 
     add_dependencies(test_btcu test_btcu_hex leveldb leveldb_sse42 memenv)
     target_include_directories(test_btcu PUBLIC ${BTCU_HEX_DESTDIR} ./src/test)
@@ -2026,7 +2026,7 @@ if(ENABLE_TESTS)
 
     if(BUILD_STATIC)
         target_link_libraries(test_btcu 
-            ZeroMQ::zmq jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB ZLIB::ZLIB
+            jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB ZLIB::ZLIB
             )
         if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
             target_link_libraries(SERVER_A Snappy::snappy-static)

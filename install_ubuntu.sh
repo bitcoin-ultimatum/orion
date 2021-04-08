@@ -370,7 +370,47 @@ then
 
 
     echo  ""
-    echo  "[52%] Building QT package: qt-5.15... "
+    echo  "[52%] Ensuring QT's sub-dependencies... "
+
+    install_package libglu1-mesa-dev
+    install_package libxi-dev
+    install_package libxrender-dev
+    install_package libx11-dev
+    install_package libxcb-glx0-dev
+    install_package libdrm-dev
+    install_package libx11-xcb-dev
+    install_package libxcb-icccm4-dev
+    install_package libxcb-image0-dev
+    install_package libxcb-shm0-dev
+    install_package libxcb-util-dev
+    install_package libxcb-keysyms1-dev
+    install_package libxcb-randr0-dev
+    install_package libxcb-render-util0-dev
+    install_package libxcb-render0-dev
+    install_package libxcb-shape0-dev
+    install_package libxcb-sync-dev
+    install_package libxcb-xfixes0-dev
+    install_package libxcb-xinerama0-dev
+    install_package libxcb-xkb-dev
+    install_package libxcb1-dev
+    install_package libxkbcommon-x11-dev
+    install_package libegl1-mesa-dev
+    install_package libwayland-dev
+    install_package libxkbcommon-dev
+    install_package libxext-dev
+    install_package libxau-dev
+    install_package libxdmcp-dev
+    install_package libffi-dev
+    install_package libfreetype6-dev
+    install_package libgraphite2-dev
+    install_package libpcre3-dev
+    install_package uuid-dev
+
+    echo  ""
+    echo  "[53%] Ensuring QT's sub-dependencies... Done!"
+
+    echo  ""
+    echo  "[53%] Building QT package: qt-5.15... "
 
     sudo -p mkdir /opt/qt5
     export QT5PREFIX=/opt/qt5

@@ -266,6 +266,7 @@ Modern Unix .deb packages doesn't include static libraries. If you wont build wi
 
 Additionally in a case if you want to build a static build you will have to build the QT5 from the sources:
 ```bash
+    sudo apt-get install libglu1-mesa-dev libx11-dev libxcb-glx0-dev libdrm-dev libx11-xcb-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-shm0-dev libxcb-util-dev libxcb-keysyms1-dev libxcb-randr0-dev libxcb-render-util0-dev libxcb-render0-dev libxcb-shape0-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-xinerama0-dev libxcb-xkb-dev libxcb1-dev libxkbcommon-x11-dev libegl1-mesa-dev libwayland-dev libxkbcommon-dev libxext-dev libxau-dev libxdmcp-dev libffi-dev libgraphite2-dev libpcre3-dev uuid-dev libxi-dev libxrender-dev
     sudo apt-get install libfontconfig1-dev libfreetype6-dev
     wget https://download.qt.io/archive/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz
     tar xvf qt-everywhere-src-5.15.2.tar.xz -C ./
@@ -284,6 +285,8 @@ Additionally in a case if you want to build a static build you will have to buil
                 -no-rpath                                 \
                 -system-zlib                              \
                 -static                                   \
+                -xcb                                      \
+                -xcb-xlib                                 \
                 -bundled-xcb-xinput                       \
                 -system-freetype                          \
                 -fontconfig                               \
@@ -291,7 +294,7 @@ Additionally in a case if you want to build a static build you will have to buil
                 -I "/usr/include/freetype2"               \
                 -I "/usr/include/fontconfig"              \
                 -L "/usr/lib/x86_64-linux-gnu"            &&
-    make
+    make &&
     sudo make install
     sudo find $QT5PREFIX/ -name \*.prl \
     -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
