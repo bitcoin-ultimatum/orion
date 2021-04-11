@@ -1989,7 +1989,6 @@ if(ENABLE_TESTS)
     add_custom_target(test_btcu_hex ALL DEPENDS ${BTCU_HEX_TEST_FILES})
 
     add_executable(test_btcu ${BTCU_TEST_SOURCES})
-    target_compile_definitions(test_btcu PUBLIC TEST_BTCU)
 
     add_dependencies(test_btcu test_btcu_hex leveldb leveldb_sse42 memenv)
     target_include_directories(test_btcu PUBLIC ${BTCU_HEX_DESTDIR} ./src/test)
@@ -2001,8 +2000,82 @@ if(ENABLE_TESTS)
         list(APPEND test_btcu_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/test_btcu-res.rc)
     endif()
 
+    add_library(SERVER_A_test STATIC ${BitcoinHeaders} ${SERVER_SOURCES})
+    if(MINIUPNP_FOUND)
+        target_include_directories(SERVER_A_test PUBLIC
+            ${MINIUPNP_INCLUDE_DIR}
+            )
+        target_link_libraries(SERVER_A_test 
+            ${MINIUPNP_LIBRARY}
+            )
+    endif()
+    target_include_directories(SERVER_A_test
+        PUBLIC 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/helpers/memenv
+            ${ZeroMQ_INCLUDE_DIRS}
+            ${LibEvent_INCLUDE_DIR}
+            ${BerkeleyDB_INCLUDE_DIRS}
+            ${OPENSSL_INCLUDE_DIR}
+            ${Boost_INCLUDE_DIRS}
+            ${Boost_INCLUDE_DIRS}/filesystem
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/qtum
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/libdevcore
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/utils
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/utils/libscrypt
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/libff/libff
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/libff
+        )
+    add_dependencies(SERVER_A_test leveldb)
+    target_link_libraries(SERVER_A_test 
+            univalue
+            UTIL_A
+            BITCOIN_CRYPTO_A
+            COMMON_A
+            ${Boost_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            ${OPENSSL_LIBRARIES}
+            leveldb
+            secp256k1
+            RocksDB::rocksdb
+            ${CMAKE_DL_LIBS}
+            Threads::Threads 
+            ff 
+            Threads::Threads
+            scrypt
+            )
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+        target_link_libraries(SERVER_A_test 
+            ZeroMQ::zmq jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB
+            )
+    else()
+        target_link_libraries(SERVER_A_test 
+            ${ZeroMQ_LIBRARY} jsoncpp_lib cryptopp-shared ${BerkeleyDB_Cxx_LIBRARY}
+            )
+    endif()
+    if(BUILD_STATIC)
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+            target_link_libraries(SERVER_A_test ZLIB::ZLIB Snappy::snappy-static)
+        else()
+            target_link_libraries(SERVER_A_test ZLIB::ZLIB Snappy::snappy)
+        endif()
+        target_link_libraries(SERVER_A_test ZLIB::ZLIB)
+    endif()
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND CRYPT32_LIBRARY)
+        target_link_libraries(SERVER_A_test 
+            ${CRYPT32_LIBRARY}
+        )
+    endif()
+    target_compile_definitions(SERVER_A_test PRIVATE TEST_BTCU)
+
     target_link_libraries(test_btcu
-            SERVER_A
+            SERVER_A_test
             WALLET_A
             univalue
             COMMON_A
@@ -2010,6 +2083,7 @@ if(ENABLE_TESTS)
             UTIL_A
             CLI_A
             BITCOIN_CRYPTO_A
+            RocksDB::rocksdb
             leveldb
             leveldb_sse42
             memenv
@@ -2026,9 +2100,9 @@ if(ENABLE_TESTS)
             jsoncpp_lib_static cryptopp-static Oracle::BerkeleyDB ZLIB::ZLIB
             )
         if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-            target_link_libraries(SERVER_A Snappy::snappy-static)
+            target_link_libraries(test_btcu Snappy::snappy-static)
         else()
-            target_link_libraries(SERVER_A Snappy::snappy)
+            target_link_libraries(test_btcu Snappy::snappy)
         endif()
     endif()
     if(GMP_FOUND)
