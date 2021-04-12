@@ -7,6 +7,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 90)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 include(TestBigEndian)
 include(CheckCSourceCompiles)
 include(CheckIncludeFiles)
