@@ -7,8 +7,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 90)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 include(TestBigEndian)
 include(CheckCSourceCompiles)
 include(CheckIncludeFiles)
@@ -419,7 +417,8 @@ else()
 endif()
 
 # Generate the config
-configure_file(src/libsecp256k1-config.h.cmake.in src/libsecp256k1-config.h ESCAPE_QUOTES)
+configure_file(
+	${PROJECT_SOURCE_DIR}/src/secp256k1/src/libsecp256k1-config.h.cmake.in ${PROJECT_SOURCE_DIR}/src/secp256k1/src/libsecp256k1-config.h ESCAPE_QUOTES)
 target_compile_definitions(secp256k1 PRIVATE HAVE_CONFIG_H SECP256K1_BUILD)
 
 # Tests
