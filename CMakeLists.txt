@@ -1759,7 +1759,7 @@ if(ENABLE_TESTS)
             # contract tests
             #./src/test/qtumtests/btcecrecoverfork_tests.cpp
             ./src/test/qtumtests/bytecodeexec_tests.cpp
-            ./src/test/qtumtests/condensingtransaction_tests.cpp
+            #./src/test/qtumtests/condensingtransaction_tests.cpp
             #./src/test/qtumtests/constantinoplefork_tests.cpp
             #./src/test/qtumtests/delegations_tests.cpp
             #./src/test/qtumtests/dgp_tests.cpp

@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 #include <qtumtests/test_utils.h>
-
+#include <test/test_btcu.h>
+#include <main.h>
 const std::vector<valtype> code = {
     /*
         contract Sender1 {
