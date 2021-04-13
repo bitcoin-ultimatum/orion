@@ -392,11 +392,11 @@ if(SECP256K1_ECMULT_STATIC_PRECOMPUTATION)
 		add_native_executable(gen_context src/gen_context.c)
 
 		add_custom_command(
-			OUTPUT ecmult_static_context.h
+			OUTPUT ${PROJECT_SOURCE_DIR}/src/ecmult_static_context.h
 			COMMAND gen_context
 		)
 
-		target_sources(secp256k1 PRIVATE ecmult_static_context.h)
+		target_sources(secp256k1 PRIVATE ${PROJECT_SOURCE_DIR}/src/ecmult_static_context.h)
 	endif()
 endif()
 	
