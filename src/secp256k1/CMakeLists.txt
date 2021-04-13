@@ -418,7 +418,7 @@ endif()
 
 # Generate the config
 configure_file(
-	${PROJECT_SOURCE_DIR}/src/secp256k1/src/libsecp256k1-config.h.cmake.in ${PROJECT_SOURCE_DIR}/src/secp256k1/src/libsecp256k1-config.h ESCAPE_QUOTES)
+	${PROJECT_SOURCE_DIR}/src/libsecp256k1-config.h.cmake.in ${PROJECT_SOURCE_DIR}/src/libsecp256k1-config.h ESCAPE_QUOTES)
 target_compile_definitions(secp256k1 PRIVATE HAVE_CONFIG_H SECP256K1_BUILD)
 
 # Tests
