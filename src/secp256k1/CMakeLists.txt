@@ -7,6 +7,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 90)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 include(TestBigEndian)
 include(CheckCSourceCompiles)
 include(CheckIncludeFiles)
@@ -380,24 +382,13 @@ endfunction(add_secp256k1_bench)
 # temporary unavailable
 option(SECP256K1_ECMULT_STATIC_PRECOMPUTATION "Precompute libsecp256k1's elliptic curve multiplication tables" ON)
 if(SECP256K1_ECMULT_STATIC_PRECOMPUTATION)
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-		add_executable(gen_context src/gen_context.c)
-		target_include_directories(gen_context PRIVATE ${CMAKE_SOURCE_DIR})
-
-		add_custom_target(ecmult_static_context gen_context WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-		add_dependencies(secp256k1 ecmult_static_context)
-	else()
 		set(USE_ECMULT_STATIC_PRECOMPUTATION 1)
-		include(NativeExecutable)
-		add_native_executable(gen_context src/gen_context.c)
+		add_executable(gen_context src/gen_context.c)
+		target_include_directories(gen_context PRIVATE ${PROJECT_SOURCE_DIR})
 
-		add_custom_command(
-			OUTPUT ecmult_static_context.h
-			COMMAND gen_context
-		)
+		add_custom_target(ecmult_static_context gen_context WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+		add_dependencies(secp256k1 ecmult_static_context)
 
-		target_sources(secp256k1 PRIVATE ecmult_static_context.h)
-	endif()
 endif()
 	
 # If this project is not the top level project, then don't install by default
@@ -417,7 +408,8 @@ else()
 endif()
 
 # Generate the config
-configure_file(src/libsecp256k1-config.h.cmake.in src/libsecp256k1-config.h ESCAPE_QUOTES)
+configure_file(
+	${PROJECT_SOURCE_DIR}/src/libsecp256k1-config.h.cmake.in ${PROJECT_SOURCE_DIR}/src/libsecp256k1-config.h ESCAPE_QUOTES)
 target_compile_definitions(secp256k1 PRIVATE HAVE_CONFIG_H SECP256K1_BUILD)
 
 # Tests
