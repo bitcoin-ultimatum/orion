@@ -747,7 +747,6 @@ void BTCUGUI::showProgress(const QString& title, int nProgress)
     }
     if (nProgress == 0) {
         pProgressDialog->setValue(0);
-        pProgressDialog->setWindowTitle(QString(title.toStdString().c_str()));
     } else if (nProgress == 100) {
         pProgressDialog->close();
         pProgressDialog->deleteLater();

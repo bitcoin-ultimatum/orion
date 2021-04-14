@@ -1596,7 +1596,7 @@ int CWallet::ScanBitcoinStateForWalletTransactions(std::unique_ptr<CCoinsViewIte
                 uint32_t high = 0x100 * *trxHash.begin() + *(trxHash.begin() + 1);
                 int pctDone = (int) (high * 100.0 / 65536.0 + 0.5);
                 if (pctDone != prevPctDone) {
-                    m_node->showProgress(_("Rescanning the Bitcoin state..."), pctDone);
+                    m_node->showProgress(_("Rescanning the chainstate state..."), pctDone);
                     prevPctDone = pctDone;
                 }
                 if (reportDone < pctDone / 10) {
@@ -1610,7 +1610,6 @@ int CWallet::ScanBitcoinStateForWalletTransactions(std::unique_ptr<CCoinsViewIte
             if (coins.nVersion != CTransaction::BITCOIN_VERSION && coins.nVersion != CTransaction::BTCU_START_VERSION) {
                 continue;
             }
-
             if (AddToWalletIfInvolvingMe(CTransaction(trxHash, coins), nullptr, merkleClb, fUpdate)) {
                 ++ret;
             }
@@ -1654,7 +1653,7 @@ int CWallet::ScanForWalletTransactions(std::unique_ptr<CCoinsViewIterator> pCoin
         LogPrintf("Scanning blocks for wallet transactions ...\n");
         LogPrintf("[0%%]..."); /* Continued */
 
-        ShowProgress(_("Rescanning blocks..."), 0); // show rescan progress in GUI as dialog or on splashscreen, if -rescan on startup
+        m_node->showProgress(_("Scanning blocks for wallet transactions..."), 0); // show rescan progress in GUI as dialog or on splashscreen, if -rescan on startup
         double dProgressStart = Checkpoints::GuessVerificationProgress(pindex, false);
         double dProgressTip = Checkpoints::GuessVerificationProgress(chainActive.Tip(), false);
         std::set<uint256> setAddedToWallet;
@@ -1662,7 +1661,7 @@ int CWallet::ScanForWalletTransactions(std::unique_ptr<CCoinsViewIterator> pCoin
             if (pindex->nHeight % 100 == 0 && dProgressTip - dProgressStart > 0.0) {
                 int nProgress = std::max(1, std::min(99, (int)((Checkpoints::GuessVerificationProgress(pindex, false) - dProgressStart) / (dProgressTip - dProgressStart) * 100)));
                 if (prevPctDone != nProgress) {
-                    ShowProgress(_("Rescanning blocks..."), nProgress);
+                    m_node->showProgress(_("Scanning blocks for wallet transactions..."), nProgress);
                     prevPctDone = nProgress;
                 }
                 if (nProgress / 10 > nPrevProgress) {
@@ -1732,7 +1731,7 @@ int CWallet::ScanForWalletTransactions(std::unique_ptr<CCoinsViewIterator> pCoin
 
             pindex = chainActive.Next(pindex);
         }
-        ShowProgress("", 100); // hide progress dialog in GUI
+        m_node->showProgress("Scanning blocks for wallet transactions...", 100); // hide progress dialog in GUI
         LogPrintf("[DONE].\n");
     }
     return ret;
