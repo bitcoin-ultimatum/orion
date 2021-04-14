@@ -427,15 +427,49 @@ public:
       leasingDB.Flush();
    }
 
+    CTxOut CalcLeasingRewardTest(const LeaserType type, const CKeyID& leaserID, const CAmount aAmount) const
+   {
+       return CalcLeasingReward(type, leaserID, aAmount);
+   }
+
+    CTxOut CalculateLeasingRewardTest(CPubKey &pubKey) const
+   {
+       auto& idxTrxHash = mapOutputs.get<byTrxHash>();
+       auto itr = idxTrxHash.begin();
+       CAmount amount = 0;
+       for(;itr != idxTrxHash.end(); itr++)
+           if(itr->kOwnerID == CPubKey(pubKey).GetID())
+               amount += CalcLeasingReward(*itr).nValue;
+
+       CTxOut reward;
+       reward.nValue = amount;
+       return reward;
+   }
+
    void GetAllAmountsLeasedTo(CPubKey &pubKey, CAmount &amount) const {
       CKeyID ownerID = CPubKey(pubKey).GetID();
       LOCK(cs_leasing);
       auto &idxLeasedTo = mapOutputs.get<byOwner>();
       auto itr = idxLeasedTo.lower_bound(ownerID);
       amount = 0;
-      for (; itr != idxLeasedTo.end() && itr->kLeaserID == ownerID; ++itr)
-         amount += itr->nValue;
+       for (; itr != idxLeasedTo.end() && itr->kOwnerID == ownerID; ++itr)
+           amount += itr->nValue;
    }
+
+    void GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const {
+        CKeyID leaserID = CPubKey(pubKey).GetID();
+        LOCK(cs_leasing);
+        auto &idxLeasedTo = mapOutputs.get<byOwner>();
+        amount = 0;
+        //auto itr = idxLeasedTo.lower_bound(leaserID);
+        //for (; itr != idxLeasedTo.end() && itr->kLeaserID == leaserID; ++itr)
+        //    amount += itr->nValue;
+        for(auto itr = idxLeasedTo.begin(); itr != idxLeasedTo.end(); itr++)
+        {
+            if(itr->kLeaserID == leaserID)
+                amount += itr->nValue;
+        }
+    }
 
    bool GetLeasingRewards(
        const LeaserType type,
@@ -910,9 +944,18 @@ bool CLeasingManager::GetLeasingRewards(
 CTxOut CLeasingManager::CalcLeasingReward(const COutPoint& point, const CKeyID& keyID) const {
    return pImpl->CalcLeasingReward(point, keyID);
 }
+CTxOut CLeasingManager::CalcLeasingReward(const LeaserType type, const CKeyID& leaserID, const CAmount aAmount) const {
+   return pImpl->CalcLeasingRewardTest(type, leaserID, aAmount);
+}
+CTxOut CLeasingManager::CalcLeasingReward(CPubKey &pubKey) const {
+   return pImpl->CalculateLeasingRewardTest(pubKey);
+}
 
 void CLeasingManager::GetAllAmountsLeasedTo(CPubKey &pubKey, CAmount &amount) const {
    pImpl->GetAllAmountsLeasedTo(pubKey, amount);
+}
+void CLeasingManager::GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const {
+   pImpl->GetAllAmountsLeasedFrom(pubKey, amount);
 }
 
 const uint256& CLeasingManager::GetBlockHash() const {

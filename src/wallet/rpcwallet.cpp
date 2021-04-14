@@ -23,7 +23,7 @@
 #include "zbtcuchain.h"
 #include <string>
 #include <stdint.h>
-
+#include "masternode-budget.h"
 #include "libzerocoin/Coin.h"
 #include "spork.h"
 #include "zbtcu/deterministicmint.h"
@@ -210,10 +210,6 @@ CKeyID GetKeyForDestination(const CCryptoKeyStore& store, const CTxDestination& 
 
 UniValue createcontract(const UniValue& params, bool fHelp){
 
-    //std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    //CWallet* const pwallet = wallet.get();
-
-
     auto locked_chain = nullptr;//pwalletMain->chain().lock();
     LOCK2(cs_main, pwalletMain->cs_wallet);
     //QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
@@ -279,7 +275,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
     if (params.size() > 3){
         senderAddress = CBTCUAddress(params[3].get_str()).Get();
         if (!IsValidDestinationKey(senderAddress))
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Qtum address to send from");
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU address to send from");
         if (!IsValidContractSenderAddressKey(senderAddress))
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid contract sender address. Only P2PK and P2PKH allowed");
         else
@@ -358,6 +354,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
             throw JSONRPCError(RPC_WALLET_ERROR, "Private key not available");
         }
         std::vector<unsigned char> scriptSig;
+        scriptSig.push_back(0);
         scriptPubKey = (CScript() << CScriptNum(addresstype::PUBKEYHASH) << ToByteVector(key_id) << ToByteVector(scriptSig) << OP_SENDER) + scriptPubKey;
     }
     else
@@ -375,7 +372,12 @@ UniValue createcontract(const UniValue& params, bool fHelp){
     // make our change address
     CReserveKey reservekey(pwalletMain);
     CWalletTx wtx;
-    if (!pwalletMain->CreateTransaction(scriptPubKey, 0, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+
+    if (nGasFee > 0) nValue = nGasFee;
+    std::vector<std::pair<CScript, CAmount> > vecSend;
+    vecSend.push_back(std::make_pair(scriptPubKey, nValue));
+
+    if (!pwalletMain->CreateTransactionSC(vecSend, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);

@@ -411,6 +411,23 @@ public:
         const CTxDestination& signSenderAddress = CNoDestination(),
                            const std::vector<CValidatorRegister> &validatorRegister = std::vector<CValidatorRegister>(),
                            const std::vector<CValidatorVote> &validatorVote = std::vector<CValidatorVote>());
+
+    bool CreateTransactionSC(const std::vector<std::pair<CScript, CAmount> >& vecSend,
+        CWalletTx& wtxNew,
+        CReserveKey& reservekey,
+        CAmount& nFeeRet,
+        std::string& strFailReason,
+        const CCoinControl* coinControl = NULL,
+        AvailableCoinsType coin_type = ALL_COINS,
+        bool useIX = false,
+        CAmount nFeePay = 0,
+        bool fIncludeDelegated = false,
+        bool fIncludeLeasing = false,
+        bool sign = false,
+        const CTxDestination& signSenderAddress = CNoDestination(),
+        const std::vector<CValidatorRegister>& validatorRegister = std::vector<CValidatorRegister>(),
+        const std::vector<CValidatorVote>& validatorVote = std::vector<CValidatorVote>());
+
     bool CreateTransaction(CScript scriptPubKey, const CAmount& nValue, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = false, CAmount nFeePay = 0, bool fIncludeDelegated = false, bool fIncludeLeased = false,
     bool sign = false,
     const CTxDestination& signSenderAddress = CNoDestination(),
