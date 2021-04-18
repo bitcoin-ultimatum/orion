@@ -187,5 +187,5 @@ btcu.build/
 btcu.xcodeproj/
 *.xcodeproj
 
-CPackConfig.cmake
-CPackSourceConfig.cmake
+/CPackConfig.cmake
+/CPackSourceConfig.cmake
