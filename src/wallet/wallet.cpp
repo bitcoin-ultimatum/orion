@@ -1288,9 +1288,9 @@ CAmount CWalletTx::GetImmatureCredit(bool fUseCache, const isminefilter& filter)
     return 0;
 }
 
-CAmount CWalletTx::GetAvailableCredit(bool fUseCache) const
+CAmount CWalletTx::GetAvailableCredit(bool fUseCache, int filter) const
 {
-    return GetUnspentCredit(ISMINE_SPENDABLE_ALL);
+    return GetUnspentCredit(filter);
 }
 
 CAmount CWalletTx::GetColdStakingCredit(bool fUseCache) const
@@ -1865,11 +1865,11 @@ CAmount CWallet::loopTxsBalance(std::function<void(const uint256&, const CWallet
     return nTotal;
 }
 
-CAmount CWallet::GetBalance() const
+CAmount CWallet::GetBalance(int filter) const
 {
-    return loopTxsBalance([](const uint256& id, const CWalletTx& pcoin, CAmount& nTotal){
+    return loopTxsBalance([&filter](const uint256& id, const CWalletTx& pcoin, CAmount& nTotal){
         if (pcoin.IsTrusted())
-            nTotal += pcoin.GetAvailableCredit();
+            nTotal += pcoin.GetAvailableCredit(true, filter);
     });
 }
 
@@ -2489,7 +2489,7 @@ bool CWallet::SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const 
 {
     // Note: this function should never be used for "always free" tx types like dstx
     std::vector<COutput> vCoins;
-    AvailableCoins(&vCoins, true, coinControl, false, coin_type, useIX, 1, fIncludeColdStaking, fIncludeDelegated, false, fIncludeLeased);
+    AvailableCoins(&vCoins, true, coinControl, false, coin_type, useIX, 1, fIncludeColdStaking, fIncludeDelegated, true, fIncludeLeased);
 
     // coin control -> return all selected outputs (we want all selected to go into the transaction for sure)
     if (coinControl && coinControl->HasSelected() && !coinControl->fAllowOtherInputs) {

@@ -75,12 +75,12 @@ bool WalletModel::isStakingStatusActive() const {
     return wallet->pStakerStatus->IsActive();
 }
 
-CAmount WalletModel::getBalance(const CCoinControl* coinControl) const
+CAmount WalletModel::getBalance(const CCoinControl* coinControl, bool fIncludeLeased) const
 {
     if (coinControl) {
         CAmount nBalance = 0;
         std::vector<COutput> vCoins;
-        wallet->AvailableCoins(&vCoins, true, coinControl, false, ALL_COINS, false, 1, false, true, true, false, true);
+        wallet->AvailableCoins(&vCoins, true, coinControl, false, ALL_COINS, false, 1, false, true, true, fIncludeLeased, true);
         for (const COutput& out : vCoins)
             if (out.fSpendable)
                 nBalance += out.tx->vout[out.i].nValue;
@@ -389,7 +389,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 
     QSet<QString> setAddress; // Used to detect duplicates
     int nAddresses = 0;
-
+    bool isP2L = false;
     // Pre-check input data for validity
     Q_FOREACH (const SendCoinsRecipient& rcp, recipients) {
         if (rcp.paymentRequest.IsInitialized()) { // PaymentRequest...
@@ -439,6 +439,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 scriptPubKey = GetScriptForStakeDelegation(stakerId, ownerId);
             } else if (rcp.isP2L) {
                 CBTCUAddress ownerAdd;
+                isP2L = true;
                 if (rcp.ownerAddress.isEmpty()) {
                     // Create new internal owner address
                     if (!getNewAddress(ownerAdd).result)
@@ -467,7 +468,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         return DuplicateAddress;
     }
 
-    CAmount nBalance = getBalance(coinControl);
+    CAmount nBalance = (isP2L?getBalance(coinControl, false):getBalance(coinControl));
 
     if (total > nBalance) {
         return AmountExceedsBalance;

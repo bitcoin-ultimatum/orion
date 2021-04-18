@@ -1636,7 +1636,7 @@ UniValue CreateLeasingTransaction(const UniValue& params, CWalletTx& wtxNew, CRe
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid amount (%d). Min amount: %d",
                                                             nValue, Params().GetMinLeasingAmount()));
     // Check amount
-    CAmount currBalance = pwalletMain->GetBalance();
+    CAmount currBalance = pwalletMain->GetBalance(ISMINE_SPENDABLE_ALL_NON_LEASED);
     if (nValue > currBalance)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
 
