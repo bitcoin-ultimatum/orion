@@ -25,6 +25,8 @@
 #include "qt/btcu/coldstakingwidget.h"
 #include "qt/btcu/leasingwidget.h"
 #include "qt/btcu/masternodeswidget.h"
+#include "qt/btcu/validatorwidget.h"
+//#include "qt/btcu/createcontract.h"
 #include "qt/btcu/snackbar.h"
 #include "qt/btcu/settings/settingswidget.h"
 #include "qt/rpcconsole.h"
@@ -77,6 +79,8 @@ public Q_SLOTS:
     void goToMasterNodes();
     void goToColdStaking();
     void goToLeasing();
+    void goToValidator();
+    void goToContract();
     void goToSettings();
 
    void goToCreateMasternode();
@@ -147,6 +151,8 @@ private:
     MasterNodesWidget *masterNodesWidget = nullptr;
     ColdStakingWidget *coldStakingWidget = nullptr;
     LeasingWidget *leasingWidget = nullptr;
+    ValidatorWidget *validatorWidget = nullptr;
+    //CreateContract *contractWidget = nullptr;
     SettingsWidget* settingsWidget = nullptr;
     //CreateMasterNodeWidget* createMasterNode = nullptr;
     //CreateValidatorWidget * createValidator = nullptr;

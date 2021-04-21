@@ -51,18 +51,26 @@ MasterNodeWizardDialog::MasterNodeWizardDialog(WalletModel *model, QWidget *pare
     setCssProperty(ui->labelMessage3, "text-main-grey");
 
     ui->lineEditName->setPlaceholderText(tr("e.g user_masternode"));
-    initCssEditLine(ui->lineEditName);
+    ui->lineEditName->setProperty("cssClass", "edit-leasing-dialog");
+    //setCssProperty(ui->lineEditName, "edit-primary-multi-book");
+    //initCssEditLine(ui->lineEditName);
     ui->lineEditName->setValidator(new QRegExpValidator(QRegExp("^[A-Za-z0-9]+"), ui->lineEditName));
 
     // Frame 4
     setCssProperty(ui->labelTitle4, "text-title-dialog");
-    setCssProperty({ui->labelSubtitleIp, ui->labelSubtitlePort}, "text-title");
-    setCssSubtitleScreen(ui->labelSubtitleAddressIp);
+    setCssProperty({ui->labelSubtitleIp, ui->labelSubtitlePort}, "text-main-purple");
+    //setCssSubtitleScreen(ui->labelSubtitleAddressIp);
+    setCssProperty(ui->labelSubtitleAddressIp, "text-main-grey");
 
     ui->lineEditIpAddress->setPlaceholderText("e.g 18.255.255.255");
     ui->lineEditPort->setPlaceholderText("e.g 3666");
-    initCssEditLine(ui->lineEditIpAddress);
-    initCssEditLine(ui->lineEditPort);
+    //setCssProperty(ui->lineEditIpAddress, "edit-primary-multi-book");
+    //setCssProperty(ui->lineEditPort, "edit-primary-multi-book");
+
+    ui->lineEditIpAddress->setProperty("cssClass", "edit-leasing-dialog");
+    ui->lineEditPort->setProperty("cssClass", "edit-leasing-dialog");
+    //initCssEditLine(ui->lineEditIpAddress);
+    //initCssEditLine(ui->lineEditPort);
     ui->stackedWidget->setCurrentIndex(pos);
     ui->lineEditPort->setValidator(new QIntValidator(0, 9999999, ui->lineEditPort));
     if(walletModel->isTestNetwork()){
@@ -80,12 +88,11 @@ MasterNodeWizardDialog::MasterNodeWizardDialog(WalletModel *model, QWidget *pare
     setCssProperty({icConfirm1, icConfirm3, icConfirm4}, "ic-step-confirm");
 
     // Connect btns
-    setCssBtnPrimary(ui->btnNext);
+    setCssBtnSecondary(ui->btnNext);
+    setCssBtnPrimary(ui->btnBack);
     ui->btnNext->setText(tr("NEXT"));
-    setCssProperty(ui->btnBack , "btn-dialog-cancel");
     ui->btnBack->setVisible(false);
     ui->btnBack->setText(tr("BACK"));
-    setCssProperty(ui->pushButtonSkip, "ic-close");
 
     connect(ui->pushButtonSkip, SIGNAL(clicked()), this, SLOT(close()));
     connect(ui->btnNext, SIGNAL(clicked()), this, SLOT(onNextClicked()));
@@ -94,7 +101,7 @@ MasterNodeWizardDialog::MasterNodeWizardDialog(WalletModel *model, QWidget *pare
 
 void MasterNodeWizardDialog::showEvent(QShowEvent *event)
 {
-    if (ui->btnNext) ui->btnNext->setFocus();
+    //if (ui->btnNext) ui->btnNext->setFocus();
 }
 
 void MasterNodeWizardDialog::onNextClicked(){
@@ -349,7 +356,7 @@ void MasterNodeWizardDialog::onBackClicked(){
     switch(pos){
         case 0:{
             ui->stackedWidget->setCurrentIndex(0);
-            ui->btnNext->setFocus();
+            //ui->btnNext->setFocus();
             ui->pushNumber1->setChecked(true);
             ui->pushNumber4->setChecked(false);
             ui->pushNumber3->setChecked(false);

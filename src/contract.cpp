@@ -79,9 +79,15 @@ bool CheckOpSender(const CTransaction& tx, const CChainParams& chainparams, int 
 
 bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
     // Check for the sender that pays the coins
-    CScript script = view.AccessCoins(tx.vin[0].prevout.hash)->vout[tx.vin[0].prevout.n].scriptPubKey;
-    if(!script.IsPayToPubkeyHash() && !script.IsPayToPubkey()){
+    if (tx.vout.size() < 2) {
         return false;
+    }
+    
+    if (view.AccessCoins(tx.vin[0].prevout.hash)->vout.size() > 0) {
+        CScript script = view.AccessCoins(tx.vin[0].prevout.hash)->vout[tx.vin[0].prevout.n].scriptPubKey;
+        if(!script.IsPayToPubkeyHash() && !script.IsPayToPubkey()){
+            return false;
+        }
     }
 
     // Check for additional VM sender
@@ -89,11 +95,10 @@ bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
         return true;
 
     // Check for the VM sender that is encoded into the output
-    for (const CTxOut& txout : tx.vout)
-    {
-        if(txout.scriptPubKey.HasOpSender())
-        {
+    for (const CTxOut& txout : tx.vout){
+        if(txout.scriptPubKey.HasOpSender()){
             // Extract the sender data
+            
             CScript senderPubKey, senderSig;
             if(!ExtractSenderData(txout.scriptPubKey, &senderPubKey, &senderSig))
                 return false;
@@ -104,16 +109,11 @@ bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
 
             // Get the signature stack
             std::vector <std::vector<unsigned char> > stack;
-            if (!EvalScript(stack, senderSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker()))
-                return false;
-
-            // Check that the signature script contains only signature and public key (2 items)
-            if(stack.size() != STANDARD_SENDER_STACK_ITEMS)
+            if (!BTC::EvalScript(stack, senderSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker(), SigVersion::BASE, nullptr))
                 return false;
 
             // Check that the items size is no more than 80 bytes
-            for(size_t i=0; i < stack.size(); i++)
-            {
+            for(size_t i=0; i < stack.size(); i++){
                 if(stack[i].size() > MAX_STANDARD_SENDER_STACK_ITEM_SIZE)
                     return false;
             }
@@ -260,9 +260,11 @@ valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsVie
         }
     }
     if(!scriptFilled && coinsView){
-        script = coinsView->AccessCoins(tx.vin[0].prevout.hash)->vout[tx.vin[0].prevout.n].scriptPubKey;
-        //script = coinsView->AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
-        scriptFilled = true;
+        if (coinsView->AccessCoins(tx.vin[0].prevout.hash)->vout.size() > 0) {
+            script = coinsView->AccessCoins(tx.vin[0].prevout.hash)->vout[tx.vin[0].prevout.n].scriptPubKey;
+            //script = coinsView->AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
+            scriptFilled = true;
+        }
     }
     if(!scriptFilled)
     {
@@ -511,7 +513,7 @@ bool QtumTxConverter::extractionQtumTransactions(ExtractQtumTX& qtumtx){
 bool QtumTxConverter::receiveStack(const CScript& scriptPubKey){
     sender = false;
     // FIX: hardcoded flag value
-    EvalScript(stack, scriptPubKey, 1610612736, BaseSignatureChecker(), nullptr);
+    BTC::EvalScript(stack, scriptPubKey, 1610612736, BaseSignatureChecker(), SigVersion::BASE, nullptr);
     if (stack.empty())
         return false;
 

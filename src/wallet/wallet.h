@@ -378,7 +378,7 @@ public:
     void ResendWalletTransactions();
 
     CAmount loopTxsBalance(std::function<void(const uint256&, const CWalletTx&, CAmount&)>method) const;
-    CAmount GetBalance() const;
+    CAmount GetBalance(int filter = ISMINE_SPENDABLE_ALL) const;
     CAmount GetColdStakingBalance() const;  // delegated coins for which we have the staking key
     CAmount GetImmatureColdStakingBalance() const;
     CAmount GetLeasingBalance() const;
@@ -411,6 +411,23 @@ public:
         const CTxDestination& signSenderAddress = CNoDestination(),
                            const std::vector<CValidatorRegister> &validatorRegister = std::vector<CValidatorRegister>(),
                            const std::vector<CValidatorVote> &validatorVote = std::vector<CValidatorVote>());
+
+    bool CreateTransactionSC(const std::vector<std::pair<CScript, CAmount> >& vecSend,
+        CWalletTx& wtxNew,
+        CReserveKey& reservekey,
+        CAmount& nFeeRet,
+        std::string& strFailReason,
+        const CCoinControl* coinControl = NULL,
+        AvailableCoinsType coin_type = ALL_COINS,
+        bool useIX = false,
+        CAmount nFeePay = 0,
+        bool fIncludeDelegated = false,
+        bool fIncludeLeasing = false,
+        bool sign = false,
+        const CTxDestination& signSenderAddress = CNoDestination(),
+        const std::vector<CValidatorRegister>& validatorRegister = std::vector<CValidatorRegister>(),
+        const std::vector<CValidatorVote>& validatorVote = std::vector<CValidatorVote>());
+
     bool CreateTransaction(CScript scriptPubKey, const CAmount& nValue, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = false, CAmount nFeePay = 0, bool fIncludeDelegated = false, bool fIncludeLeased = false,
     bool sign = false,
     const CTxDestination& signSenderAddress = CNoDestination(),
@@ -841,7 +858,7 @@ public:
     CAmount GetCredit(const isminefilter& filter) const;
     CAmount GetUnspentCredit(const isminefilter& filter) const;
     CAmount GetImmatureCredit(bool fUseCache = true, const isminefilter& filter = ISMINE_SPENDABLE_ALL) const;
-    CAmount GetAvailableCredit(bool fUseCache = true) const;
+    CAmount GetAvailableCredit(bool fUseCache = true, int filter = ISMINE_SPENDABLE_ALL) const;
     // Return sum of unlocked coins
     CAmount GetUnlockedCredit() const;
     // Return sum of unlocked coins

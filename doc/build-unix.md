@@ -241,7 +241,7 @@ See the section "Disable-wallet mode" to build BTCU without wallet.
 Dependencies for the GUI: Ubuntu & Debian
 -----------------------------------------
 
-If you want to build bitcoin-qt, make sure that the required packages for Qt development
+If you want to build btcu-qt, make sure that the required packages for Qt development
 are installed. Qt 5 is necessary to build the GUI.
 To build without GUI pass `-DENABLE_GUI=OFF` on the cmake command line.
 
@@ -259,13 +259,15 @@ To build with Qt 5 you need the following:
     sudo apt-get install libprotobuf-dev protobuf-compiler libpng-dev
 ```
 
-Modern Unix .deb packages doesn't include static libraries. If you won't build with -DBUILD_STATIC=OFF you can just run:
+Modern Unix .deb packages doesn't include static libraries. If you wont build with -DBUILD_STATIC=OFF you can just run:
 ```bash
-    sudo apt-get libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5charts5 libfontconfig1-dev libfreetype6-dev
+    sudo apt-get install libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5charts5
 ```
 
 Additionally in a case if you want to build a static build you will have to build the QT5 from the sources:
 ```bash
+    sudo apt-get install libglu1-mesa-dev libx11-dev libxcb-glx0-dev libdrm-dev libx11-xcb-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-shm0-dev libxcb-util-dev libxcb-keysyms1-dev libxcb-randr0-dev libxcb-render-util0-dev libxcb-render0-dev libxcb-shape0-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-xinerama0-dev libxcb-xkb-dev libxcb1-dev libxkbcommon-x11-dev libegl1-mesa-dev libwayland-dev libxkbcommon-dev libxext-dev libxau-dev libxdmcp-dev libffi-dev libgraphite2-dev libpcre3-dev uuid-dev libxi-dev libxrender-dev
+    sudo apt-get install libfontconfig1-dev libfreetype6-dev
     wget https://download.qt.io/archive/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz
     tar xvf qt-everywhere-src-5.15.2.tar.xz -C ./
     cd qt-everywhere-src-5.15.2
@@ -283,6 +285,8 @@ Additionally in a case if you want to build a static build you will have to buil
                 -no-rpath                                 \
                 -system-zlib                              \
                 -static                                   \
+                -xcb                                      \
+                -xcb-xlib                                 \
                 -bundled-xcb-xinput                       \
                 -system-freetype                          \
                 -fontconfig                               \
@@ -290,9 +294,9 @@ Additionally in a case if you want to build a static build you will have to buil
                 -I "/usr/include/freetype2"               \
                 -I "/usr/include/fontconfig"              \
                 -L "/usr/lib/x86_64-linux-gnu"            &&
-    make
+    make &&
     sudo make install
-    find $QT5PREFIX/ -name \*.prl \
+    sudo find $QT5PREFIX/ -name \*.prl \
     -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
     cd -
 ```
@@ -308,7 +312,7 @@ But if you need to build a static build (with a flag -DSTATIC_BUILD=ON) you will
 ```bash
     git clone https://github.com/fukuchi/libqrencode.git
     cd libqrencode
-    ./autogen.sh && ./configure --prefix=/usr --enable-static --enable-shared && make && make install
+    ./autogen.sh && ./configure --prefix=/usr --enable-static --enable-shared && make && sudo make install
     cd -
 ```
 

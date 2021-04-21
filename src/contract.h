@@ -38,9 +38,9 @@ std::vector<ResultExecute> CallContract(const dev::Address& addrContract, std::v
 
 //bool CheckOpSender(const CTransaction& tx, const CChainParams& chainparams, int nHeight);
 //
-//bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx);
+bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx);
 //
-//bool CheckMinGasPrice(std::vector<EthTransactionParams>& etps, const uint64_t& minGasPrice);
+bool CheckMinGasPrice(std::vector<EthTransactionParams>& etps, const uint64_t& minGasPrice);
 
 void writeVMlog(const std::vector<ResultExecute>& res, const CTransaction& tx = CTransaction(), const CBlock& block = CBlock());
 

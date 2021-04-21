@@ -2024,6 +2024,9 @@ bool AppInit2()
 #endif // ENABLE_WALLET
 #endif // ENABLE_LEASING_MANAGER
 
+    //Update block hash and block height in leasing manager and other backends
+    GetMainSignals().UpdatedBlockTip(chainActive.Tip());
+
 #if defined(ENABLE_WALLET) && defined(ENABLE_LEASING_MANAGER)
     // Generate coins in the background
     if (pwalletMain && pleasingManagerMain)

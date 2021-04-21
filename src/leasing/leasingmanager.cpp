@@ -21,6 +21,7 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/tag.hpp>
 #include <boost/multi_index/composite_key.hpp>
+#include <main.h>
 
 #ifdef  _WIN32
 #include <boost/thread/interruption.hpp>
@@ -341,6 +342,8 @@ public:
          return LeasingError("duplicate leasing on reading from DB for %s:%d", leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
       }
 
+      leasingDB.WriteLeasingOutput(leasingOutput);
+
       IncLeasingSupply(leasingOutput.kLeaserID, leasingOutput.nValue);
 
       return true;
@@ -351,7 +354,7 @@ public:
 
       COutPoint point;
 
-      if (txout.IsEmpty()) {
+      if (txout.IsEmpty() || !txout.IsLeasingReward()) {
          return true;
       }
 
@@ -385,6 +388,10 @@ public:
       LOCK(cs_leasing);
 
       COutPoint point;
+
+      if (txout.IsEmpty() || !txout.IsLeasingReward()) {
+         return true;
+      }
 
       if (!ExtractLeasingPoint(txout, point)) {
          return LeasingError("can't extract leasing reward point for %s:%d", txout.GetHash().ToString(), n);
@@ -420,15 +427,49 @@ public:
       leasingDB.Flush();
    }
 
+    CTxOut CalcLeasingRewardTest(const LeaserType type, const CKeyID& leaserID, const CAmount aAmount) const
+   {
+       return CalcLeasingReward(type, leaserID, aAmount);
+   }
+
+    CTxOut CalculateLeasingRewardTest(CPubKey &pubKey) const
+   {
+       auto& idxTrxHash = mapOutputs.get<byTrxHash>();
+       auto itr = idxTrxHash.begin();
+       CAmount amount = 0;
+       for(;itr != idxTrxHash.end(); itr++)
+           if(itr->kOwnerID == CPubKey(pubKey).GetID())
+               amount += CalcLeasingReward(*itr).nValue;
+
+       CTxOut reward;
+       reward.nValue = amount;
+       return reward;
+   }
+
    void GetAllAmountsLeasedTo(CPubKey &pubKey, CAmount &amount) const {
       CKeyID ownerID = CPubKey(pubKey).GetID();
       LOCK(cs_leasing);
       auto &idxLeasedTo = mapOutputs.get<byOwner>();
       auto itr = idxLeasedTo.lower_bound(ownerID);
       amount = 0;
-      for (; itr != idxLeasedTo.end() && itr->kLeaserID == ownerID; ++itr)
-         amount += itr->nValue;
+       for (; itr != idxLeasedTo.end() && itr->kOwnerID == ownerID; ++itr)
+           amount += itr->nValue;
    }
+
+    void GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const {
+        CKeyID leaserID = CPubKey(pubKey).GetID();
+        LOCK(cs_leasing);
+        auto &idxLeasedTo = mapOutputs.get<byOwner>();
+        amount = 0;
+        //auto itr = idxLeasedTo.lower_bound(leaserID);
+        //for (; itr != idxLeasedTo.end() && itr->kLeaserID == leaserID; ++itr)
+        //    amount += itr->nValue;
+        for(auto itr = idxLeasedTo.begin(); itr != idxLeasedTo.end(); itr++)
+        {
+            if(itr->kLeaserID == leaserID)
+                amount += itr->nValue;
+        }
+    }
 
    bool GetLeasingRewards(
        const LeaserType type,
@@ -514,6 +555,7 @@ private:
       leasingDB.Flush();
 
       auto pCursor = leasingDB.NewIterator();
+      pCursor->SeekToFirst();
       while (pCursor->Valid()) {
          boost::this_thread::interruption_point();
          try {
@@ -528,7 +570,7 @@ private:
 
                   ssKey >> leasingOutput.nTrxHash;
                   ssKey >> leasingOutput.nPosition;
-                  if (leasingOutput.nSpendingHeight != _nonRewardHeight) {
+                  if (leasingOutput.nSpendingHeight == _nonRewardHeight) {
                      if (!mapOutputs.insert(leasingOutput).second) {
                         LeasingError("duplicate of leasing for %s:%d",
                            leasingOutput.nTrxHash.ToString(), leasingOutput.nPosition);
@@ -719,6 +761,9 @@ private:
       int64_t aResAmount = leasingOut.nValue * nPct / _100pct;
       int64_t nRewardAge = (GetBlockHeight() - leasingOut.nLastRewardHeight);
 
+      LeasingLogPrint("nHeight=%d", GetBlockHeight());
+      LeasingLogPrint("nLastRewardHeight=%d", leasingOut.nLastRewardHeight);
+
       aResAmount = aResAmount * nRewardAge / (365 * 24 * 60); // 1 year
 
       auto outPoint = COutPoint(leasingOut.nTrxHash, leasingOut.nPosition);
@@ -727,6 +772,7 @@ private:
       LeasingLogPrint("nPct=%d, aResAmount=%d, nRewardAge=%d", nPct, aResAmount, nRewardAge);
       LeasingLogPrint("outPoint=%s", outPoint.ToString());
       LeasingLogPrint("outScript=%s", outScript.ToString());
+
 
       return CTxOut(aResAmount, outScript);
    }
@@ -837,10 +883,12 @@ CLeasingManager::~CLeasingManager() {
 }
 
 void CLeasingManager::UpdatedBlockTip(const CBlockIndex* pIndex) {
+   LeasingLogPrint("block=%s, height=%d", pIndex->GetBlockHash().ToString(), pIndex->nHeight);
    pImpl->SetBlock(pIndex->nHeight, pIndex->GetBlockHash());
 }
 
 void CLeasingManager::SyncTransaction(const CTransaction& tx, const CBlock* pBlock) {
+
    if (tx.IsCoinBase() || tx.IsCoinStake()) {
       // there is no P2L or LR transactions
       return;
@@ -896,9 +944,18 @@ bool CLeasingManager::GetLeasingRewards(
 CTxOut CLeasingManager::CalcLeasingReward(const COutPoint& point, const CKeyID& keyID) const {
    return pImpl->CalcLeasingReward(point, keyID);
 }
+CTxOut CLeasingManager::CalcLeasingReward(const LeaserType type, const CKeyID& leaserID, const CAmount aAmount) const {
+   return pImpl->CalcLeasingRewardTest(type, leaserID, aAmount);
+}
+CTxOut CLeasingManager::CalcLeasingReward(CPubKey &pubKey) const {
+   return pImpl->CalculateLeasingRewardTest(pubKey);
+}
 
 void CLeasingManager::GetAllAmountsLeasedTo(CPubKey &pubKey, CAmount &amount) const {
    pImpl->GetAllAmountsLeasedTo(pubKey, amount);
+}
+void CLeasingManager::GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const {
+   pImpl->GetAllAmountsLeasedFrom(pubKey, amount);
 }
 
 const uint256& CLeasingManager::GetBlockHash() const {

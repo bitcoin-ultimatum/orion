@@ -210,6 +210,9 @@ SET(QT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/masternodewizarddialog.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/mnrow.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/masternodeswidget.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/btcu/validatorwidget.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/btcu/registervalidator.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/btcu/validatorrow.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/sendchangeaddressdialog.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/sendconfirmdialog.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/sendcustomfeedialog.cpp

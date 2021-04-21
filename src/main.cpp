@@ -44,6 +44,8 @@
 #include "zbtcuchain.h"
 #include "leasing/leasing_tx_verify.h"
 #include "blockrewards.h"
+#include "contract.h"
+#include "validation.h"
 
 #include "zbtcu/zerocoin.h"
 #include "libzerocoin/Denominations.h"
@@ -780,7 +782,8 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
         else if ((whichType == TX_MULTISIG) && (!fIsBareMultisigStd)) {
             reason = "bare-multisig";
             return false;
-        } else if (txout.IsDust(::minRelayTxFee)) {
+
+        } else if (txout.IsDust(::minRelayTxFee) && !txout.scriptPubKey.HasOpCreate() && !txout.scriptPubKey.HasOpCall()) {
             reason = "dust";
             return false;
         }
@@ -830,7 +833,7 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
         // IsStandard() will have already returned false
         // and this method isn't called.
         std::vector<std::vector<unsigned char> > stack;
-        if (!EvalScript(stack, tx.vin[i].scriptSig, false, BaseSignatureChecker()))
+        if (!BTC::EvalScript(stack, tx.vin[i].scriptSig, false, BaseSignatureChecker(), SigVersion::BASE, nullptr))
             return false;
 
         if (whichType == TX_SCRIPTHASH) {
@@ -1936,7 +1939,8 @@ void UpdateCoins(const CTransaction& tx, CValidationState& state, CCoinsViewCach
 bool CScriptCheck::operator()()
 {
     const CScript& scriptSig = ptxTo->vin[nIn].scriptSig;
-    if (!VerifyScript(scriptSig, scriptPubKey, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, cacheStore), &error)) {
+    CScriptWitness witness;
+    if (!BTC::VerifyScript(scriptSig, scriptPubKey, &witness, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, cacheStore), &error)) {
         return ::error("CScriptCheck(): %s:%d VerifySignature failed: %s", ptxTo->GetHash().ToString(), nIn, ScriptErrorString(error));
     }
     return true;
@@ -2627,6 +2631,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     if (!fAlreadyChecked && !CheckBlock(block, state, !fJustCheck, !fJustCheck))
         return false;
 
+    uint64_t blockGasLimit = 40000000; //= qtumDGP.getBlockGasLimit(::ChainActive().Height());
+    uint64_t minGasPrice = 40;         //CAmount(qtumDGP.getMinGasPrice(::ChainActive().Height()));
+    CAmount nGasPrice = 40;            //(minGasPrice>DEFAULT_GAS_PRICE)?minGasPrice:DEFAULT_GAS_PRICE;
 
     // verify that the view's current state corresponds to the previous block
     // we start from bitcoin chainstate therefore shouldn't check previous for the first block
@@ -2703,6 +2710,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     std::vector<uint256> vSpendsInBlock;
     uint256 hashBlock = block.GetHash();
     std::vector<CTransaction> validatorTransactions;
+    uint64_t countCumulativeGasUsed = 0;
+    //std::map<dev::Address, std::pair<CHeightTxIndexKey, std::vector<uint256> > > heightIndexes;
+    uint64_t blockGasUsed = 0;
+    CAmount gasRefunds = 0;
+
     for (unsigned int i = 0; i < block.vtx.size(); i++) {
         const CTransaction& tx = block.vtx[i];
 
@@ -2857,6 +2869,119 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         
         vPos.emplace_back(tx.GetHash(), pos);
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
+
+        bool hasOpSpend = tx.HasOpSpend();
+
+        unsigned int contractflags = SCRIPT_EXEC_BYTE_CODE;
+        
+
+        if (tx.HasCreateOrCall() && !hasOpSpend) {
+            if (!CheckSenderScript(view, tx)) {
+                return state.Error("bad-txns-invalid-sender-script");
+            }
+
+            std::vector<CTransactionRef> blockTransactions;
+            for (auto t : block.vtx) {
+                blockTransactions.push_back(std::make_shared<const CTransaction>(t));
+            }
+
+            QtumTxConverter convert(tx, &view, NULL, contractflags); //&block.vtx return as 3rd parametr
+
+            ExtractQtumTX resultConvertQtumTX;
+            if (!convert.extractionQtumTransactions(resultConvertQtumTX)) {
+                return state.Error("ConnectBlock(): Contract transaction of the wrong format");
+            }
+            if (!CheckMinGasPrice(resultConvertQtumTX.second, minGasPrice))
+                return state.Error("ConnectBlock(): Contract execution has lower gas price than allowed");
+
+
+            dev::u256 gasAllTxs = dev::u256(0);
+            ByteCodeExec exec(block, resultConvertQtumTX.first, blockGasLimit, pindex->pprev);
+            //validate VM version and other ETH params before execution
+            //Reject anything unknown (could be changed later by DGP)
+            //TODO evaluate if this should be relaxed for soft-fork purposes
+            bool nonZeroVersion = false;
+            dev::u256 sumGas = dev::u256(0);
+            //CAmount nTxFee = view.GetValueIn(tx) - tx.GetValueOut();
+            for (QtumTransaction& qtx : resultConvertQtumTX.first) {
+                sumGas += qtx.gas() * qtx.gasPrice();
+
+                if (sumGas > dev::u256(INT64_MAX)) {
+                    return state.Error("ConnectBlock(): Transaction's gas stipend overflows");
+                }
+
+                //if (sumGas > dev::u256(nTxFee)) {
+                //    return state.Error("ConnectBlock(): Transaction fee does not cover the gas stipend");
+                //}
+
+                VersionVM v = qtx.getVersion();
+                if (v.format != 0)
+                    return state.Error("ConnectBlock(): Contract execution uses unknown version format");
+                if (v.rootVM != 0) {
+                    nonZeroVersion = true;
+                } else {
+                    if (nonZeroVersion) {
+                        //If an output is version 0, then do not allow any other versions in the same tx
+                        return state.Error("ConnectBlock(): Contract tx has mixed version 0 and non-0 VM executions");
+                    }
+                }
+                if (!(v.rootVM == 0 || v.rootVM == 1))
+                    return state.Error("ConnectBlock(): Contract execution uses unknown root VM");
+                if (v.vmVersion != 0)
+                    return state.Error("ConnectBlock(): Contract execution uses unknown VM version");
+                if (v.flagOptions != 0)
+                    return state.Error("ConnectBlock(): Contract execution uses unknown flag options");
+
+                //check gas limit is not less than minimum gas limit (unless it is a no-exec tx)
+                if (qtx.gas() < MINIMUM_GAS_LIMIT && v.rootVM != 0)
+                    return state.Error("ConnectBlock(): Contract execution has lower gas limit than allowed");
+
+                if (qtx.gas() > UINT32_MAX)
+                    return state.Invalid("ConnectBlock(): Contract execution can not specify greater gas limit than can fit in 32-bits");
+
+                gasAllTxs += qtx.gas();
+                if (gasAllTxs > dev::u256(blockGasLimit))
+                    return state.Error("bad-txns-gas-exceeds-blockgaslimit");
+
+                //don't allow less than DGP set minimum gas price to prevent MPoS greedy mining/spammers
+                if (v.rootVM != 0 && (uint64_t)qtx.gasPrice() < minGasPrice)
+                    return state.Error("ConnectBlock(): Contract execution has lower gas price than allowed");
+            }
+
+            if (!nonZeroVersion) {
+                //if tx is 0 version, then the tx must already have been added by a previous contract execution
+                if (!tx.HasOpSpend()) {
+                    return state.Error("ConnectBlock(): Version 0 contract executions are not allowed unless created by the AAL ");
+                }
+            }
+
+            if (!exec.performByteCode()) {
+                return state.Error("ConnectBlock(): Unknown error during contract execution");
+            }
+
+            std::vector<ResultExecute> resultExec(exec.getResult());
+            ByteCodeExecResult bcer;
+            if (!exec.processingResults(bcer)) {
+                return state.Error("ConnectBlock(): Error processing VM execution results");
+            }
+            blockGasUsed += bcer.usedGas;
+            if (blockGasUsed > blockGasLimit) {
+                return state.Invalid("ConnectBlock(): Block exceeds gas limit");
+            }
+            for (CTxOut refundVout : bcer.refundOutputs) {
+                gasRefunds += refundVout.nValue;
+            }
+            
+            if (fRecordLogOpcodes && !fJustCheck) {
+                writeVMlog(resultExec, tx, block);
+            }
+
+            /*for (ResultExecute& re : resultExec) {
+                if (re.execRes.newAddress != dev::Address() && !fJustCheck)
+                    dev::g_logPost(std::string("Address : " + re.execRes.newAddress.hex()), NULL);
+            }*/
+            
+        }
     }
 
     //Track zBTCU money supply in the block index
@@ -3087,6 +3212,9 @@ void static UpdateTip(CBlockIndex* pindexNew)
             pChainTip->GetBlockHash().GetHex(), pChainTip->nHeight, pChainTip->nVersion, log(pChainTip->nChainWork.getdouble()) / log(2.0), (unsigned long)pChainTip->nChainTx,
               DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pChainTip->GetBlockTime()),
               Checkpoints::GuessVerificationProgress(pChainTip), (unsigned int)pcoinsTip->GetCacheSize());
+
+    // Notify external listeners about the new tip.
+    GetMainSignals().UpdatedBlockTip(pChainTip);
 
     // Check the version of the last 100 blocks to see if we need to upgrade:
     static bool fWarned = false;
@@ -3551,8 +3679,7 @@ bool ActivateBestChain(CValidationState& state, CBlock* pblock, bool fAlreadyChe
                             (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
                             pnode->PushInventory(CInv(MSG_BLOCK, hashNewTip));
                 }
-                // Notify external listeners about the new tip.
-                GetMainSignals().UpdatedBlockTip(pindexNewTip);
+
 
                 unsigned size = 0;
                 if (pblock)
