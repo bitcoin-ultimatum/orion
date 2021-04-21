@@ -461,9 +461,9 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
                     //MNRow *mnrow = new MNRow(ui->scrollAreaMy);
                     QSharedPointer<MNRow> mnrow = QSharedPointer<MNRow>(new MNRow(ui->scrollAreaMy));
                     mnrow->setGraphicsEffect(shadowEffect);
-                    connect(mnrow.get(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
+                    connect(mnrow.data(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
                     mnrow->updateView(name, address, double(leasingAmount/100000000.0), blockHeight, type, double(reward.nValue/100000000.0));
-                    ui->scrollAreaWidgetContentsMy->layout()->addWidget(mnrow.get());
+                    ui->scrollAreaWidgetContentsMy->layout()->addWidget(mnrow.data());
                     ui->scrollAreaWidgetContentsMy->layout()->addItem(SpacerNodeMy);
                     MNRows.push_back(mnrow);
                 }
@@ -494,8 +494,8 @@ void MasterNodesWidget::onpbnGlobalMasternodesClicked()
     //MNRow * mnrow = new MNRow(ui->scrollArea);
     QSharedPointer<MNRow> mnrow = QSharedPointer<MNRow>(new MNRow(ui->scrollArea));
     mnrow->setGraphicsEffect(shadowEffect);
-    connect(mnrow.get(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
-    ui->scrollAreaWidgetContents->layout()->addWidget(mnrow.get());
+    connect(mnrow.data(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
+    ui->scrollAreaWidgetContents->layout()->addWidget(mnrow.data());
     ui->scrollAreaWidgetContents->layout()->addItem(SpacerNode);
     MNRows.push_back(mnrow);
 
@@ -508,7 +508,7 @@ void MasterNodesWidget::clearScrollWidget()
     {
         for (auto i : MNRows) {
             i->hide();
-            ui->scrollAreaWidgetContentsMy->layout()->removeWidget(i.get());
+            ui->scrollAreaWidgetContentsMy->layout()->removeWidget(i.data());
         }
         MNRows.clear();
     }
@@ -516,7 +516,7 @@ void MasterNodesWidget::clearScrollWidget()
     {
         for (auto i : MNRows) {
             i->hide();
-            ui->scrollAreaWidgetContents->layout()->removeWidget(i.get());
+            ui->scrollAreaWidgetContents->layout()->removeWidget(i.data());
         }
         MNRows.clear();
     }
