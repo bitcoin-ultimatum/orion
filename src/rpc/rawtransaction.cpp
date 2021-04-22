@@ -610,10 +610,10 @@ UniValue signrawtransaction(const UniValue& params, bool fHelp)
     LOCK(cs_main);
 #endif
     RPCTypeCheck(params, boost::assign::list_of(UniValue::VSTR)(UniValue::VARR)(UniValue::VARR)(UniValue::VSTR)(UniValue::VBOOL), true);
-
+#ifndef TEST_BTCU
     if (!pwalletMain->IsCrypted() && !Params().IsRegTestNet())
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an not encrypted wallet. Run encryptwallet first");
-
+#endif
     std::vector<unsigned char> txData(ParseHexV(params[0], "argument 1"));
     CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
     std::vector<CMutableTransaction> txVariants;
