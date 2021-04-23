@@ -169,6 +169,10 @@ option(ENABLE_LEASING_MANAGER "Enable leasing manager" ON)
 option(ENABLE_TESTS "Build tests" ON)
 option(BUILD_STATIC "Build dependencies as static libs" OFF)
 option(EXTRA_WARNINGS "Enable extra warnings" OFF)
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    option(BUILD_STATIC "Build dependencies as static libs" ON)
+endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" OFF)
 endif()
@@ -1759,6 +1763,17 @@ if(BUILD_UTILS)
             )
     if(GMP_FOUND)
         target_link_libraries(btcu-tx ${GMP_LIBRARIES})
+    endif()
+    if(ZeroMQ_FOUND)
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
+            target_link_libraries(btcu-tx 
+                ZeroMQ::zmq
+                )
+        else()
+            target_link_libraries(btcu-tx 
+                ${ZeroMQ_LIBRARY}
+                )
+        endif()
     endif()
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
         # TODO: add custom deb command

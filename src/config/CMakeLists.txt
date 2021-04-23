@@ -559,7 +559,7 @@ else()
 endif()
 # you can remove check for the Darwin if you'd build 
 # a static QT version by yourself
-if(Qt5Core_FOUND AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(BUILD_STATIC AND Qt5Core_FOUND AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set(QT_STATICPLUGIN 1)
 endif()
 
