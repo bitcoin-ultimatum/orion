@@ -169,6 +169,9 @@ public:
     CAmount getDelegatedBalance() const;
     CAmount getColdStakedBalance() const;
 
+    CAmount getInLeasing();
+    CAmount getLeasingProfit();
+
     bool isColdStaking() const;
     bool isLeasing() const;
 

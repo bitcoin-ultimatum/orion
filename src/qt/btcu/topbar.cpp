@@ -605,7 +605,7 @@ void TopBar::updateDisplayUnit()
                           leasingModel->getTotalAmount()/*walletModel->getUnconfirmedZerocoinBalance()*/, walletModel->getImmatureZerocoinBalance(),
                           walletModel->getWatchBalance(), walletModel->getWatchUnconfirmedBalance(),
                           walletModel->getWatchImmatureBalance(), walletModel->getDelegatedBalance(),
-                          walletModel->getColdStakedBalance());
+                          walletModel->getColdStakedBalance(), walletModel->getInLeasing(), walletModel->getLeasingProfit());
            //ui->comboBoxTokens->setCurrentIndex(nDisplayUnit);
 
         }
@@ -615,7 +615,7 @@ void TopBar::updateDisplayUnit()
 void TopBar::updateBalances(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance,
                             const CAmount& zerocoinBalance, const CAmount& unconfirmedZerocoinBalance, const CAmount& immatureZerocoinBalance,
                             const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance,
-                            const CAmount& delegatedBalance, const CAmount& coldStakedBalance){
+                            const CAmount& delegatedBalance, const CAmount& coldStakedBalance, const CAmount& leasing, const CAmount& leasingReward){
 
     // Locked balance. //TODO move this to the signal properly in the future..
     CAmount nLockedBalance = 0;
@@ -641,11 +641,40 @@ void TopBar::updateBalances(const CAmount& balance, const CAmount& unconfirmedBa
     ui->labelAmountPiv->setText(totalPiv);
     //ui->labelAmountzPiv->setText(totalzPiv);
 
-    ui->labelPendingPiv->setText(GUIUtil::formatBalance(unconfirmedBalance, nDisplayUnit));
-    ui->labelLeasing->setText(GUIUtil::formatBalance(leasingModel->getTotalAmount()/*unconfirmedZerocoinBalance*/, nDisplayUnit, true));
+    //In Leasing + Leasing Profit
+    /*CAmount leasingAmount = 0;
+    CAmount rewardAmount = 0;
+    int rowCount = filter->rowCount();
+    for(int addressNumber = 0; addressNumber < rowCount; addressNumber++)
+    {
+        QString address;
+        QModelIndex rowIndex = filter->index(addressNumber, AddressTableModel::Address);
+        QModelIndex sibling = rowIndex.sibling(addressNumber, AddressTableModel::Label);
+        QString label = sibling.data(Qt::DisplayRole).toString();
+        //if (label.toStdString() == addressName) ???
+        sibling = rowIndex.sibling(addressNumber, AddressTableModel::Address);
+        address = sibling.data(Qt::DisplayRole).toString().toStdString();
 
+        CKeyID key;
+        walletModel->getKeyId(CBTCUAddress(address), key);
+        CPubKey pubKey;
+        walletModel->getPubKey(key, pubKey);
+        CAmount amount;
+        CTxOut reward;
+
+        pwalletMain->pLeasingManager->GetAllAmountsLeasedTo(pubKey, amount);
+        leasingAmount += amount;
+        reward = pwalletMain->pLeasingManager->CalcLeasingReward(pubKey);
+        rewardAmount += reward.nValue;
+    }*/
+
+    //ui->labelImmaturezPiv->setText(QString::number(leasingReward/100000000.0, 'g', 12) + " zBTCU");//GUIUtil::formatBalance(immatureZerocoinBalance, nDisplayUnit, true));
+    ui->labelLeasing->setText(QString::number(leasing/100000000.0, 'g', 12) + " zBTCU");//GUIUtil::formatBalance(/*leasingModel->getTotalAmount()*/leasingReward, nDisplayUnit, true));
+    ui->labelImmaturezPiv->setText(GUIUtil::formatBalance(/*immatureZerocoinBalance*/ leasingReward, nDisplayUnit, true));
+    //ui->labelLeasing->setText(GUIUtil::formatBalance(/*leasingModel->getTotalAmount()*/ leasing, nDisplayUnit, true));
+
+    ui->labelPendingPiv->setText(GUIUtil::formatBalance(unconfirmedBalance, nDisplayUnit));
     ui->labelImmaturePiv->setText(GUIUtil::formatBalance(immatureBalance, nDisplayUnit));
-    ui->labelImmaturezPiv->setText(GUIUtil::formatBalance(immatureZerocoinBalance, nDisplayUnit, true));
 }
 
 void TopBar::resizeEvent(QResizeEvent *event){

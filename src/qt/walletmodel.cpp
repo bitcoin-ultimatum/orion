@@ -24,11 +24,18 @@
 #include <stdint.h>
 #include <iostream>
 #include "zbtcu/deterministicmint.h"
+#include "qt/btcu/addressfilterproxymodel.h"
+#include "addresstablemodel.h"
 
 #include <QDebug>
 #include <QSet>
 #include <QTimer>
 
+class CLeasingManager: public CValidationInterface {
+public:
+    void GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const;
+    void CalcLeasingReward(CPubKey &pubKey, CAmount &amount) const;
+};
 
 WalletModel::WalletModel(CWallet* wallet, OptionsModel* optionsModel, QObject* parent) : QObject(parent), wallet(wallet), optionsModel(optionsModel), addressTableModel(0),
                                                                                          transactionTableModel(0),
@@ -160,6 +167,62 @@ CAmount WalletModel::getDelegatedBalance() const
 CAmount WalletModel::getColdStakedBalance() const
 {
     return wallet->GetColdStakingBalance();
+}
+
+CAmount WalletModel::getInLeasing()
+{
+    AddressTableModel* addressTableModel = this->getAddressTableModel();
+    AddressFilterProxyModel *filter = new AddressFilterProxyModel(QString(AddressTableModel::Receive), this);
+    filter->setSourceModel(addressTableModel);
+
+    std::string address = "";
+    CAmount amount = 0;
+    int rowCount = filter->rowCount();
+    for(int addressNumber = 0; addressNumber < rowCount; addressNumber++)
+    {
+        QModelIndex rowIndex = filter->index(addressNumber, AddressTableModel::Address);
+        QModelIndex sibling = rowIndex.sibling(addressNumber, AddressTableModel::Label);
+        QString label = sibling.data(Qt::DisplayRole).toString();
+        sibling = rowIndex.sibling(addressNumber, AddressTableModel::Address);
+        address = sibling.data(Qt::DisplayRole).toString().toStdString();
+
+        CKeyID key;
+        this->getKeyId(CBTCUAddress(address), key);
+        CPubKey pubKey;
+        this->getPubKey(key, pubKey);
+        CAmount leased = 0;
+        wallet->pLeasingManager->GetAllAmountsLeasedFrom(pubKey, leased);
+        amount += leased;
+    }
+    return amount;
+}
+
+CAmount WalletModel::getLeasingProfit()
+{
+    AddressTableModel* addressTableModel = this->getAddressTableModel();
+    AddressFilterProxyModel *filter = new AddressFilterProxyModel(QString(AddressTableModel::Receive), this);
+    filter->setSourceModel(addressTableModel);
+
+    std::string address = "";
+    CAmount amount = 0;
+    int rowCount = filter->rowCount();
+    for(int addressNumber = 0; addressNumber < rowCount; addressNumber++)
+    {
+        QModelIndex rowIndex = filter->index(addressNumber, AddressTableModel::Address);
+        QModelIndex sibling = rowIndex.sibling(addressNumber, AddressTableModel::Label);
+        QString label = sibling.data(Qt::DisplayRole).toString();
+        sibling = rowIndex.sibling(addressNumber, AddressTableModel::Address);
+        address = sibling.data(Qt::DisplayRole).toString().toStdString();
+
+        CKeyID key;
+        this->getKeyId(CBTCUAddress(address), key);
+        CPubKey pubKey;
+        this->getPubKey(key, pubKey);
+        CAmount reward = 0;
+        wallet->pLeasingManager->CalcLeasingReward(pubKey, reward);
+        amount += reward;
+    }
+    return amount;
 }
 
 bool WalletModel::isColdStaking() const
