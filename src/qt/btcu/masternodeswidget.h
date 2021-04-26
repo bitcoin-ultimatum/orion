@@ -19,6 +19,8 @@
 #include <QSpacerItem>
 #include <QSharedPointer>
 
+#define CREATE_MN_AMOUNT 1000
+
 class BTCUGUI;
 
 namespace Ui {

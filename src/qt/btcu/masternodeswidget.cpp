@@ -319,6 +319,15 @@ void MasterNodesWidget::onpbnMenuClicked()
 }
 void MasterNodesWidget::onpbnMasternodeClicked()
 {
+    if(pwalletMain->GetBalance()/100000000 < CREATE_MN_AMOUNT)
+    {
+        std::string error = "Not enough coins to create masternode, min = " +
+              std::to_string(CREATE_MN_AMOUNT) +
+              ", current = " + std::to_string(pwalletMain->GetBalance()/100000000);
+        informError(error.c_str());
+        return;
+    }
+
     MasterNodeWizardDialog* wizardDialog = new MasterNodeWizardDialog(walletModel, window);
     showHideOp(true);
     openDialogWithOpaqueBackground(wizardDialog, window);
@@ -480,14 +489,14 @@ void MasterNodesWidget::onpbnGlobalMasternodesClicked()
         ui->scrollAreaWidgetContents->layout()->removeItem(SpacerNode);
         delete SpacerNode;
     }
-    SpacerNode = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
+    /*SpacerNode = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
     //MNRow * mnrow = new MNRow(ui->scrollArea);
     QSharedPointer<MNRow> mnrow = QSharedPointer<MNRow>(new MNRow(ui->scrollArea));
     mnrow->setGraphicsEffect(shadowEffect);
     connect(mnrow.get(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
     ui->scrollAreaWidgetContents->layout()->addWidget(mnrow.get());
     ui->scrollAreaWidgetContents->layout()->addItem(SpacerNode);
-    MNRows.push_back(mnrow);
+    MNRows.push_back(mnrow);*/
 
    showHistory();
 }

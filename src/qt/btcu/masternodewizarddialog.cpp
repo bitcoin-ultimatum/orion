@@ -13,6 +13,7 @@
 #include <QFile>
 #include <QIntValidator>
 #include <QHostAddress>
+#include <QRegExp>
 #include <QRegExpValidator>
 
 MasterNodeWizardDialog::MasterNodeWizardDialog(WalletModel *model, QWidget *parent) :
@@ -119,14 +120,30 @@ void MasterNodeWizardDialog::onNextClicked(){
             break;
         }
         case 1:{
-
+            QString name = ui->lineEditName->text();
             // No empty names accepted.
-            if (ui->lineEditName->text().isEmpty()) {
+            if (name.isEmpty()) {
                 setCssEditLine(ui->lineEditName, false, true);
                 inform("Enter masternode's name");
                 return;
             }
-            else if(checkName(ui->lineEditName->text()))
+            if(name.size() > 255)
+            {
+                setCssEditLine(ui->lineEditName, false, true);
+                inform("Maximum length of the name is 255 characters>");
+                return;
+            }
+            QRegExp expr("[a-zA-Z0-9]");
+            for(auto ch : name)
+            {
+                if(!expr.exactMatch(ch))
+                {
+                    setCssEditLine(ui->lineEditName, false, true);
+                    inform("Name must contain only digits and letters");
+                    return;
+                }
+            }
+            if(checkName(name))
             {
                 setCssEditLine(ui->lineEditName, false, true);
                 inform("Masternode with the same name already exists");
@@ -146,8 +163,29 @@ void MasterNodeWizardDialog::onNextClicked(){
         }
         case 2:{
 
-            // No empty address accepted
-            if (ui->lineEditIpAddress->text().isEmpty()) {
+            QString address = ui->lineEditIpAddress->text();
+            if (address.isEmpty()) {
+                setCssEditLine(ui->lineEditIpAddress, false, true);
+                inform("Enter IP address");
+                return;
+            }
+            QHostAddress hostAddress(address);
+            QAbstractSocket::NetworkLayerProtocol layerProtocol = hostAddress.protocol();
+            if(layerProtocol == -1)
+            {
+                setCssEditLine(ui->lineEditIpAddress, false, true);
+                inform("Enter correct IPv4 or IPv6 address format");
+                return;
+            }
+            QRegExp expr("//d*");
+            if (!expr.exactMatch(ui->lineEditPort->text())){
+                setCssEditLine(ui->lineEditPort, false, true);
+                inform("Port must contain only numbers");
+                return;
+            }
+            if (ui->lineEditPort->text().toInt() <= 0 || ui->lineEditPort->text().toInt() > 999999){
+                setCssEditLine(ui->lineEditPort, false, true);
+                inform("Invalid port number");
                 return;
             }
 

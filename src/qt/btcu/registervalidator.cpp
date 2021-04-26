@@ -296,7 +296,7 @@ void RegisterValidator::concats()
             ui->lineEditMasternode->addAction(btnMasternodeContact, QLineEdit::TrailingPosition);
         });
     }
-
+    
     if(menuMasternodes->isVisible()){
         menuMasternodes->hide();
         ui->lineEditMasternode->removeAction(btnUpMasternodeContact);
@@ -317,7 +317,11 @@ void RegisterValidator::concats()
 
 void RegisterValidator::onRegister()
 {
-    if(ui->comboBox->currentIndex() == 0) return;
+    if(ui->comboBox->currentIndex() == 0)
+    {
+        setCssEditLine(ui->lineEditMNName, false, true);
+        return;
+    }
 
     /*QString name = "";
     for(int i = 0 ; i < ui->comboBox->currentText().size(); ++i)
