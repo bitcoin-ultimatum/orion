@@ -6,37 +6,59 @@
 #include "qt/btcu/masternodeswidget.h"
 #include "qt/btcu/forms/ui_masternodeswidget.h"
 #include "qt/btcu/qtutils.h"
-#include "qt/btcu/mnrow.h"
 #include "qt/btcu/createmasternodewidget.h"
 #include "qt/btcu/mninfodialog.h"
 
-#include "qt/btcu/masternodewizarddialog.h"
-
-#include "activemasternode.h"
 #include "clientmodel.h"
 #include "guiutil.h"
 #include "init.h"
+#include "wallet/wallet.h"
+#include "walletmodel.h"
+#include "util.h"
+#include "activemasternode.h"
 #include "masternode-sync.h"
 #include "masternodeconfig.h"
 #include "masternodeman.h"
 #include "sync.h"
-#include "wallet/wallet.h"
-#include "walletmodel.h"
 #include "askpassphrasedialog.h"
-#include "util.h"
 #include "qt/btcu/optionbutton.h"
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <fstream>
 #include "qt/btcu/createmasternodewidget.h"
 #include "qt/btcu/createvalidatorwidget.h"
+#include "qt/btcu/masternodewizarddialog.h"
+#include "univalue.h"
+#include "../../rpc/server.h"
+#include "../../init.h"
 
+#include "main.h"
 #include <QGraphicsDropShadowEffect>
 
 #define DECORATION_SIZE 65
 #define NUM_ITEMS 3
 #define REQUEST_START_ALL 1
 #define REQUEST_START_MISSING 2
+
+enum class LeaserType: int {
+    ValidatorNode = 1,
+    MasterNode = 2
+};
+
+class CLeasingManager: public CValidationInterface {
+public:
+
+    bool GetLeasingRewards(const LeaserType type, const CKeyID &leaserID, const size_t nLimit,
+                           std::vector<CTxOut> &vRewards) const;
+
+    CTxOut CalcLeasingReward(const COutPoint &point, const CKeyID &keyID) const;
+
+    void GetAllAmountsLeasedTo(CPubKey &pubKey, CAmount &amount) const;
+    void GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const;
+
+    CTxOut CalcLeasingReward(const LeaserType type, const CKeyID& leaserID, const CAmount aAmount) const;
+    CTxOut CalcLeasingReward(CPubKey &pubKey) const;
+};
 
 class MNHolder : public FurListRow<QWidget*>
 {
@@ -56,7 +78,7 @@ public:
         QString address = index.sibling(index.row(), MNModel::ADDRESS).data(Qt::DisplayRole).toString();
         QString status = index.sibling(index.row(), MNModel::STATUS).data(Qt::DisplayRole).toString();
         bool wasCollateralAccepted = index.sibling(index.row(), MNModel::WAS_COLLATERAL_ACCEPTED).data(Qt::DisplayRole).toBool();
-        row->updateView("Address: " + address, label, status, wasCollateralAccepted);
+        //row->updateView("Address: " + address, label, status, wasCollateralAccepted);
     }
 
     QColor rectColor(bool isHovered, bool isSelected) override{
@@ -119,21 +141,21 @@ MasterNodesWidget::MasterNodesWidget(BTCUGUI *parent) :
     //setCssSubtitleScreen(ui->labelSubtitle1);
 
     /* Buttons */
-   //ui->pbnGlobal->setProperty("cssClass","btn-secundary-small");
-   ui->pbnGlobal->setProperty("cssClass","btn-check-left");
-   ui->pbnGlobal->setChecked(true);
-   //ui->pbnMy->setProperty("cssClass","btn-primary-small");
-   ui->pbnMy->setProperty("cssClass","btn-check-left");
-   ui->pbnMy->setChecked(false);
+   //ui->pbnGlobalMasternodes->setProperty("cssClass","btn-secundary-small");
+   ui->pbnGlobalMasternodes->setProperty("cssClass","btn-check-left");
+   ui->pbnGlobalMasternodes->setChecked(true);
+   //ui->pbnMyMasternode->setProperty("cssClass","btn-primary-small");
+   ui->pbnMyMasternodes->setProperty("cssClass","btn-check-left");
+   ui->pbnMyMasternodes->setChecked(false);
    ui->pbnMasternode->setProperty("cssClass","btn-secundary-small");
-   ui->pbnValidator->setProperty("cssClass","btn-secundary-small");
 
-   setCssBtnSecondary(ui->pbnTempAdd);
-   connect(ui->pbnTempAdd, SIGNAL(clicked()), this, SLOT(onTempADD()));
-   connect(ui->pbnValidator, SIGNAL(clicked()), this, SLOT(onpbnValidatorClicked()));
+   //setCssBtnSecondary(ui->pbnTempAdd);
+   ui->pbnTempAdd->hide();
+
+   //connect(ui->pbnTempAdd, SIGNAL(clicked()), this, SLOT(onTempADD()));
    connect(ui->pbnMasternode, SIGNAL(clicked()), this, SLOT(onpbnMasternodeClicked()));
-   connect(ui->pbnMy, SIGNAL(clicked()), this, SLOT(onpbnMyClicked()));
-   connect(ui->pbnGlobal, SIGNAL(clicked()), this, SLOT(onpbnGlobalClicked()));
+   connect(ui->pbnMyMasternodes, SIGNAL(clicked()), this, SLOT(onpbnMyMasternodesClicked()));
+   connect(ui->pbnGlobalMasternodes, SIGNAL(clicked()), this, SLOT(onpbnGlobalMasternodesClicked()));
    showHistory();
 
    /*ui->pushButtonSave->setText(tr("Create Masternode Controller"));
@@ -177,43 +199,6 @@ MasterNodesWidget::MasterNodesWidget(BTCUGUI *parent) :
 
 void MasterNodesWidget::onTempADD()
 {
-   QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
-   shadowEffect->setColor(QColor(0, 0, 0, 22));
-   shadowEffect->setXOffset(0);
-   shadowEffect->setYOffset(2);
-   shadowEffect->setBlurRadius(6);
-   if(ui->pbnMy->isChecked())
-   {
-      bShowHistoryMy = true;
-      if(SpacerNodeMy)
-      {
-         ui->scrollAreaWidgetContentsMy->layout()->removeItem(SpacerNodeMy);
-         delete SpacerNodeMy;
-      }
-      SpacerNodeMy = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
-      MNRow * mnrow = new MNRow(ui->scrollAreaMy);
-      mnrow->setGraphicsEffect(shadowEffect);
-      connect(mnrow, SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
-      ui->scrollAreaWidgetContentsMy->layout()->addWidget(mnrow);
-      ui->scrollAreaWidgetContentsMy->layout()->addItem(SpacerNodeMy);
-   }
-   else{
-      bShowHistory = true;
-      if(SpacerNode)
-      {
-         ui->scrollAreaWidgetContents->layout()->removeItem(SpacerNode);
-         delete SpacerNode;
-      }
-      SpacerNode = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
-      MNRow * mnrow = new MNRow(ui->scrollArea);
-      mnrow->setGraphicsEffect(shadowEffect);
-      connect(mnrow, SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
-      ui->scrollAreaWidgetContents->layout()->addWidget(mnrow);
-      ui->scrollAreaWidgetContents->layout()->addItem(SpacerNode);
-   }
-
-
-
    showHistory();
 }
 
@@ -221,7 +206,7 @@ void MasterNodesWidget::showHistory()
 {
    ui->verticalSpacer_2->changeSize(0,0,QSizePolicy::Fixed,QSizePolicy::Fixed);
    ui->verticalSpacer_3->changeSize(0,0,QSizePolicy::Fixed,QSizePolicy::Fixed);
-   if(ui->pbnMy->isChecked())
+   if(ui->pbnMyMasternodes->isChecked())
    {
       ui->scrollArea->setVisible(false);
       ui->scrollAreaMy->setVisible(true);
@@ -259,8 +244,7 @@ void MasterNodesWidget::showHistory()
 
 void MasterNodesWidget::onpbnMenuClicked()
 {
-
-   bool My = ui->pbnMy->isChecked();
+   bool My = ui->pbnMyMasternodes->isChecked();
    QPoint pos;
    QPushButton* btnMenu = (QPushButton*) sender();
    pos = btnMenu->rect().bottomRight();
@@ -284,7 +268,7 @@ void MasterNodesWidget::onpbnMenuClicked()
       }else {
          this->menuMy->hide();
       }
-      if(pos.y()+ this->menu->height() > ui->scrollAreaMy->height())
+      if(pos.y()+ this->menuMy->height() > ui->scrollAreaMy->height())
       {
          pos = btnMenu->rect().topRight();
          pos = btnMenu->mapToParent(pos);
@@ -344,9 +328,13 @@ void MasterNodesWidget::onpbnMenuClicked()
 }
 void MasterNodesWidget::onpbnMasternodeClicked()
 {
+    MasterNodeWizardDialog* wizardDialog = new MasterNodeWizardDialog(walletModel, window);
+    showHideOp(true);
+    openDialogWithOpaqueBackground(wizardDialog, window);
+    /*
    CreateMasterNodeWidget* newMacterNode = new CreateMasterNodeWidget(window);
    showHideOp(true);
-   openDialogWithOpaqueBackground(newMacterNode, window);
+   openDialogWithOpaqueBackground(newMacterNode, window);*/
    //window->goToCreateMasternode();
    //Q_EMIT CreateMasternode();
 }
@@ -360,18 +348,178 @@ void MasterNodesWidget::onpbnValidatorClicked()
 }
 
 
-void MasterNodesWidget::onpbnMyClicked()
+void MasterNodesWidget::onpbnMyMasternodesClicked()
 {
-      ui->pbnGlobal->setChecked(false);
-      ui->pbnMy->setChecked(true);
-   showHistory();
+    clearScrollWidget();
+    ui->pbnGlobalMasternodes->setChecked(false);
+    ui->pbnMyMasternodes->setChecked(true);
 
+    QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
+    shadowEffect->setColor(QColor(0, 0, 0, 22));
+    shadowEffect->setXOffset(0);
+    shadowEffect->setYOffset(2);
+    shadowEffect->setBlurRadius(6);
+
+        bShowHistoryMy = true;
+
+        std::string strConfFile = "masternode.conf";
+        std::string strDataDir = GetDataDir().string();
+        if (strConfFile != boost::filesystem::basename(strConfFile) + boost::filesystem::extension(strConfFile)){
+            throw std::runtime_error(strprintf(_("masternode.conf %s resides outside data directory %s"), strConfFile, strDataDir));
+        }
+
+        boost::filesystem::path pathBootstrap = GetDataDir() / strConfFile;
+        if (boost::filesystem::exists(pathBootstrap)) {
+            boost::filesystem::path pathMasternodeConfigFile = GetMasternodeConfigFile();
+            boost::filesystem::ifstream streamConfig(pathMasternodeConfigFile);
+
+            if (streamConfig.good()) {
+
+                int linenumber = 1;
+                for (std::string line; std::getline(streamConfig, line); linenumber++) {
+                    if (line.empty()) continue;
+                    if (line.at(0) == '#') continue;
+
+                    std::string name = "";
+                    std::string hash = "";
+                    std::string address = "";
+
+                    std::string buffLine = "";
+                    int count = 0;
+                    for (int i = 0; i < line.size(); ++i) {
+                        if (line.at(i) == ' ')
+                        {
+                            if(count == 3) break;
+                            count++;
+                        }
+                        else if(count == 0) name += line.at(i);
+                        else if(count == 3) hash += line.at(i);
+                    }
+
+                    int rowCount = filter->rowCount();
+                    for(int addressNumber = 0; addressNumber < rowCount; addressNumber++)
+                    {
+                        QModelIndex rowIndex = filter->index(addressNumber, AddressTableModel::Address);
+                        QModelIndex sibling = rowIndex.sibling(addressNumber, AddressTableModel::Label);
+                        QString label = sibling.data(Qt::DisplayRole).toString();
+                        if(label.toStdString() == name)
+                        {
+                            sibling = rowIndex.sibling(addressNumber, AddressTableModel::Address);
+                            address = sibling.data(Qt::DisplayRole).toString().toStdString();
+                            break;
+                        }
+                    }
+
+                    if(address == "") continue;
+
+                    uint256 uHash =  uint256(hash);
+                    uint256 uBlock;
+                    CTransaction tr;
+                    int blockHeight = -1;
+
+                    GetTransaction(uHash, tr, uBlock, true);
+                    IsTransactionInChain(uHash, blockHeight, tr);
+
+                    CKeyID key;
+                    walletModel->getKeyId(CBTCUAddress(address), key);
+                    CPubKey pubKey;
+                    walletModel->getPubKey(key, pubKey);
+
+                    QString type = "-";
+                    //LeaserType type;
+                    for(auto i : tr.GetOutPoints())
+                    {
+                        //type = static_cast<LeaserType>(i.n);
+                        LeaserType t = static_cast<LeaserType>(i.n);
+                        if(t == LeaserType::MasterNode)
+                            type = "Validator";
+                        else if(t == LeaserType::ValidatorNode)
+                            type =  "Masternode";
+                    }
+
+                    CAmount leasingAmount;
+                    CTxOut reward;
+#ifdef ENABLE_LEASING_MANAGER
+                    assert(pwalletMain != NULL);
+                   LOCK2(cs_main, pwalletMain->cs_wallet);
+
+                    if(pwalletMain->pLeasingManager)
+                    {
+                        pwalletMain->pLeasingManager->GetAllAmountsLeasedTo(pubKey, leasingAmount);
+                        CTxOut reward1 = pwalletMain->pLeasingManager->CalcLeasingReward(LeaserType::MasterNode, key, leasingAmount);
+                        reward = pwalletMain->pLeasingManager->CalcLeasingReward(pubKey);
+                    }
+#endif
+
+                    if(SpacerNodeMy)
+                    {
+                        ui->scrollAreaWidgetContentsMy->layout()->removeItem(SpacerNodeMy);
+                        delete SpacerNodeMy;
+                    }
+
+                    SpacerNodeMy = new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding);
+                    //MNRow *mnrow = new MNRow(ui->scrollAreaMy);
+                    QSharedPointer<MNRow> mnrow = QSharedPointer<MNRow>(new MNRow(ui->scrollAreaMy));
+                    mnrow->setGraphicsEffect(shadowEffect);
+                    connect(mnrow.data(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
+                    mnrow->updateView(name, address, double(leasingAmount/100000000.0), blockHeight, type, double(reward.nValue/100000000.0));
+                    ui->scrollAreaWidgetContentsMy->layout()->addWidget(mnrow.data());
+                    ui->scrollAreaWidgetContentsMy->layout()->addItem(SpacerNodeMy);
+                    MNRows.push_back(mnrow);
+                }
+            }
+        }
+
+    showHistory();
 }
-void MasterNodesWidget::onpbnGlobalClicked()
+void MasterNodesWidget::onpbnGlobalMasternodesClicked()
 {
-   ui->pbnGlobal->setChecked(true);
-   ui->pbnMy->setChecked(false);
+    clearScrollWidget();
+   ui->pbnGlobalMasternodes->setChecked(true);
+   ui->pbnMyMasternodes->setChecked(false);
+
+    QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
+    shadowEffect->setColor(QColor(0, 0, 0, 22));
+    shadowEffect->setXOffset(0);
+    shadowEffect->setYOffset(2);
+    shadowEffect->setBlurRadius(6);
+
+    bShowHistory = true;
+    if(SpacerNode)
+    {
+        ui->scrollAreaWidgetContents->layout()->removeItem(SpacerNode);
+        delete SpacerNode;
+    }
+    SpacerNode = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
+    //MNRow * mnrow = new MNRow(ui->scrollArea);
+    QSharedPointer<MNRow> mnrow = QSharedPointer<MNRow>(new MNRow(ui->scrollArea));
+    mnrow->setGraphicsEffect(shadowEffect);
+    connect(mnrow.data(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
+    ui->scrollAreaWidgetContents->layout()->addWidget(mnrow.data());
+    ui->scrollAreaWidgetContents->layout()->addItem(SpacerNode);
+    MNRows.push_back(mnrow);
+
    showHistory();
+}
+
+void MasterNodesWidget::clearScrollWidget()
+{
+    if (ui->pbnMyMasternodes->isChecked())
+    {
+        for (auto i : MNRows) {
+            i->hide();
+            ui->scrollAreaWidgetContentsMy->layout()->removeWidget(i.data());
+        }
+        MNRows.clear();
+    }
+    else
+    {
+        for (auto i : MNRows) {
+            i->hide();
+            ui->scrollAreaWidgetContents->layout()->removeWidget(i.data());
+        }
+        MNRows.clear();
+    }
 }
 
 void MasterNodesWidget::showEvent(QShowEvent *event){
@@ -381,13 +529,24 @@ void MasterNodesWidget::showEvent(QShowEvent *event){
         connect(timer, &QTimer::timeout, [this]() {mnModel->updateMNList();});
     }
     timer->start(30000);*/
+    if(ui->pbnMyMasternodes->isChecked())
+        onpbnMyMasternodesClicked();
+    else if(ui->pbnGlobalMasternodes->isChecked())
+        onpbnGlobalMasternodesClicked();
 }
 
 void MasterNodesWidget::hideEvent(QHideEvent *event){
     //if(timer) timer->stop();
+    clearScrollWidget();
 }
 
 void MasterNodesWidget::loadWalletModel(){
+    if(walletModel)
+    {
+        addressTableModel = walletModel->getAddressTableModel();
+        filter = new AddressFilterProxyModel(QString(AddressTableModel::Receive), this);
+        filter->setSourceModel(addressTableModel);
+    }
    /* if(walletModel) {
         ui->listMn->setModel(mnModel);
         ui->listMn->setModelColumn(AddressTableModel::Label);

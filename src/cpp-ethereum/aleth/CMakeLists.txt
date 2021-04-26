@@ -16,5 +16,3 @@ target_include_directories(cpp-ethereum PRIVATE ../utils)
 if(MINIUPNPC)
     target_compile_definitions(cpp-ethereum PRIVATE ETH_MINIUPNPC)
 endif()
-
-install(TARGETS cpp-ethereum DESTINATION bin)
