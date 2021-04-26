@@ -40,7 +40,7 @@ public:
     void GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const;
 
     CTxOut CalcLeasingReward(const LeaserType type, const CKeyID& leaserID, const CAmount aAmount) const;
-    CTxOut CalcLeasingReward(CPubKey &pubKey) const;
+    void CalcLeasingReward(CPubKey &pubKey, CAmount &amount) const;
 
     const uint256& GetBlockHash() const;
     

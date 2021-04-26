@@ -23,12 +23,12 @@
 #include <QScreen>
 #include <QScrollBar>
 #include <QGraphicsDropShadowEffect>
+#include <iostream>
+
 #define DECORATION_SIZE 70
 #define NUM_ITEMS 3
 #define LOAD_MIN_TIME_INTERVAL 15
 #define REQUEST_LOAD_TASK 1
-
-#include <iostream>
 
 class LeasingHolder : public FurListRow<QWidget*>
 {
@@ -82,10 +82,9 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
     setCssProperty(ui->right, "container-right");
     ui->right->setContentsMargins(0,10,0,20);*/
    setCssProperty(ui->containerLeft, "container-border");
-   setCssProperty(ui->containerright, "container-border");
+   setCssProperty(ui->containerRight, "container-border");
    setCssProperty(ui->containerbottom, "container-border");
    //initCssEditLine(ui->containerBTCU);
-   setCssProperty(ui->scrollAreaHistory, "container");
    setCssProperty(ui->scrollArea, "container");
    //ui->containerSend->setGraphicsEffect(0);
 
@@ -112,8 +111,7 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
    setCssProperty(ui->labelAddress, "text-body2-grey");
    setCssProperty(ui->labelProfit, "text-body2-grey");
 
-
-   ui->lineEditOwnerAddress->setPlaceholderText(tr("Masternode"));
+   ui->lineEditOwnerAddress->setPlaceholderText(tr("Optional"));
    btnOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
    setCssProperty(ui->lineEditOwnerAddress, "edit-primary-multi-book");
    ui->lineEditOwnerAddress->setAttribute(Qt::WA_MacShowFocusRect, 0);
@@ -132,121 +130,121 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
    //connect(ui->pbnTempAdd, SIGNAL(clicked()), this, SLOT(onTempADD()));
    connect(ui->pbnCONFIRM, SIGNAL(clicked()), this, SLOT(onpbnCONFIRM()));
 
+    // Transactions
+    txHolder = new TxViewHolder(isLightTheme());
+    txViewDelegate = new FurAbstractListItemDelegate(
+            DECORATION_SIZE,
+            txHolder,
+            this
+    );
+
+    setCssProperty(ui->listViewTransaction, "container");
+    ui->listViewTransaction->setItemDelegate(txViewDelegate);
+    ui->listViewTransaction->setIconSize(QSize(DECORATION_SIZE, DECORATION_SIZE));
+    ui->listViewTransaction->setMinimumHeight(NUM_ITEMS * (DECORATION_SIZE + 2));
+    ui->listViewTransaction->setAttribute(Qt::WA_MacShowFocusRect, false);
+    ui->listViewTransaction->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->listViewTransaction->setLayoutMode(QListView::LayoutMode::Batched);
+    ui->listViewTransaction->setBatchSize(50);
+    ui->listViewTransaction->setUniformItemSizes(true);
+
+    connect(ui->listViewTransaction, SIGNAL(clicked(QModelIndex)), this, SLOT(handleTransactionClicked(QModelIndex)));
+
+    ui->containerHistory->setVisible(true);
+    ui->emptyContainer->setVisible(false);
+
+    ui->infoFrame->setVisible(false);
+
    showHistory();
 
-   /*ui->labelTitle->setText(tr("Leasing"));
-   setCssTitleScreen(ui->labelTitle);
-   ui->labelTitle->setFont(fontLight);*/
+    // Sort type
+    setCssProperty(ui->lineEditSort, "edit-primary-multi-book");
+    btnBoxSortType = ui->lineEditSort->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
+    connect(btnBoxSortType, &QAction::triggered, [this](){ onBoxSortTypeClicked(); });
+    SortEdit* lineEditType = new SortEdit(ui->comboBoxSortType);
+    initComboBox(ui->comboBoxSortType, lineEditType);
+    connect(lineEditType, &SortEdit::Mouse_Pressed, [this](){ui->comboBoxSortType->showPopup();});
 
-    /* Button Group */
-    /*ui->pushLeft->setText(tr("Leasings"));
-    ui->pushRight->setText(tr("Lease"));
-    setCssProperty(ui->pushLeft, "btn-check-left");
-    setCssProperty(ui->pushRight, "btn-check-right");*/
+    QSettings settings;
+    ui->comboBoxSortType->addItem(tr("All"), TransactionFilterProxy::TYPE(TransactionRecord::P2LLeasingSent) | TransactionFilterProxy::TYPE(TransactionRecord::P2LLeasingSentToSelf) |
+                                                                TransactionFilterProxy::TYPE(TransactionRecord::P2LLeasingRecv) |
+                                                                TransactionFilterProxy::TYPE(TransactionRecord::LeasingReward) |
+                                                                TransactionFilterProxy::TYPE(TransactionRecord::P2LUnlockLeasing) | TransactionFilterProxy::TYPE(TransactionRecord::P2LUnlockOwnLeasing) | TransactionFilterProxy::TYPE(TransactionRecord::P2LReturnLeasing));
+    ui->comboBoxSortType->addItem(tr("Leased"), TransactionFilterProxy::TYPE(TransactionRecord::P2LLeasingSent) | TransactionFilterProxy::TYPE(TransactionRecord::P2LLeasingSentToSelf));
+    ui->comboBoxSortType->addItem(tr("Leasings"), TransactionFilterProxy::TYPE(TransactionRecord::P2LLeasingRecv));
+    ui->comboBoxSortType->addItem(tr("Leasing rewards"), TransactionFilterProxy::TYPE(TransactionRecord::LeasingReward));
+    ui->comboBoxSortType->addItem(tr("Unlock leasings"), TransactionFilterProxy::TYPE(TransactionRecord::P2LUnlockLeasing) | TransactionFilterProxy::TYPE(TransactionRecord::P2LUnlockOwnLeasing) | TransactionFilterProxy::TYPE(TransactionRecord::P2LReturnLeasing));
+    ui->comboBoxSortType->setCurrentIndex(0);
+    connect(ui->comboBoxSortType, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(onSortTypeChanged(const QString&)));
+    ui->comboBoxSortType->setVisible(false);
+    ui->lineEditSort->setText(ui->comboBoxSortType->currentText());
+    widgetBoxSortType=new QWidget(this);
+    QVBoxLayout* LayoutDigits = new QVBoxLayout(widgetBoxSortType);
+    listViewBoxSortType = new QListView();
+    LayoutDigits->addWidget(listViewBoxSortType);
+    widgetBoxSortType->setGraphicsEffect(0);
+    //listViewBoxSort->setGraphicsEffect(shadowEffect);
+    listViewBoxSortType->setProperty("cssClass", "container-border-light");
+    listViewBoxSortType->setModel(ui->comboBoxSortType->model());
+    connect(listViewBoxSortType, SIGNAL(clicked(QModelIndex)), this, SLOT(BoxSortTypeClick(QModelIndex)));
+    widgetBoxSortType->hide();
 
-    /* Subtitle */
-    /*ui->labelSubtitle1->setText(tr(
-        "You can lease your BTCUs, letting a hot node (24/7 online node)\n"
-        "leasing on your behalf, while you keep the keys securely offline."));
-    setCssSubtitleScreen(ui->labelSubtitle1);
-    spacerDiv.reset(new QSpacerItem(40, 20, QSizePolicy::Maximum, QSizePolicy::Expanding));
-
-    setCssProperty(ui->labelSubtitleDescription, "text-title");
-    ui->lineEditOwnerAddress->setPlaceholderText(tr("Enter owner address"));
-    btnOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
-    setCssProperty(ui->lineEditOwnerAddress, "edit-primary-multi-book");
-    ui->lineEditOwnerAddress->setAttribute(Qt::WA_MacShowFocusRect, 0);
-    setShadow(ui->lineEditOwnerAddress);
-
-    ui->labelSubtitle2->setText(tr("Lease BTCU"));
-    setCssSubtitleScreen(ui->labelSubtitle2);
-    ui->labelSubtitle2->setContentsMargins(0,2,0,0);
-
-    ui->pushButtonSend->setText(tr("Lease"));
-    ui->pushButtonClear->setText(tr("Clear All"));
-    setCssBtnPrimary(ui->pushButtonSend);
-    setCssBtnSecondary(ui->pushButtonClear);
-
-    connect(ui->pushButtonClear, SIGNAL(clicked()), this, SLOT(clearAll()));
-
-    ui->labelEditTitle->setText(tr("Leasing address"));
-    setCssProperty(ui->labelEditTitle, "text-title");
-    */
     sendMultiRow =new SendMultiRow(this);
     sendMultiRow->setOnlyLeasingAddressAccepted(true);
     ((QVBoxLayout*)ui->containerSend->layout())->insertWidget(1, sendMultiRow);
     connect(sendMultiRow, &SendMultiRow::onContactsClicked, [this](){ onContactsClicked(false); });
-    /*
-    // List
-    ui->labelListHistory->setText(tr("Leased balance history"));
-    setCssProperty(ui->labelLeasingTotal, "text-title-right");
-    setCssProperty(ui->labelLeasingReward, "text-title-right");
-    setCssProperty(ui->labelListHistory, "text-title");
-    setCssProperty(ui->pushImgEmpty, "img-empty-transactions");
-    ui->labelEmpty->setText(tr("No leasings yet"));
-    setCssProperty(ui->labelEmpty, "text-empty");
+}
 
-    ui->btnCoinControl->setTitleClassAndText("btn-title-grey", "Coin Control");
-    ui->btnCoinControl->setSubTitleClassAndText("text-subtitle", "Select BTCU outputs to lease.");
+void LeasingWidget::onBoxSortTypeClicked()
+{
+    if(widgetBoxSortType->isVisible()){
+        widgetBoxSortType->hide();
+        btnBoxSortType->setIcon(getIconComboBox(isLightTheme(),false));
+        return;
+    }
+    btnBoxSortType->setIcon(getIconComboBox(isLightTheme(),true));
+    QPoint pos = ui->lineEditSort->pos();
+    QPoint point = ui->containerLeft->rect().bottomRight();
+    widgetBoxSortType->setFixedSize(ui->lineEditSort->width() + 20,200);
 
-    ui->btnLeasing->setTitleClassAndText("btn-title-grey", "Create Leasing Address");
-    ui->btnLeasing->setSubTitleClassAndText("text-subtitle", "Creates an address to receive leased coins\nand lease them on their owner's behalf.");
-    ui->btnLeasing->layout()->setMargin(0);
+    pos.setY(point.y() + ui->lineEditSort->height() + 25);
+    pos.setX(point.x() + ui->containerRight->width() - widgetBoxSortType->width() + 15);
+    widgetBoxSortType->move(pos);
+    widgetBoxSortType->show();
+}
 
-    connect(ui->btnCoinControl, SIGNAL(clicked()), this, SLOT(onCoinControlClicked()));
-    connect(ui->btnLeasing, SIGNAL(clicked()), this, SLOT(onLeasingClicked()));
+void LeasingWidget::onSortTypeChanged(const QString& value){
+    if (!filter) return;
+    int filterByType = ui->comboBoxSortType->itemData(ui->comboBoxSortType->currentIndex()).toInt();
+    filter->setTypeFilter(filterByType);
+    ui->listViewTransaction->update();
 
-    onLeaseSelected(true);
-    ui->pushRight->setChecked(true);
-    connect(ui->pushLeft, &QPushButton::clicked, [this](){onLeaseSelected(false);});
-    connect(ui->pushRight,  &QPushButton::clicked, [this](){onLeaseSelected(true);});
+    if (filter->rowCount() == 0){
+        ui->emptyContainer->setVisible(true);
+        ui->listViewTransaction->setVisible(false);
+    } else {
+        ui->emptyContainer->setVisible(false);
+        ui->listViewTransaction->setVisible(true);
+    }
 
-    // List
-    setCssProperty(ui->listView, "container");
-    txHolder.reset(new LeasingHolder(isLightTheme()));
-    leasing = new FurAbstractListItemDelegate(
-                DECORATION_SIZE,
-                txHolder.get(),
-                this
-    );
+    // Store settings
+    QSettings settings;
+    settings.setValue("transactionType", filterByType);
+}
 
-    addressHolder.reset(new AddressHolder(isLightTheme()));
-    addressLeasing = new FurAbstractListItemDelegate(
-            DECORATION_SIZE,
-            addressHolder.get(),
-            this
-    );
+void LeasingWidget::BoxSortTypeClick(const QModelIndex &index)
+{
+    QString value = index.data(0).toString();
+    if(value.length() > 22)
+    {
+        value = value.left(19) + "...";
+    }
+    ui->lineEditSort->setText(value);
+    ui->comboBoxSortType->setCurrentIndex(index.row());
+    widgetBoxSortType->hide();
+    btnBoxSortType->setIcon(getIconComboBox(isLightTheme(),false));
+}
 
-    ui->listView->setItemDelegate(leasing);
-    ui->listView->setIconSize(QSize(DECORATION_SIZE, DECORATION_SIZE));
-    ui->listView->setMinimumHeight(NUM_ITEMS * (DECORATION_SIZE + 2));
-    ui->listView->setAttribute(Qt::WA_MacShowFocusRect, false);
-    ui->listView->setSelectionBehavior(QAbstractItemView::SelectRows);
-
-    ui->btnMyLeasingAddresses->setChecked(true);
-    ui->listViewLeasingAddress->setVisible(false);
-
-    ui->btnMyLeasingAddresses->setTitleClassAndText("btn-title-grey", "My Leasing Addresses");
-    ui->btnMyLeasingAddresses->setSubTitleClassAndText("text-subtitle", "List your own leasing addresses.");
-    ui->btnMyLeasingAddresses->layout()->setMargin(0);
-    ui->btnMyLeasingAddresses->setRightIconClass("ic-arrow");
-
-    // List Addresses
-    setCssProperty(ui->listViewLeasingAddress, "container");
-    ui->listViewLeasingAddress->setItemDelegate(addressLeasing);
-    ui->listViewLeasingAddress->setIconSize(QSize(DECORATION_SIZE, DECORATION_SIZE));
-    ui->listViewLeasingAddress->setMinimumHeight(NUM_ITEMS * (DECORATION_SIZE + 2));
-    ui->listViewLeasingAddress->setAttribute(Qt::WA_MacShowFocusRect, false);
-    ui->listViewLeasingAddress->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->listViewLeasingAddress->setUniformItemSizes(true);
-
-    connect(ui->pushButtonSend, &QPushButton::clicked, this, &LeasingWidget::onSendClicked);
-    connect(btnOwnerContact, &QAction::triggered, [this](){ onContactsClicked(true); });
-    connect(ui->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(handleAddressClicked(QModelIndex)));
-    connect(ui->listViewLeasingAddress, SIGNAL(clicked(QModelIndex)), this, SLOT(handleMyLeasingAddressClicked(QModelIndex)));
-    connect(ui->btnMyLeasingAddresses, SIGNAL(clicked()), this, SLOT(onMyLeasingAddressesClicked()));
-*/
-     }
 void LeasingWidget::showHistory()
 {
    if(bShowHistory)
@@ -268,7 +266,7 @@ void LeasingWidget::onTempADD(QString Address = QString(), QString Name = QStrin
    if(count <= 0 ) return;
    if(SpacerHistory)
    {
-      ui->scrollAreaWidgetContents->layout()->removeItem(SpacerHistory);
+      ui->listViewTransaction->layout()->removeItem(SpacerHistory);
       delete SpacerHistory;
    }
    if(SpacerTop)
@@ -290,8 +288,8 @@ void LeasingWidget::onTempADD(QString Address = QString(), QString Name = QStrin
       n++;
       SpacerTop = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
       SpacerHistory = new QSpacerItem(20,20,QSizePolicy::Minimum,QSizePolicy::Expanding);
-      ui->scrollAreaWidgetContents->layout()->addWidget(createLeasinghistoryrow(address, label, QString::number(amount, 10)));
-      ui->scrollAreaWidgetContents->layout()->addItem(SpacerHistory);
+      ui->listViewTransaction->layout()->addWidget(createLeasinghistoryrow(address, label, QString::number(amount, 10)));
+      ui->listViewTransaction->layout()->addItem(SpacerHistory);
       ui->scrollAreaWidgetContentsTop->layout()->addWidget(createLeasingTop(n, address));
       ui->scrollAreaWidgetContentsTop->layout()->addItem(SpacerTop);
    }
@@ -449,7 +447,7 @@ void LeasingWidget::onpbnMenuClicked()
 
    if(!this->menu)
    {
-      this->menu = new TooltipMenu(window, ui->scrollAreaHistory);
+      this->menu = new TooltipMenu(window, ui->listViewTransaction);
       this->menu->setEditBtnText(tr("More Information"));
       this->menu->setDeleteBtnText(tr("Cancel Leasing"));
       this->menu->setCopyBtnText(tr("Add New Leasing"));
@@ -468,7 +466,7 @@ void LeasingWidget::onpbnMenuClicked()
          return;
       }
    }
-   if(pos.y()+ this->menu->height() > ui->scrollAreaHistory->height())
+   if(pos.y()+ this->menu->height() > ui->listViewTransaction->height())
    {
       pos = btnMenu->rect().topRight();
       pos = btnMenu->mapToParent(pos);
@@ -523,14 +521,30 @@ void LeasingWidget::loadWalletModel(){
         //ui->listViewLeasingAddress->setModel(addressesFilter);
         //ui->listViewLeasingAddress->setModelColumn(AddressTableModel::Address);
 
-       /*filter = new TransactionFilterProxy();
-       filter->setDynamicSortFilter(true);
-       filter->setSortCaseSensitivity(Qt::CaseInsensitive);
-       filter->setFilterCaseSensitivity(Qt::CaseInsensitive);
-       filter->setSortRole(Qt::EditRole);
-       filter->setSourceModel(txModel);
-       filter->setTypeFilter(TransactionFilterProxy::TYPE(TransactionRecord::P2LLeasingRecv));
-       filter->sort(TransactionTableModel::Date, Qt::DescendingOrder);*/
+        filter = new TransactionFilterProxy();
+        filter->setDynamicSortFilter(true);
+        filter->setSortCaseSensitivity(Qt::CaseInsensitive);
+        filter->setFilterCaseSensitivity(Qt::CaseInsensitive);
+        filter->setSortRole(Qt::EditRole);
+        filter->setSourceModel(txModel);
+        filter->sort(TransactionTableModel::Date, Qt::DescendingOrder);
+
+        txHolder->setFilter(filter);
+
+        ui->listViewTransaction->setModel(filter);
+        ui->listViewTransaction->setModelColumn(TransactionTableModel::ToAddress);
+
+        if (filter->rowCount() == 0){
+            ui->emptyContainer->setVisible(true);
+            ui->containerHistory->setVisible(false);
+        }
+        else{
+            ui->containerHistory->setVisible(true);
+            ui->emptyContainer->setVisible(false);
+        }
+        /*else {
+            showList(true);
+        }*/
 
         connect(txModel, &TransactionTableModel::txArrived, this, &LeasingWidget::onTxArrived);
 
@@ -740,6 +754,13 @@ void LeasingWidget::showList(bool show){
     /*ui->emptyContainer->setVisible(!show);
     ui->listView->setVisible(show);
     ui->containerHistoryLabel->setVisible(show);*/
+    if (filter->rowCount() == 0){
+        ui->emptyContainer->setVisible(true);
+        ui->containerHistory->setVisible(false);
+    } else {
+        ui->emptyContainer->setVisible(false);
+        ui->containerHistory->setVisible(true);
+    }
 }
 
 void LeasingWidget::onSendClicked(){
@@ -769,8 +790,24 @@ void LeasingWidget::onSendClicked(){
 
     QString inputOwner = ui->lineEditOwnerAddress->text();
     bool isOwnerEmpty = inputOwner.isEmpty();
-    if (!isOwnerEmpty && !walletModel->validateAddress(inputOwner)) {
-       informError(tr("Owner address invalid"));
+    if (isOwnerEmpty)
+    {
+        std::string strAccount = "";
+        std::string purpose = AddressBook::AddressBookPurpose::LEASED;
+        CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS;
+        CBTCUAddress address;
+        PairResult r = pwalletMain->getNewAddress(address, strAccount, purpose, addrType);
+        inputOwner = QString::fromStdString(address.ToString());
+
+        CKeyID ownerKey;
+        if (!address.GetKeyID(ownerKey))
+        {
+            informError(tr("Unable to get spend pubkey hash from owneraddress"));
+            return;
+        }
+    }
+    if(!walletModel->validateAddress(inputOwner)) {
+        informError(tr("Owner address invalid"));
         return;
     }
 
@@ -859,6 +896,25 @@ void LeasingWidget::onSendClicked(){
     dialog->deleteLater();
 }
 
+void LeasingWidget::handleTransactionClicked(const QModelIndex &index){
+
+    ui->listViewTransaction->setCurrentIndex(index);
+    QModelIndex rIndex = filter->mapToSource(index);
+
+    window->showHide(true);
+    TxDetailDialog *dialog = new TxDetailDialog(window, false);
+    dialog->setData(walletModel, rIndex);
+    connect(dialog, SIGNAL(messageInfo(const QString, int)), window, SLOT(messageInfo(const QString, int)));
+    openDialogWithOpaqueBackgroundY(dialog, window, 3, 17);
+    disconnect(dialog, SIGNAL(messageInfo(const QString, int)), window, SLOT(messageInfo(const QString, int)));
+
+    // Back to regular status
+    ui->listViewTransaction->scrollTo(index);
+    ui->listViewTransaction->clearSelection();
+    ui->listViewTransaction->setFocus();
+    dialog->deleteLater();
+}
+
 bool LeasingWidget::validate()
 {
    if (!walletModel)
@@ -899,13 +955,13 @@ bool LeasingWidget::validate()
 }
 void LeasingWidget::clearLeasingHistoryrow()
 {
-   QList<QWidget *> listRow = ui->scrollAreaWidgetContents->findChildren<QWidget *> ("Historyrow");
+   QList<QWidget *> listRow = ui->listViewTransaction->findChildren<QWidget *> ("Historyrow");
    int size = listRow.length();
    QWidget * row;
    for(int i = 0; i < size; i++)
    {
       row = listRow.at(i);
-      ui->scrollAreaWidgetContents->layout()->removeWidget(row);
+      ui->listViewTransaction->layout()->removeWidget(row);
       delete row;
    }
 }
