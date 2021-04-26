@@ -47,17 +47,8 @@ enum class LeaserType: int {
 
 class CLeasingManager: public CValidationInterface {
 public:
-
-    bool GetLeasingRewards(const LeaserType type, const CKeyID &leaserID, const size_t nLimit,
-                           std::vector<CTxOut> &vRewards) const;
-
-    CTxOut CalcLeasingReward(const COutPoint &point, const CKeyID &keyID) const;
-
     void GetAllAmountsLeasedTo(CPubKey &pubKey, CAmount &amount) const;
-    void GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const;
-
-    CTxOut CalcLeasingReward(const LeaserType type, const CKeyID& leaserID, const CAmount aAmount) const;
-    CTxOut CalcLeasingReward(CPubKey &pubKey) const;
+    void CalcLeasingReward(CPubKey &pubKey, CAmount &amount) const;
 };
 
 class MNHolder : public FurListRow<QWidget*>
@@ -382,7 +373,6 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
 
                     std::string name = "";
                     std::string hash = "";
-                    std::string address = "";
 
                     std::string buffLine = "";
                     int count = 0;
@@ -396,6 +386,7 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
                         else if(count == 3) hash += line.at(i);
                     }
 
+                    std::string address = "";
                     int rowCount = filter->rowCount();
                     for(int addressNumber = 0; addressNumber < rowCount; addressNumber++)
                     {
@@ -438,16 +429,15 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
                     }
 
                     CAmount leasingAmount;
-                    CTxOut reward;
+                    CAmount reward;
 #ifdef ENABLE_LEASING_MANAGER
                     assert(pwalletMain != NULL);
-                   LOCK2(cs_main, pwalletMain->cs_wallet);
+                    LOCK2(cs_main, pwalletMain->cs_wallet);
 
                     if(pwalletMain->pLeasingManager)
                     {
                         pwalletMain->pLeasingManager->GetAllAmountsLeasedTo(pubKey, leasingAmount);
-                        CTxOut reward1 = pwalletMain->pLeasingManager->CalcLeasingReward(LeaserType::MasterNode, key, leasingAmount);
-                        reward = pwalletMain->pLeasingManager->CalcLeasingReward(pubKey);
+                        pwalletMain->pLeasingManager->CalcLeasingReward(pubKey, reward);
                     }
 #endif
 
@@ -462,7 +452,7 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
                     QSharedPointer<MNRow> mnrow = QSharedPointer<MNRow>(new MNRow(ui->scrollAreaMy));
                     mnrow->setGraphicsEffect(shadowEffect);
                     connect(mnrow.get(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
-                    mnrow->updateView(name, address, double(leasingAmount/100000000.0), blockHeight, type, double(reward.nValue/100000000.0));
+                    mnrow->updateView(name, address, double(leasingAmount/100000000.0), blockHeight, type, double(reward/100000000.0));
                     ui->scrollAreaWidgetContentsMy->layout()->addWidget(mnrow.get());
                     ui->scrollAreaWidgetContentsMy->layout()->addItem(SpacerNodeMy);
                     MNRows.push_back(mnrow);

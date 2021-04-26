@@ -26,7 +26,8 @@ MasterNodeWizardDialog::MasterNodeWizardDialog(WalletModel *model, QWidget *pare
     ui->setupUi(this);
 
     this->setStyleSheet(parent->styleSheet());
-    setCssProperty(ui->frame, "container-dialog");
+
+    setCssProperty(ui->frame, "container-border");
     ui->frame->setContentsMargins(10,10,10,10);
 
     setCssProperty({ui->labelLine1, ui->labelLine3}, "line-purple");
@@ -122,6 +123,13 @@ void MasterNodeWizardDialog::onNextClicked(){
             // No empty names accepted.
             if (ui->lineEditName->text().isEmpty()) {
                 setCssEditLine(ui->lineEditName, false, true);
+                inform("Enter masternode's name");
+                return;
+            }
+            else if(checkName(ui->lineEditName->text()))
+            {
+                setCssEditLine(ui->lineEditName, false, true);
+                inform("Masternode with the same name already exists");
                 return;
             }
             setCssEditLine(ui->lineEditName, true, true);
@@ -153,6 +161,44 @@ void MasterNodeWizardDialog::onNextClicked(){
     pos++;
 }
 
+bool MasterNodeWizardDialog::checkName(QString newName)
+{
+    newName = newName.trimmed();
+    std::string strConfFile = "masternode.conf";
+    std::string strDataDir = GetDataDir().string();
+    if (strConfFile != boost::filesystem::basename(strConfFile) + boost::filesystem::extension(strConfFile)){
+        throw std::runtime_error(strprintf(_("masternode.conf %s resides outside data directory %s"), strConfFile, strDataDir));
+    }
+
+    boost::filesystem::path pathBootstrap = GetDataDir() / strConfFile;
+    if (boost::filesystem::exists(pathBootstrap)) {
+        boost::filesystem::path pathMasternodeConfigFile = GetMasternodeConfigFile();
+        boost::filesystem::ifstream streamConfig(pathMasternodeConfigFile);
+
+        if (streamConfig.good()) {
+
+            int linenumber = 1;
+            for (std::string line; std::getline(streamConfig, line); linenumber++) {
+                if (line.empty()) continue;
+                if (line.at(0) == '#') continue;
+
+                std::string name = "";
+
+                int count = 0;
+                for (int i = 0; i < line.size(); ++i) {
+                    if (line.at(i) == ' ') {
+                        if (count == 3) break;
+                        count++;
+                    }
+                    else if (count == 0) name += line.at(i);
+                }
+                if(name == newName.toStdString()) return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool MasterNodeWizardDialog::createMN(){
     if (walletModel) {
         /**
@@ -171,11 +217,8 @@ bool MasterNodeWizardDialog::createMN(){
         std::string mnKeyString = mnKey.ToString();
 
         // second create mn address
-        QString addressLabel = ui->lineEditName->text();
-        if (addressLabel.isEmpty()) {
-            returnStr = tr("address label cannot be empty");
-            return false;
-        }
+        QString addressLabel = ui->lineEditName->text().trimmed();
+
         std::string alias = addressLabel.toStdString();
 
         QString addressStr = ui->lineEditIpAddress->text();
