@@ -1,4 +1,26 @@
 #!/bin/bash
+
+usage()
+{
+   echo ""
+   echo "Usage: $0 [-u|-s]"
+   echo -e "\t-u Update the solution instead of cloning the BTCU repository"
+   echo -e "\t-s Build a static type build (additionally will build from the sources: libnorm, libzmq3 and qt5)"
+   exit 1 # Exit script after printing help
+}
+
+is_static=false
+is_update=false
+
+while getopts "us?h" opt
+do
+   case "$opt" in
+      u ) is_update=true ;;
+      s ) is_static=true ;;
+      h|?) usage ;;
+   esac
+done
+
 echo  "[0%] Updating apt-get..."
 sudo apt-get update 
 echo  "[0%] Updating apt-get... Done!"
@@ -191,24 +213,35 @@ cd -
 echo  ""
 echo  "[30%] Installing dependency: graphite2... Done!"
 
-echo  ""
-echo  "[30%] Installing dependency: libzmq3-dev and dependencies for a static build... "
+if [ "$is_static" = true ]
+then
+    echo  ""
+    echo  "[30%] Installing dependency: libzmq3-dev and dependencies for a static build... "
 
-git clone --recurse-submodules https://github.com/USNavalResearchLaboratory/norm.git
+    git clone --recurse-submodules https://github.com/USNavalResearchLaboratory/norm.git
 
-cd norm
-./waf configure --prefix=/usr --enable-static-library && ./waf install
-cd -
+    cd norm
+    ./waf configure --prefix=/usr --enable-static-library && ./waf install
+    cd -
 
-install_package libpgm-dev
+    install_package libpgm-dev
 
-git clone https://github.com/zeromq/libzmq.git
-cd libzmq
-cmake -G "CodeBlocks - Unix Makefiles" -DWITH_PERF_TOOL=OFF -DWITH_NORM=ON -DWITH_LIBSODIUM_STATIC=ON -DZMQ_BUILD_TESTS=OFF -DENABLE_CPACK=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr &&
-make && sudo make install
+    git clone https://github.com/zeromq/libzmq.git
+    cd libzmq
+    cmake -G "CodeBlocks - Unix Makefiles" -DWITH_PERF_TOOL=OFF -DWITH_NORM=ON -DWITH_LIBSODIUM_STATIC=ON -DZMQ_BUILD_TESTS=OFF -DENABLE_CPACK=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr &&
+    make && sudo make install
 
-echo  ""
-echo  "[31%] Installing dependency: libzmq3-dev and dependencies for a static build... Done!"
+    echo  ""
+    echo  "[31%] Installing dependency: libzmq3-dev and dependencies for a static build... Done!"
+else
+    echo  ""
+    echo  "[30%] Installing dependency: libzmq3-dev..."
+
+    install_package libzmq3-dev
+
+    echo  ""
+    echo  "[31%] Installing dependency: libzmq3-dev... Done!"
+fi
 
 echo  ""
 echo  "[31%] Installing dependency: librocksdb-dev... "
@@ -347,67 +380,66 @@ echo  "[50%] Installing dependency: libpng-dev... Done!"
 echo  ""
 echo  "[50%] Installing QT Components. "
 
-if [ "$2" = "static" ]
+echo  ""
+echo  "[50%] Ensuring QT's sub-dependencies... "
+
+install_package libglu1-mesa-dev
+install_package libxi-dev
+install_package libxrender-dev
+install_package libx11-dev
+install_package libxcb-glx0-dev
+install_package libdrm-dev
+install_package libx11-xcb-dev
+install_package libxcb-icccm4-dev
+install_package libxcb-image0-dev
+install_package libxcb-shm0-dev
+install_package libxcb-util-dev
+install_package libxcb-keysyms1-dev
+install_package libxcb-randr0-dev
+install_package libxcb-render-util0-dev
+install_package libxcb-render0-dev
+install_package libxcb-shape0-dev
+install_package libxcb-sync-dev
+install_package libxcb-xfixes0-dev
+install_package libxcb-xinerama0-dev
+install_package libxcb-xkb-dev
+install_package libxcb1-dev
+install_package libxkbcommon-x11-dev
+install_package libegl1-mesa-dev
+install_package libwayland-dev
+install_package libxkbcommon-dev
+install_package libxext-dev
+install_package libxau-dev
+install_package libxdmcp-dev
+install_package libffi-dev
+install_package libfreetype6-dev
+install_package libgraphite2-dev
+install_package libpcre3-dev
+install_package uuid-dev
+
+echo  ""
+echo  "[51%] Ensuring QT's sub-dependencies... Done!"
+
+if [ "$is_static" = true ]
 then
     echo  ""
-    echo  "[50%] Downloading QT package: qt-5.15... "
+    echo  "[51%] Downloading QT package: qt-5.15... "
 
     wget https://download.qt.io/archive/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz
 
 
     echo  ""
-    echo  "[51%] Downloading QT package: qt-5.15... Done!"
+    echo  "[52%] Downloading QT package: qt-5.15... Done!"
 
 
     echo  ""
-    echo  "[51%] Extracting QT package: qt-5.15... "
+    echo  "[52%] Extracting QT package: qt-5.15... "
 
     tar xvf qt-everywhere-src-5.15.2.tar.xz -C ./
     cd qt-everywhere-src-5.15.2
 
     echo  ""
-    echo  "[52%] Extracting QT package: qt-5.15... Done!"
-
-
-    echo  ""
-    echo  "[52%] Ensuring QT's sub-dependencies... "
-
-    install_package libglu1-mesa-dev
-    install_package libxi-dev
-    install_package libxrender-dev
-    install_package libx11-dev
-    install_package libxcb-glx0-dev
-    install_package libdrm-dev
-    install_package libx11-xcb-dev
-    install_package libxcb-icccm4-dev
-    install_package libxcb-image0-dev
-    install_package libxcb-shm0-dev
-    install_package libxcb-util-dev
-    install_package libxcb-keysyms1-dev
-    install_package libxcb-randr0-dev
-    install_package libxcb-render-util0-dev
-    install_package libxcb-render0-dev
-    install_package libxcb-shape0-dev
-    install_package libxcb-sync-dev
-    install_package libxcb-xfixes0-dev
-    install_package libxcb-xinerama0-dev
-    install_package libxcb-xkb-dev
-    install_package libxcb1-dev
-    install_package libxkbcommon-x11-dev
-    install_package libegl1-mesa-dev
-    install_package libwayland-dev
-    install_package libxkbcommon-dev
-    install_package libxext-dev
-    install_package libxau-dev
-    install_package libxdmcp-dev
-    install_package libffi-dev
-    install_package libfreetype6-dev
-    install_package libgraphite2-dev
-    install_package libpcre3-dev
-    install_package uuid-dev
-
-    echo  ""
-    echo  "[53%] Ensuring QT's sub-dependencies... Done!"
+    echo  "[53%] Extracting QT package: qt-5.15... Done!"
 
     echo  ""
     echo  "[53%] Building QT package: qt-5.15... "
@@ -450,7 +482,14 @@ then
     echo  "[56%] Installing QT package: qt-5.15... Done!"
 
 else
-    echo  "[56%] Not a static... Skip QT package build."
+    echo  "[55%] Not a static... Skip QT package build."
+
+    echo  ""
+    echo  "[55%] Installing Q5... "
+    install_package qt5-default
+
+    echo  ""
+    echo  "[56%] Installing Q5... Done!"
 fi
 
 echo  ""
@@ -507,7 +546,7 @@ echo  "[62%] Installing QT dependency: libqt5svg5... Done!"
 echo  ""
 echo  "[62%] Installing QT dependency: libqt5charts5... "
 
-install_package libqt5charts5
+install_package libqt5charts5-dev
 
 echo  ""
 echo  "[63%] Installing QT dependency: libqt5charts5... Done!"
@@ -519,7 +558,7 @@ echo  ""
 echo  "[63%] Checking is folder the git repository... "
 if [ -d .git ]; then
 echo -ne  "yes"
-    if [ "$1" = "update" ]
+    if [ "$is_update" = true ]
     then
     echo  ""
     echo  "[63%] Updating current version of the BTCU... "
@@ -592,7 +631,7 @@ echo  "[68%] Installing Berkeley DB... Done!"
 echo  ""
 echo  "[68%] Running CMake configuring... "
 
-if [ "$2" = "static" ]
+if [ "$is_static" = true ]
 then
     cmake -G "CodeBlocks - Unix Makefiles" . -DBUILD_STATIC=ON
 else
