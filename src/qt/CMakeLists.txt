@@ -20,7 +20,9 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 	add_compile_options("-fPIE")
 endif ()
-
+if(BUILD_STATIC)
+		find_package(Qt5QmlImportScanner REQUIRED)
+endif()
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
 
 # you can remove check for the Darwin if you'd build 
@@ -366,6 +368,11 @@ target_link_libraries(btcu-qt
         ${Qrcode_LIBRARIES}
         Threads::Threads
     )
+
+if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    qt5_import_qml_plugins(btcu-qt)
+    qt5_import_plugins(btcu-qt INCLUDE Qt5::QSvgPlugin Qt5::QSvgIconPlugin Qt5::QSvgIconPlugin Qt5::QGifPlugin Qt5::QJpegPlugin)
+endif()
 
 get_filename_component(_qt_bin_dir "${qt5_ROOT_DIR}/bin" DIRECTORY)
 find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
@@ -850,6 +857,11 @@ if(ENABLE_TESTS)
 			${Qrcode_LIBRARIES}
 			Qt5::Gui Qt5::Core Qt5::Widgets Qt5::Network Qt5::Svg Qt5::Test ${QT_LIBRARIES}
 		)
+	if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+		qt5_import_qml_plugins(test_btcu-qt)
+		qt5_import_plugins(btcu-qt INCLUDE Qt5::QSvgPlugin Qt5::QSvgIconPlugin Qt5::QSvgIconPlugin Qt5::QGifPlugin Qt5::QJpegPlugin)
+	endif()
+	
 	if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 		target_link_libraries(test_btcu-qt PUBLIC pthread)
 	endif()
