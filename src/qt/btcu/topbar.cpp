@@ -548,8 +548,8 @@ void TopBar::setNumBlocks(int count) {
 }
 
 void TopBar::loadWalletModel(){
-    connect(walletModel, SIGNAL(balanceChanged(CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount)), this,
-            SLOT(updateBalances(CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount)));
+    connect(walletModel, SIGNAL(balanceChanged(CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount)), this,
+            SLOT(updateBalances(CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount)));
     connect(walletModel->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
     connect(walletModel, &WalletModel::encryptionStatusChanged, this, &TopBar::refreshStatus);
 
@@ -640,33 +640,6 @@ void TopBar::updateBalances(const CAmount& balance, const CAmount& unconfirmedBa
     std::cout << totalPiv.toStdString() << std::endl;
     ui->labelAmountPiv->setText(totalPiv);
     //ui->labelAmountzPiv->setText(totalzPiv);
-
-    //In Leasing + Leasing Profit
-    /*CAmount leasingAmount = 0;
-    CAmount rewardAmount = 0;
-    int rowCount = filter->rowCount();
-    for(int addressNumber = 0; addressNumber < rowCount; addressNumber++)
-    {
-        QString address;
-        QModelIndex rowIndex = filter->index(addressNumber, AddressTableModel::Address);
-        QModelIndex sibling = rowIndex.sibling(addressNumber, AddressTableModel::Label);
-        QString label = sibling.data(Qt::DisplayRole).toString();
-        //if (label.toStdString() == addressName) ???
-        sibling = rowIndex.sibling(addressNumber, AddressTableModel::Address);
-        address = sibling.data(Qt::DisplayRole).toString().toStdString();
-
-        CKeyID key;
-        walletModel->getKeyId(CBTCUAddress(address), key);
-        CPubKey pubKey;
-        walletModel->getPubKey(key, pubKey);
-        CAmount amount;
-        CTxOut reward;
-
-        pwalletMain->pLeasingManager->GetAllAmountsLeasedTo(pubKey, amount);
-        leasingAmount += amount;
-        reward = pwalletMain->pLeasingManager->CalcLeasingReward(pubKey);
-        rewardAmount += reward.nValue;
-    }*/
 
     //ui->labelImmaturezPiv->setText(QString::number(leasingReward/100000000.0, 'g', 12) + " zBTCU");//GUIUtil::formatBalance(immatureZerocoinBalance, nDisplayUnit, true));
     ui->labelLeasing->setText(QString::number(leasing/100000000.0, 'g', 12) + " zBTCU");//GUIUtil::formatBalance(/*leasingModel->getTotalAmount()*/leasingReward, nDisplayUnit, true));

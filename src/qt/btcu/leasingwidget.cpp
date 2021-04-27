@@ -528,6 +528,8 @@ void LeasingWidget::loadWalletModel(){
         filter->setSortRole(Qt::EditRole);
         filter->setSourceModel(txModel);
         filter->sort(TransactionTableModel::Date, Qt::DescendingOrder);
+        int filterByType = ui->comboBoxSortType->itemData(ui->comboBoxSortType->currentIndex()).toInt();
+        filter->setTypeFilter(filterByType);
 
         txHolder->setFilter(filter);
 
@@ -563,6 +565,7 @@ void LeasingWidget::onTxArrived(const QString& hash, const bool& isCoinStake, co
     /*if (isLAnyType) {
         tryRefreshLeasings();
     }*/
+    ui->listViewTransaction->update();
 }
 
 void LeasingWidget::walletSynced(bool sync) {

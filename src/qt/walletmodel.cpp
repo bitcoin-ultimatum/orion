@@ -304,7 +304,7 @@ void WalletModel::emitBalanceChanged()
     Q_EMIT balanceChanged(cachedBalance, cachedUnconfirmedBalance, cachedImmatureBalance,
                         cachedZerocoinBalance, cachedUnconfirmedZerocoinBalance, cachedImmatureZerocoinBalance,
                         cachedWatchOnlyBalance, cachedWatchUnconfBalance, cachedWatchImmatureBalance,
-                        cachedDelegatedBalance, cachedColdStakedBalance);
+                        cachedDelegatedBalance, cachedColdStakedBalance, cachedInLeasingBalance, cachedLeasingProfitBalance);
 }
 
 void WalletModel::checkBalanceChanged()
@@ -324,6 +324,8 @@ void WalletModel::checkBalanceChanged()
     // Cold staking
     CAmount newColdStakedBalance =  getColdStakedBalance();
     CAmount newDelegatedBalance = getDelegatedBalance();
+    CAmount newInLeasing = getInLeasing();
+    CAmount newLeasingProfit = getLeasingProfit();
 
 
     if (haveWatchOnly()) {
@@ -335,7 +337,8 @@ void WalletModel::checkBalanceChanged()
     if (cachedBalance != newBalance || cachedUnconfirmedBalance != newUnconfirmedBalance || cachedImmatureBalance != newImmatureBalance ||
         cachedZerocoinBalance != newZerocoinBalance || cachedUnconfirmedZerocoinBalance != newUnconfirmedZerocoinBalance || cachedImmatureZerocoinBalance != newImmatureZerocoinBalance ||
         cachedWatchOnlyBalance != newWatchOnlyBalance || cachedWatchUnconfBalance != newWatchUnconfBalance || cachedWatchImmatureBalance != newWatchImmatureBalance ||
-        cachedTxLocks != nCompleteTXLocks || cachedDelegatedBalance != newDelegatedBalance || cachedColdStakedBalance != newColdStakedBalance) {
+        cachedTxLocks != nCompleteTXLocks || cachedDelegatedBalance != newDelegatedBalance || cachedColdStakedBalance != newColdStakedBalance ||
+        cachedInLeasingBalance != newInLeasing || cachedLeasingProfitBalance != newLeasingProfit) {
         cachedBalance = newBalance;
         cachedUnconfirmedBalance = newUnconfirmedBalance;
         cachedImmatureBalance = newImmatureBalance;
@@ -348,10 +351,12 @@ void WalletModel::checkBalanceChanged()
         cachedWatchImmatureBalance = newWatchImmatureBalance;
         cachedColdStakedBalance = newColdStakedBalance;
         cachedDelegatedBalance = newDelegatedBalance;
+        cachedInLeasingBalance = newInLeasing;
+        cachedLeasingProfitBalance = newLeasingProfit;
         Q_EMIT balanceChanged(newBalance, newUnconfirmedBalance, newImmatureBalance,
                             newZerocoinBalance, newUnconfirmedZerocoinBalance, newImmatureZerocoinBalance,
                             newWatchOnlyBalance, newWatchUnconfBalance, newWatchImmatureBalance,
-                            newDelegatedBalance, newColdStakedBalance);
+                            newDelegatedBalance, newColdStakedBalance, newInLeasing, newLeasingProfit);
     }
 }
 
