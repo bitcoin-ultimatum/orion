@@ -90,7 +90,7 @@ public:
             READWRITE(*const_cast<std::vector<CValidatorRegister>*>(&validatorRegister));
             READWRITE(*const_cast<std::vector<CValidatorVote>*>(&validatorVote));
         }
-        if (fSaveHash && (nVersion == BITCOIN_VERSION || (nVersion >= BTCU_START_VERSION && nVersion <= CURRENT_VERSION)))
+        if (fSaveHash && this->nVersion == CTransaction::BITCOIN_VERSION)
             READWRITE(*const_cast<uint256*>(&hash));
         else if (ser_action.ForRead())
             UpdateHash();
