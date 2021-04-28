@@ -2905,7 +2905,7 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                 if (coinControl && !coinControl->fSplitBlock) {
                     for (const PAIRTYPE(CScript, CAmount) & s : vecSend) {
                         CTxOut txout(s.second, s.first);
-                        if (txout.IsDust(::minRelayTxFee)) {
+                        if (txout.IsDust(::minRelayTxFee) && !txout.scriptPubKey.HasOpCreate() && !txout.scriptPubKey.HasOpCall()) {
                             strFailReason = _("Transaction amount too small");
                             return false;
                         }
