@@ -493,8 +493,8 @@ void MasterNodesWidget::onpbnGlobalMasternodesClicked()
     //MNRow * mnrow = new MNRow(ui->scrollArea);
     QSharedPointer<MNRow> mnrow = QSharedPointer<MNRow>(new MNRow(ui->scrollArea));
     mnrow->setGraphicsEffect(shadowEffect);
-    connect(mnrow.get(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
-    ui->scrollAreaWidgetContents->layout()->addWidget(mnrow.get());
+    connect(mnrow.data(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
+    ui->scrollAreaWidgetContents->layout()->addWidget(mnrow.data());
     ui->scrollAreaWidgetContents->layout()->addItem(SpacerNode);
     MNRows.push_back(mnrow);*/
 
@@ -507,7 +507,7 @@ void MasterNodesWidget::clearScrollWidget()
     {
         for (auto i : MNRows) {
             i->hide();
-            ui->scrollAreaWidgetContentsMy->layout()->removeWidget(i.get());
+            ui->scrollAreaWidgetContentsMy->layout()->removeWidget(i.data());
         }
         MNRows.clear();
     }
@@ -515,7 +515,7 @@ void MasterNodesWidget::clearScrollWidget()
     {
         for (auto i : MNRows) {
             i->hide();
-            ui->scrollAreaWidgetContents->layout()->removeWidget(i.get());
+            ui->scrollAreaWidgetContents->layout()->removeWidget(i.data());
         }
         MNRows.clear();
     }

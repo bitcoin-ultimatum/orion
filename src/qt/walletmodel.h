@@ -154,7 +154,7 @@ public:
     bool isLeasingNetworkelyEnabled() const;
     CAmount getMinLeasingAmount() const;
 
-    CAmount getBalance(const CCoinControl* coinControl = NULL) const;
+    CAmount getBalance(const CCoinControl* coinControl = NULL, bool fIncludeLeased = true) const;
     CAmount getUnconfirmedBalance() const;
     CAmount getImmatureBalance() const;
     CAmount getLockedBalance() const;
