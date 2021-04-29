@@ -98,36 +98,28 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
    setCssTitleScreen(ui->labelTopLeasing);
    setCssTitleScreen(ui->labelHistory);
    setCssSubtitleScreen(ui->labelEditTitle);
-   //setCssSubtitleScreen(ui->labelEnterAmount);
-   //setCssSubtitleScreen(ui->labelBTCU);
-   /*setCssSubtitleScreen(ui->labelStatus);
-   setCssSubtitleScreen(ui->labelAmount);
-   setCssSubtitleScreen(ui->labelMasternode);
-   setCssSubtitleScreen(ui->labelAddress);
-   setCssSubtitleScreen(ui->labelProfit);*/
    setCssProperty(ui->labelStatus, "text-body2-grey");
    setCssProperty(ui->labelAmount, "text-body2-grey");
    setCssProperty(ui->labelMasternode, "text-body2-grey");
    setCssProperty(ui->labelAddress, "text-body2-grey");
    setCssProperty(ui->labelProfit, "text-body2-grey");
 
+   /*Line Edit*/
    ui->lineEditOwnerAddress->setPlaceholderText(tr("Optional"));
+    setCssProperty(ui->lineEditOwnerAddress, "edit-primary-multi-book");
+    ui->lineEditOwnerAddress->setAttribute(Qt::WA_MacShowFocusRect, 0);
+
    btnOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
-   setCssProperty(ui->lineEditOwnerAddress, "edit-primary-multi-book");
-   ui->lineEditOwnerAddress->setAttribute(Qt::WA_MacShowFocusRect, 0);
-   setShadow(ui->lineEditOwnerAddress);
    connect(btnOwnerContact, &QAction::triggered, [this](){ onContactsClicked(true); });
-   //ui->lineEditBTCU->setPlaceholderText(tr("0"));
-   //ui->lineEditBTCU->setProperty("cssClass","edit-primary-BTCU");
+
    btnUpOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),true), QLineEdit::TrailingPosition);
    connect(btnUpOwnerContact, &QAction::triggered, [this](){ onContactsClicked(true); });
+
    ui->lineEditOwnerAddress->removeAction(btnUpOwnerContact);
+
    /* Button*/
    setCssBtnSecondary(ui->pbnCONFIRM);
    setCssBtnPrimary(ui->pbnReset);
-
-   //setCssBtnSecondary(ui->pbnTempAdd);
-   //connect(ui->pbnTempAdd, SIGNAL(clicked()), this, SLOT(onTempADD()));
    connect(ui->pbnCONFIRM, SIGNAL(clicked()), this, SLOT(onpbnCONFIRM()));
 
     // Transactions
@@ -644,7 +636,8 @@ void LeasingWidget::onContactsClicked(){
     if(menu && menu->isVisible()){
         menu->hide();
     }
-    int contactsSize = walletModel->getAddressTableModel()->sizeSend();
+
+    int contactsSize = isContactOwnerSelected ? walletModel->getAddressTableModel()->sizeRecv() : walletModel->getAddressTableModel()->sizeSend();
     if(contactsSize == 0) {
         inform(isContactOwnerSelected ?
                  tr( "No receive addresses available, you can go to the receive screen and create some there!") :
@@ -655,7 +648,7 @@ void LeasingWidget::onContactsClicked(){
 
     int height = 45;
     height = (contactsSize < 4) ? height * contactsSize + 25 : height * 4 + 25;
-    int width = sendMultiRow->getEditWidth();
+    int width = isContactOwnerSelected ? width = ui->lineEditOwnerAddress->width() : width = sendMultiRow->getEditWidth();
 
     if(!menuContacts){
         menuContacts = new ContactsDropdown(
@@ -664,7 +657,6 @@ void LeasingWidget::onContactsClicked(){
                 this
         );
        menuContacts->setGraphicsEffect(0);
-        menuContacts->setWalletModel(walletModel, AddressTableModel::Send);
         connect(menuContacts, &ContactsDropdown::contactSelected, [this](QString address, QString label){
             if (isContactOwnerSelected) {
                 ui->lineEditOwnerAddress->setText(address);
@@ -674,30 +666,48 @@ void LeasingWidget::onContactsClicked(){
                 sendMultiRow->setLabel(label);
                 sendMultiRow->setAddress(address);
             }
-           ui->lineEditOwnerAddress->removeAction(btnUpOwnerContact);
-           ui->lineEditOwnerAddress->addAction(btnOwnerContact, QLineEdit::TrailingPosition);
         });
     }
 
     if(menuContacts->isVisible()){
         menuContacts->hide();
-       ui->lineEditOwnerAddress->removeAction(btnUpOwnerContact);
-       ui->lineEditOwnerAddress->addAction(btnOwnerContact, QLineEdit::TrailingPosition);
+        if(isContactOwnerSelected)
+        {
+            ui->lineEditOwnerAddress->removeAction(btnUpOwnerContact);
+            ui->lineEditOwnerAddress->addAction(btnOwnerContact, QLineEdit::TrailingPosition);
+        }
+        else
+            sendMultiRow->updateAction();
         return;
     }
+    else
+    {
+        ui->lineEditOwnerAddress->removeAction(btnOwnerContact);
+        ui->lineEditOwnerAddress->addAction(btnUpOwnerContact, QLineEdit::TrailingPosition);
+    }
 
-   ui->lineEditOwnerAddress->removeAction(btnOwnerContact);
-   ui->lineEditOwnerAddress->addAction(btnUpOwnerContact, QLineEdit::TrailingPosition);
+   menuContacts->setWalletModel(walletModel, isContactOwnerSelected ? AddressTableModel::Receive : AddressTableModel::Send);
     menuContacts->resizeList(width, height);
     menuContacts->setStyleSheet(styleSheet());
     menuContacts->adjustSize();
 
     QPoint pos;
-    pos = sendMultiRow->pos();
-    pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
+    if(isContactOwnerSelected)
+    {
+        pos = ui->lineEditOwnerAddress->pos();
+        pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
 
-    pos.setX(pos.x() + 40);
-    pos.setY(pos.y());
+        pos.setX(pos.x() + 20);
+        pos.setY(pos.y() - 20);
+    }
+    else
+    {
+        pos = sendMultiRow->pos();
+        pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
+
+        pos.setX(pos.x() + 40);
+        pos.setY(pos.y());
+    }
 
     menuContacts->move(pos);
     menuContacts->show();

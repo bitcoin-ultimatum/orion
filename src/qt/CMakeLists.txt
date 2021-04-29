@@ -356,7 +356,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     list(APPEND QT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/macos_appnap.mm)
 endif()
 
-add_library(qt_stuff STATIC ${BitcoinHeaders} ${QtHeaders} ${QT_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS}${SERVER_SOURCES} ${COMMON_SOURCES} ${BITCOIN_CRYPTO_SOURCES})
+add_library(qt_stuff STATIC ${BitcoinHeaders} ${QtHeaders} ${QT_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS} ${SERVER_SOURCES} ${COMMON_SOURCES} ${BITCOIN_CRYPTO_SOURCES})
 target_include_directories(qt_stuff
 		PUBLIC 
 			${CMAKE_SOURCE_DIR}/src
