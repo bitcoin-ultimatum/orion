@@ -644,7 +644,7 @@ void LeasingWidget::onContactsClicked(){
     if(menu && menu->isVisible()){
         menu->hide();
     }
-    int contactsSize = isContactOwnerSelected ? walletModel->getAddressTableModel()->sizeRecv() : walletModel->getAddressTableModel()->sizeLeasingSend();
+    int contactsSize = walletModel->getAddressTableModel()->sizeSend();
     if(contactsSize == 0) {
         inform(isContactOwnerSelected ?
                  tr( "No receive addresses available, you can go to the receive screen and create some there!") :
@@ -653,27 +653,9 @@ void LeasingWidget::onContactsClicked(){
         return;
     }
 
-    int height;
-    int width;
-    QPoint pos;
-
-    if (1/*isContactOwnerSelected*/) {
-        height = ui->lineEditOwnerAddress->height();
-        width = ui->lineEditOwnerAddress->width();
-        /*pos = ui->containerSend->rect().bottomLeft();*/
-        pos = ui->lineEditOwnerAddress->rect().bottomLeft();
-        pos.setY((pos.y() + (height +4) * 2.4));
-    } else {
-        height = sendMultiRow->getEditHeight();
-        width = sendMultiRow->getEditWidth();
-        pos = sendMultiRow->getEditLineRect().bottomLeft();
-        pos.setY((pos.y() + (height - 14) * 4));
-    }
-
-    pos.setX(pos.x() + 30);
-   height = 45;
-    //height = (contactsSize <= 2) ? height * ( 2 * (contactsSize + 1 )) : height * 4;
-   height = (contactsSize < 4) ? height * contactsSize + 25 : height * 4 + 25;
+    int height = 45;
+    height = (contactsSize < 4) ? height * contactsSize + 25 : height * 4 + 25;
+    int width = sendMultiRow->getEditWidth();
 
     if(!menuContacts){
         menuContacts = new ContactsDropdown(
@@ -682,6 +664,7 @@ void LeasingWidget::onContactsClicked(){
                 this
         );
        menuContacts->setGraphicsEffect(0);
+        menuContacts->setWalletModel(walletModel, AddressTableModel::Send);
         connect(menuContacts, &ContactsDropdown::contactSelected, [this](QString address, QString label){
             if (isContactOwnerSelected) {
                 ui->lineEditOwnerAddress->setText(address);
@@ -705,10 +688,17 @@ void LeasingWidget::onContactsClicked(){
 
    ui->lineEditOwnerAddress->removeAction(btnOwnerContact);
    ui->lineEditOwnerAddress->addAction(btnUpOwnerContact, QLineEdit::TrailingPosition);
-    menuContacts->setWalletModel(walletModel, isContactOwnerSelected ? AddressTableModel::Receive : AddressTableModel::LeasingSend);
     menuContacts->resizeList(width, height);
     menuContacts->setStyleSheet(styleSheet());
     menuContacts->adjustSize();
+
+    QPoint pos;
+    pos = sendMultiRow->pos();
+    pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
+
+    pos.setX(pos.x() + 40);
+    pos.setY(pos.y());
+
     menuContacts->move(pos);
     menuContacts->show();
 }
