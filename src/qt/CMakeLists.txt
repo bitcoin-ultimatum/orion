@@ -69,6 +69,9 @@ foreach(comp Widgets Core Gui Network LinguistTools DBus Svg Charts Test)
 					NO_CMAKE_SYSTEM_PATH
 					NO_CMAKE_FIND_ROOT_PATH
 				)
+		if(NOT Qt5${comp}_FOUND)
+			find_package(Qt5${comp} NO_SYSTEM_ENVIRONMENT_PATH)
+		endif()
 	else()
     	find_package(Qt5${comp} NO_SYSTEM_ENVIRONMENT_PATH)
 	endif()
@@ -335,8 +338,8 @@ set_source_files_properties(${QT_TRANSLATIONS_FILES} PROPERTIES OUTPUT_LOCATION 
 QT5_ADD_TRANSLATION(QM ${QT_TRANSLATIONS_FILES})
 add_custom_target(translations_target ALL DEPENDS ${QM})
 
-QT5_ADD_RESOURCES(QRC_RESOURCE btcu.qrc)
-QT5_ADD_RESOURCES(QRC_LOCALE_RESOURCE btcu_locale.qrc)
+QT5_ADD_RESOURCES(QRC_RESOURCE ${CMAKE_CURRENT_SOURCE_DIR}/btcu.qrc)
+QT5_ADD_RESOURCES(QRC_LOCALE_RESOURCE ${CMAKE_CURRENT_SOURCE_DIR}/btcu_locale.qrc)
 
 add_executable(btcu-qt btcu.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE} ${CMAKE_CURRENT_SOURCE_DIR}/btcu.qrc)
 if(BUILD_STATIC)
