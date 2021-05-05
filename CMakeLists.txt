@@ -59,8 +59,12 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
         set(ENV{target} "Linux")
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-          set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+            set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+                CACHE STRING "")
         endif()
+        set(VCPKG_DEFAULT_TRIPLET "x64-windows-static" CACHE STRING "Default triplet for the build" FORCE)
+        set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "Default triplet for the build" FORCE)
+        set(VCPKG_ROOT "$ENV{VCPKG_ROOT}"  CACHE STRING "VCPKG root" FORCE)
     endif()
 endif()
 
@@ -83,8 +87,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     if (CMAKE_GENERATOR MATCHES "Visual Studio" OR MSVC)
         message(WARNING "Important: Sometimes Visual Studio may get accidental crush due to low RAM memory. Please make sure you have enough free RAM for the build. Also is it recommended to turn off Real time protection of the Windows Defender in a build time.")
     endif()
-    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "Default triplet for the build" FORCE)
-    set(VCPKG_ROOT "$ENV{VCPKG_ROOT}"  CACHE STRING "VCPKG root" FORCE)
 
     set(CMAKE_CXX_FLAGS_RELEASE "/MT /O2 /Ob2" CACHE STRING "Enforced CXX static flag for release" FORCE)
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd  /Zi /Ob0 /Od /RTC1" CACHE STRING "Enforced CXX static flag for debug" FORCE)
@@ -172,6 +174,7 @@ option(EXTRA_WARNINGS "Enable extra warnings" OFF)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     option(BUILD_STATIC "Build dependencies as static libs" ON)
+    set(BUILD_STATIC ON CACHE BOOL "" FORCE)
 endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" OFF)
@@ -493,6 +496,7 @@ if (MSVC)
     add_compile_options(-DNTDDI_VERSION=0x0A000001) # declare Windows API requirement
     add_compile_options(-DNOMINMAX)                 # undefine windows.h MAX && MIN macros cause it cause conflicts with std::min && std::max functions
     add_compile_options(-DMINIUPNP_STATICLIB)       # define miniupnp static library
+    add_compile_options(-DZMQ_STATIC)               # define zmq static library
 
 	add_compile_definitions(
 		# Define WIN32_LEAN_AND_MEAN to exclude APIs such as Cryptography, DDE,
@@ -748,6 +752,8 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     else()
 	    list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib")
     endif()
+
+	set( ZeroMQ_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/zeromq"  CACHE STRING "ZeroMQ root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/zeromq")
     
 	set( CURL_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/curl"  CACHE STRING "Curl root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/curl")
 
