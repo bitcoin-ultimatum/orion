@@ -749,15 +749,15 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
     if(${CMAKE_BUILD_TYPE} MATCHES "DEBUG" OR ${CMAKE_BUILD_TYPE} MATCHES "Debug")
 	    list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/debug/lib")
+        set( OPENSSL_ROOT_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/debug" CACHE STRING "OpenSSL root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/debug")
     else()
 	    list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib")
+        set( OPENSSL_ROOT_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}" CACHE STRING "OpenSSL root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/debug")
     endif()
 
 	set( ZeroMQ_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/zeromq"  CACHE STRING "ZeroMQ root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/zeromq")
     
 	set( CURL_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/curl"  CACHE STRING "Curl root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/curl")
-
-	set( OPENSSL_ROOT_DIR "${VCPKG_ROOT}/packages/openssl_${VCPKG_TARGET_TRIPLET}" CACHE STRING "OpenSSL root dir is ${VCPKG_ROOT}/packages/openssl_${VCPKG_TARGET_TRIPLET}")
     
 	set( Qt5Core_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/cmake/Qt5Core" CACHE STRING "QT5Core root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/cmake/Qt5Core")
     set( Qt5Widgets_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/cmake/Qt5Widgets" CACHE STRING "Qt5Widgets root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/cmake/Qt5Widgets")
