@@ -790,6 +790,8 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	    set( GMP_LIBRARY "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib" )
     endif()
 
+	set( OPENSSL_INCLUDE_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/include" )
+
 	set( CURL_INCLUDE_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/include" )
 
 	set( MHD_INCLUDE_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/include" )
