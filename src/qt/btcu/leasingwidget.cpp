@@ -110,10 +110,10 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
     ui->lineEditOwnerAddress->setAttribute(Qt::WA_MacShowFocusRect, 0);
 
    btnOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),false), QLineEdit::TrailingPosition);
-   connect(btnOwnerContact, &QAction::triggered, [this](){ onContactsClicked(true); });
+   connect(btnOwnerContact, &QAction::triggered, [this](){ onOwnerClicked(); });
 
    btnUpOwnerContact = ui->lineEditOwnerAddress->addAction(getIconComboBox(isLightTheme(),true), QLineEdit::TrailingPosition);
-   connect(btnUpOwnerContact, &QAction::triggered, [this](){ onContactsClicked(true); });
+   connect(btnUpOwnerContact, &QAction::triggered, [this](){ onOwnerClicked(); });
 
    ui->lineEditOwnerAddress->removeAction(btnUpOwnerContact);
 
@@ -184,7 +184,7 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
     sendMultiRow =new SendMultiRow(this);
     sendMultiRow->setOnlyLeasingAddressAccepted(true);
     ((QVBoxLayout*)ui->containerSend->layout())->insertWidget(1, sendMultiRow);
-    connect(sendMultiRow, &SendMultiRow::onContactsClicked, [this](){ onContactsClicked(false); });
+    connect(sendMultiRow, &SendMultiRow::onContactsClicked, [this](){ onContactsClicked(); });
 }
 
 void LeasingWidget::onBoxSortTypeClicked()
@@ -626,58 +626,40 @@ void LeasingWidget::onError(QString error, int type) {
      */
 }
 
-void LeasingWidget::onContactsClicked(bool ownerAdd) {
-    isContactOwnerSelected = ownerAdd;
-    onContactsClicked();
-}
-
-void LeasingWidget::onContactsClicked(){
-
+void LeasingWidget::onOwnerClicked()
+{
     if(menu && menu->isVisible()){
         menu->hide();
     }
 
-    int contactsSize = isContactOwnerSelected ? walletModel->getAddressTableModel()->sizeRecv() : walletModel->getAddressTableModel()->sizeSend();
+    int contactsSize = walletModel->getAddressTableModel()->sizeRecv();
     if(contactsSize == 0) {
-        inform(isContactOwnerSelected ?
-                 tr( "No receive addresses available, you can go to the receive screen and create some there!") :
-                 tr("No contacts available, you can go to the contacts screen and add some there!")
-        );
+        inform(tr( "No receive addresses available, you can go to the receive screen and create some there!"));
         return;
     }
 
     int height = 45;
-    height = (contactsSize < 4) ? height * contactsSize + 25 : height * 4 + 25;
-    int width = isContactOwnerSelected ? width = ui->lineEditOwnerAddress->width() : width = sendMultiRow->getEditWidth();
+    height = (contactsSize < 3) ? height * contactsSize + 25 : height * 3 + 25;
+    int width = width = ui->lineEditOwnerAddress->width();
 
-    if(!menuContacts){
-        menuContacts = new ContactsDropdown(
+    if (!menuOwner) {
+        menuOwner = new ContactsDropdown(
                 width,
                 height,
                 this
         );
-       menuContacts->setGraphicsEffect(0);
-        connect(menuContacts, &ContactsDropdown::contactSelected, [this](QString address, QString label){
-            if (isContactOwnerSelected) {
-                ui->lineEditOwnerAddress->setText(address);
-               curentAddress = address;
-               curentName = label;
-            } else {
-                sendMultiRow->setLabel(label);
-                sendMultiRow->setAddress(address);
-            }
+        menuOwner->setGraphicsEffect(0);
+        connect(menuOwner, &ContactsDropdown::contactSelected, [this](QString address, QString label) {
+            ui->lineEditOwnerAddress->setText(address);
+            curentAddress = address;
+            curentName = label;
         });
     }
 
-    if(menuContacts->isVisible()){
-        menuContacts->hide();
-        if(isContactOwnerSelected)
-        {
-            ui->lineEditOwnerAddress->removeAction(btnUpOwnerContact);
-            ui->lineEditOwnerAddress->addAction(btnOwnerContact, QLineEdit::TrailingPosition);
-        }
-        else
-            sendMultiRow->updateAction();
+    if(menuOwner->isVisible()){
+        menuOwner->hide();
+        ui->lineEditOwnerAddress->removeAction(btnUpOwnerContact);
+        ui->lineEditOwnerAddress->addAction(btnOwnerContact, QLineEdit::TrailingPosition);
         return;
     }
     else
@@ -686,28 +668,68 @@ void LeasingWidget::onContactsClicked(){
         ui->lineEditOwnerAddress->addAction(btnUpOwnerContact, QLineEdit::TrailingPosition);
     }
 
-   menuContacts->setWalletModel(walletModel, isContactOwnerSelected ? AddressTableModel::Receive : AddressTableModel::Send);
+    menuOwner->setWalletModel(walletModel, AddressTableModel::Receive);
+    menuOwner->resizeList(width, height);
+    menuOwner->setStyleSheet(styleSheet());
+    menuOwner->adjustSize();
+
+    QPoint pos;
+    pos = ui->lineEditOwnerAddress->pos();
+    pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
+
+    pos.setX(pos.x() + 20);
+    pos.setY(pos.y() - 20);
+    menuOwner->move(pos);
+    menuOwner->show();
+}
+
+void LeasingWidget::onContactsClicked()
+{
+    if(menu && menu->isVisible()){
+        menu->hide();
+    }
+
+    int contactsSize = walletModel->getAddressTableModel()->sizeSend();
+    if(contactsSize == 0) {
+        inform(tr("No contacts available, you can go to the contacts screen and add some there!"));
+        return;
+    }
+
+    int height = 45;
+    height = (contactsSize < 3) ? height * contactsSize + 25 : height * 3 + 25;
+    int width = width = sendMultiRow->getEditWidth();
+
+    if (!menuContacts) {
+        menuContacts = new ContactsDropdown(
+                width,
+                height,
+                this
+        );
+        menuContacts->setGraphicsEffect(0);
+        connect(menuContacts, &ContactsDropdown::contactSelected, [this](QString address, QString label) {
+            sendMultiRow->setLabel(label);
+            sendMultiRow->setAddress(address);
+        });
+    }
+
+    if(menuContacts->isVisible())
+    {
+        menuContacts->hide();
+        sendMultiRow->updateAction();
+        return;
+    }
+
+   menuContacts->setWalletModel(walletModel, AddressTableModel::Send);
     menuContacts->resizeList(width, height);
     menuContacts->setStyleSheet(styleSheet());
     menuContacts->adjustSize();
 
     QPoint pos;
-    if(isContactOwnerSelected)
-    {
-        pos = ui->lineEditOwnerAddress->pos();
-        pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
+    pos = sendMultiRow->pos();
+    pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
 
-        pos.setX(pos.x() + 20);
-        pos.setY(pos.y() - 20);
-    }
-    else
-    {
-        pos = sendMultiRow->pos();
-        pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
-
-        pos.setX(pos.x() + 40);
-        pos.setY(pos.y());
-    }
+    pos.setX(pos.x() + 40);
+    pos.setY(pos.y());
 
     menuContacts->move(pos);
     menuContacts->show();

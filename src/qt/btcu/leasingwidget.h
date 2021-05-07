@@ -70,7 +70,7 @@ private Q_SLOTS:
     void onAddressCopyClicked();
     void onAddressEditClicked();
     void onTxArrived(const QString& hash, const bool& isLeasing, const bool& isCSAnyType, const bool& isLAnyType);
-    void onContactsClicked(bool ownerAdd);
+    void onOwnerClicked();
     void onContactsClicked();
     void clearAll();
     void onLabelClicked();
@@ -110,13 +110,13 @@ private:
     bool isLeasingAddressListVisible = false;
 
     ContactsDropdown *menuContacts = nullptr;
+    ContactsDropdown *menuOwner = nullptr;
     TooltipMenu* menu = nullptr;
     TooltipMenu* menuAddresses = nullptr;
     SendMultiRow* sendMultiRow;
     bool isShowingDialog = false;
     bool isChainSync = false;
 
-    bool isContactOwnerSelected;
     int64_t lastRefreshTime = 0;
     std::atomic<bool> isLoading;
     SendCoinsRecipient recipient;
