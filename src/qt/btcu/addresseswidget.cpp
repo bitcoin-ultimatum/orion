@@ -388,6 +388,11 @@ void AddressesWidget::onpbnMenuClicked()
       }
    }
    this->index = rIndex;
+
+   if(pos.y()+menu->height() > ui->scrollAddresses->height())
+   {
+       pos.setY(pos.y() - (menu->height() + btnMenu->height()));
+   }
    menu->move(pos);
    menu->show();
 
