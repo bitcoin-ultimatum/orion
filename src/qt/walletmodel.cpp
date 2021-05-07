@@ -25,7 +25,6 @@
 #include <iostream>
 #include "zbtcu/deterministicmint.h"
 #include "qt/btcu/addressfilterproxymodel.h"
-#include "addresstablemodel.h"
 
 #include <QDebug>
 #include <QSet>
@@ -222,6 +221,7 @@ CAmount WalletModel::getLeasingProfit()
         wallet->pLeasingManager->CalcLeasingReward(pubKey, reward);
         amount += reward;
     }
+    if (amount < 0) amount = 0;
     return amount;
 }
 

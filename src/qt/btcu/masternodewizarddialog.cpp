@@ -177,12 +177,6 @@ void MasterNodeWizardDialog::onNextClicked(){
                 inform("Enter correct IPv4 or IPv6 address format");
                 return;
             }
-            QRegExp expr("//d*");
-            if (!expr.exactMatch(ui->lineEditPort->text())){
-                setCssEditLine(ui->lineEditPort, false, true);
-                inform("Port must contain only numbers");
-                return;
-            }
             if (ui->lineEditPort->text().toInt() <= 0 || ui->lineEditPort->text().toInt() > 999999){
                 setCssEditLine(ui->lineEditPort, false, true);
                 inform("Invalid port number");
@@ -193,6 +187,10 @@ void MasterNodeWizardDialog::onNextClicked(){
             ui->btnBack->setVisible(true);
             ui->btnBack->setVisible(true);
             isOk = createMN();
+            if(!isOk) {
+                inform(returnStr);
+                return;
+            }
             accept();
         }
     }

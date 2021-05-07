@@ -642,8 +642,8 @@ void TopBar::updateBalances(const CAmount& balance, const CAmount& unconfirmedBa
     //ui->labelAmountzPiv->setText(totalzPiv);
 
     //ui->labelImmaturezPiv->setText(QString::number(leasingReward/100000000.0, 'g', 12) + " zBTCU");//GUIUtil::formatBalance(immatureZerocoinBalance, nDisplayUnit, true));
-    ui->labelLeasing->setText(QString::number(leasing/100000000.0, 'g', 12) + " zBTCU");//GUIUtil::formatBalance(/*leasingModel->getTotalAmount()*/leasingReward, nDisplayUnit, true));
-    ui->labelImmaturezPiv->setText(GUIUtil::formatBalance(/*immatureZerocoinBalance*/ leasingReward, nDisplayUnit, true));
+    ui->labelLeasing->setText(QString::number(leasing/100000000.0) + " zBTCU");
+    ui->labelImmaturezPiv->setText(QString::number(leasingReward/100000000.0, 'g', 5) + " zBTCU");
     //ui->labelLeasing->setText(GUIUtil::formatBalance(/*leasingModel->getTotalAmount()*/ leasing, nDisplayUnit, true));
 
     ui->labelPendingPiv->setText(GUIUtil::formatBalance(unconfirmedBalance, nDisplayUnit));
