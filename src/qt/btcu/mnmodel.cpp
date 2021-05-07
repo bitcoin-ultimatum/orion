@@ -115,6 +115,57 @@ QVariant MNModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+QString MNModel::getPubKey(QString MNname)
+{
+    auto iter = nodes.find(MNname);
+    std::string pubKey = "";
+    pubKey = iter->second->pubKeyMasternode.GetHash().ToString();
+    return pubKey == "" ? "Not available" : QString::fromStdString(pubKey);
+}
+
+QString MNModel::getIP(QString MNname)
+{
+    auto iter = nodes.find(MNname);
+    QString ip = iter->first;
+    return ip == "" ? "Not available" : ip;
+}
+
+QString MNModel::getTxId(QString MNname)
+{
+    auto iter = nodes.find(MNname);
+    std::string txId = "";
+    txId = iter->second->vin.prevout.hash.GetHex();
+    return txId == "" ? "Not available" : QString::fromStdString(txId);
+}
+
+QString MNModel::getOutputIndex(QString MNname)
+{
+    auto iter = nodes.find(MNname);
+    uint32_t index = 0;
+    index = iter->second->vin.prevout.n;
+    return QString::number(index);
+}
+
+QString MNModel::getStatus(QString MNname)
+{
+    auto iter = nodes.find(MNname);
+    std::string status = "";
+    status = iter->second->Status();
+    return status == "" ? "Not available" : QString::fromStdString(status);
+}
+
+QString MNModel::getPrivKey(QString MNname)
+{
+    auto iter = nodes.find(MNname);
+    std::string key = "";
+    for (CMasternodeConfig::CMasternodeEntry mne : masternodeConfig.getEntries()) {
+        if (mne.getTxHash().compare(iter->second->vin.prevout.hash.GetHex()) == 0){
+            key = mne.getPrivKey();
+        }
+    };
+    return QString::fromStdString(key);
+}
+
 QModelIndex MNModel::index(int row, int column, const QModelIndex& parent) const
 {
     Q_UNUSED(parent);

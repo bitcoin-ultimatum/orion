@@ -106,6 +106,7 @@ MasterNodesWidget::MasterNodesWidget(BTCUGUI *parent) :
    //ui->right->setVisible(false);
    setCssProperty(ui->scrollArea, "container");
    setCssProperty(ui->scrollAreaMy, "container");
+    ui->scrollAreaMy->resize(50, ui->scrollAreaMy->height());
    this->setGraphicsEffect(0);
    //ui->scrollAreaMy->setGraphicsEffect(0);
     /* Light Font */
@@ -233,26 +234,24 @@ void MasterNodesWidget::showHistory()
 
 }
 
-void MasterNodesWidget::onpbnMenuClicked()
+void MasterNodesWidget::onpbnMenuClicked(QModelIndex index)
 {
    bool My = ui->pbnMyMasternodes->isChecked();
+   this->index = index;
    QPoint pos;
    QPushButton* btnMenu = (QPushButton*) sender();
    pos = btnMenu->rect().bottomRight();
    pos = btnMenu->mapToParent(pos);
    pos = btnMenu->parentWidget()->mapToParent(pos);
    pos = btnMenu->parentWidget()->parentWidget()->mapToParent(pos);
-   /*posT = btnMenu->parentWidget()->parentWidget()->parentWidget()->mapToParent(posT);
-   posT = btnMenu->parentWidget()->parentWidget()->parentWidget()->parentWidget()->mapToParent(posT);*/
    if(My)
    {
       if(!this->menuMy)
       {
-
          this->menuMy = new TooltipMenu(window, ui->scrollAreaMy);
-         this->menuMy->setEditBtnText(tr("More Information    "));
-         this->menuMy->setDeleteBtnText(tr("Upgrade to validator"));
-         this->menuMy->setCopyBtnText(tr("Stop Masternode     "));
+         this->menuMy->setCopyBtnText(tr("More information"));
+         this->menuMy->setEditBtnText(tr("Upgrade to validator"));
+         this->menuMy->setDeleteBtnText(tr("Stop Masternode"));
 
          this->menuMy->adjustSize();
          this->menuMy->setMinimumWidth(this->menuMy->width() + 10);
@@ -261,21 +260,20 @@ void MasterNodesWidget::onpbnMenuClicked()
       }
       if(pos.y()+ this->menuMy->height() > ui->scrollAreaMy->height())
       {
-         pos = btnMenu->rect().topRight();
-         pos = btnMenu->mapToParent(pos);
-         pos = btnMenu->parentWidget()->mapToParent(pos);
-         pos = btnMenu->parentWidget()->parentWidget()->mapToParent(pos);
-         pos.setY(pos.y() - this->menu->height() );
+         pos.setY(pos.y() - (this->menuMy->height() + btnMenu->height()));
       }
-
+      //connect(this->menuMy, &TooltipMenu::message, this, &AddressesWidget::message);
+      //connect(this->menuMy, SIGNAL(onEditClicked()), this, SLOT(onEditMNClicked()));
+      //connect(this->menuMy, SIGNAL(onDeleteClicked()), this, SLOT(onDeleteMNClicked()));
+      connect(this->menuMy, SIGNAL(onCopyClicked()), this, SLOT(onInfoMNClicked()), Qt::UniqueConnection);
    }
    else{
       if(!this->menu)
       {
          this->menu = new TooltipMenu(window, ui->scrollArea);
-         this->menu->setCopyBtnText(tr("Stop Masternode"));
+         this->menu->setCopyBtnText(tr("More information"));
          this->menu->setEditBtnText(tr("Upgrade to validator"));
-         //this->menu->setDeleteBtnText(tr("Upgrade to validator"));
+         this->menu->setDeleteBtnText(tr("Stop Masternode"));
          this->menu->adjustSize();
          //this->menu->setMinimumWidth(this->menu->width() - 10);
          this->menu->setFixedHeight(this->menu->height() - 50);
@@ -290,18 +288,13 @@ void MasterNodesWidget::onpbnMenuClicked()
       }
       if(pos.y()+ this->menu->height() > ui->scrollArea->height())
       {
-         pos = btnMenu->rect().topRight();
-         pos = btnMenu->mapToParent(pos);
-         pos = btnMenu->parentWidget()->mapToParent(pos);
-         pos = btnMenu->parentWidget()->parentWidget()->mapToParent(pos);
-         pos.setY(pos.y() - this->menu->height() );
+          pos.setY(pos.y() - (this->menu->height() + btnMenu->height()));
       }
+      //connect(this->menu, &TooltipMenu::message, this, &AddressesWidget::message);
+      //connect(this->menu, SIGNAL(onEditClicked()), this, SLOT(onEditMNClicked()));
+      //connect(this->menu, SIGNAL(onDeleteClicked()), this, SLOT(onDeleteMNClicked()));
+      //connect(this->menu, SIGNAL(onCopyClicked()), this, SLOT(onInfoMNClicked()));
    }
-
-   /*connect(this->menu, &TooltipMenu::message, this, &AddressesWidget::message);
-      connect(this->menu, SIGNAL(onEditClicked()), this, SLOT(onEditMNClicked()));
-      connect(this->menu, SIGNAL(onDeleteClicked()), this, SLOT(onDeleteMNClicked()));
-      connect(this->menu, SIGNAL(onCopyClicked()), this, SLOT(onInfoMNClicked()));*/
 
    pos.setX(pos.x() - (DECORATION_SIZE * 2.6));
    if(My)
@@ -396,6 +389,7 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
                     }
 
                     std::string address = "";
+                    QModelIndex index;
                     int rowCount = filter->rowCount();
                     for(int addressNumber = 0; addressNumber < rowCount; addressNumber++)
                     {
@@ -406,6 +400,7 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
                         {
                             sibling = rowIndex.sibling(addressNumber, AddressTableModel::Address);
                             address = sibling.data(Qt::DisplayRole).toString().toStdString();
+                            index = rowIndex;
                             break;
                         }
                     }
@@ -456,15 +451,16 @@ void MasterNodesWidget::onpbnMyMasternodesClicked()
                         delete SpacerNodeMy;
                     }
 
-                    SpacerNodeMy = new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding);
-                    //MNRow *mnrow = new MNRow(ui->scrollAreaMy);
                     QSharedPointer<MNRow> mnrow = QSharedPointer<MNRow>(new MNRow(ui->scrollAreaMy));
+                    mnrow->setIndex(index);
                     mnrow->setGraphicsEffect(shadowEffect);
-                    connect(mnrow.get(), SIGNAL(onMenuClicked()), this, SLOT(onpbnMenuClicked()));
-                    mnrow->updateView(name, address, double(leasingAmount/100000000.0), blockHeight, type, double(reward/100000000.0));
+                    connect(mnrow.get(), SIGNAL(onMenuClicked(QModelIndex)), this, SLOT(onpbnMenuClicked(QModelIndex)));
+                    mnrow->updateView(name, address, double(leasingAmount / 100000000.0), blockHeight, type, double(reward / 100000000.0));
                     ui->scrollAreaWidgetContentsMy->layout()->addWidget(mnrow.get());
-                    ui->scrollAreaWidgetContentsMy->layout()->addItem(SpacerNodeMy);
                     MNRows.push_back(mnrow);
+
+                    SpacerNodeMy = new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding);
+                    ui->scrollAreaWidgetContentsMy->layout()->addItem(SpacerNodeMy);
                 }
             }
         }
@@ -702,18 +698,23 @@ void MasterNodesWidget::onError(QString error, int type) {
 }
 
 void MasterNodesWidget::onInfoMNClicked() {
-    /*if(!verifyWalletUnlocked()) return;
+    if(!verifyWalletUnlocked()) return;
     showHideOp(true);
+
     MnInfoDialog* dialog = new MnInfoDialog(window);
-    QString label = index.data(Qt::DisplayRole).toString();
-    QString address = index.sibling(index.row(), MNModel::ADDRESS).data(Qt::DisplayRole).toString();
-    QString status = index.sibling(index.row(), MNModel::STATUS).data(Qt::DisplayRole).toString();
-    QString txId = index.sibling(index.row(), MNModel::COLLATERAL_ID).data(Qt::DisplayRole).toString();
-    QString outIndex = index.sibling(index.row(), MNModel::COLLATERAL_OUT_INDEX).data(Qt::DisplayRole).toString();
-    QString pubKey = index.sibling(index.row(), MNModel::PUB_KEY).data(Qt::DisplayRole).toString();
-    dialog->setData(pubKey, label, address, txId, outIndex, status);
+
+    QString name = index.sibling(index.row(), AddressTableModel::Label).data(Qt::DisplayRole).toString();
+    QString address = index.sibling(index.row(), AddressTableModel::Address).data(Qt::DisplayRole).toString();
+    QString pubKey = mnModel->getPubKey(name);
+    QString ip = mnModel->getIP(name);
+    QString txId = mnModel->getTxId(name);
+    QString outIndex = mnModel->getOutputIndex(name);
+    QString status = mnModel->getStatus(name);
+
+    dialog->setData(name, address, pubKey, ip, txId, outIndex, status);
     dialog->adjustSize();
     showDialog(dialog, 3, 17);
+
     if (dialog->exportMN){
         if (ask(tr("Remote Masternode Data"),
                 tr("You are just about to export the required data to run a Masternode\non a remote server to your clipboard.\n\n\n"
@@ -722,15 +723,15 @@ void MasterNodesWidget::onInfoMNClicked() {
                 ))) {
             // export data
             QString exportedMN = "masternode=1\n"
-                                 "externalip=" + address.left(address.lastIndexOf(":")) + "\n" +
+                                 "externalip=" + ip.left(ip.lastIndexOf(":")) + "\n" +
                                  "masternodeaddr=" + address + + "\n" +
-                                 "masternodeprivkey=" + index.sibling(index.row(), MNModel::PRIV_KEY).data(Qt::DisplayRole).toString() + "\n";
+                                 "masternodeprivkey=" + mnModel->getPrivKey(name) + "\n";
             GUIUtil::setClipboard(exportedMN);
             inform(tr("Masternode exported!, check your clipboard"));
         }
     }
 
-    dialog->deleteLater();*/
+    dialog->deleteLater();
 }
 
 void MasterNodesWidget::onDeleteMNClicked(){

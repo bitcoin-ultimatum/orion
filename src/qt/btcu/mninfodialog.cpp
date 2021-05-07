@@ -16,21 +16,26 @@ MnInfoDialog::MnInfoDialog(QWidget *parent) :
     ui(new Ui::MnInfoDialog)
 {
     ui->setupUi(this);
+
     this->setStyleSheet(parent->styleSheet());
-    setCssProperty(ui->frame, "container-dialog");
+    setCssProperty(ui->frame, "container-border");
+    ui->frame->setContentsMargins(10,10,10,10);
+
+    //setCssProperty(ui->layoutScroll, "container-border");
+    setCssProperty(ui->scrollArea, "container-border");
+
     setCssProperty(ui->labelTitle, "text-title-dialog");
-    setCssTextBodyDialog({ui->labelAmount, ui->labelSend, ui->labelInputs, ui->labelFee, ui->labelId});
-    setCssProperty({ui->labelDivider1, ui->labelDivider4, ui->labelDivider6, ui->labelDivider7, ui->labelDivider8, ui->labelDivider9}, "container-divider");
-    setCssTextBodyDialog({ui->textAmount, ui->textAddress, ui->textInputs, ui->textStatus, ui->textId, ui->textExport});
-    setCssProperty({ui->pushCopy, ui->pushCopyId, ui->pushExport}, "ic-copy-big");
+    setCssProperty({ui->labelDivider1, ui->labelDivider2, ui->labelDivider3, ui->labelDivider4, ui->labelDivider5, ui->labelDivider6, ui->labelDivider7, ui->labelDivider8}, "container-divider");
+    setCssProperty({ui->pushCopyKey, ui->pushCopyId, ui->pushExport}, "ic-copy-big");
     setCssProperty(ui->btnEsc, "ic-close");
+
     connect(ui->btnEsc, SIGNAL(clicked()), this, SLOT(closeDialog()));
-    connect(ui->pushCopy, &QPushButton::clicked, [this](){ copyInform(pubKey, "Masternode public key copied"); });
+    connect(ui->pushCopyKey, &QPushButton::clicked, [this](){ copyInform(pubKey, "Masternode public key copied"); });
     connect(ui->pushCopyId, &QPushButton::clicked, [this](){ copyInform(txId, "Collateral tx id copied"); });
     connect(ui->pushExport, &QPushButton::clicked, [this](){ exportMN = true; accept(); });
 }
 
-void MnInfoDialog::setData(QString pubKey, QString name, QString address, QString txId, QString outputIndex, QString status){
+void MnInfoDialog::setData(QString name, QString address, QString pubKey, QString ip, QString txId, QString outputIndex, QString status){
     this->pubKey = pubKey;
     this->txId = txId;
     QString shortPubKey = pubKey;
@@ -41,10 +46,12 @@ void MnInfoDialog::setData(QString pubKey, QString name, QString address, QStrin
     if(shortTxId.length() > 20) {
         shortTxId = shortTxId.left(12) + "..." + shortTxId.right(12);
     }
-    ui->textId->setText(shortPubKey);
+    ui->textName->setText(name);
     ui->textAddress->setText(address);
-    ui->textAmount->setText(shortTxId);
-    ui->textInputs->setText(outputIndex);
+    ui->textPubKey->setText(shortPubKey);
+    ui->textIP->setText(ip);
+    ui->textTxId->setText(shortTxId);
+    ui->textOutIndex->setText(outputIndex);
     ui->textStatus->setText(status);
 }
 
