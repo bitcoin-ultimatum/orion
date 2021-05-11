@@ -25,6 +25,10 @@ MnInfoDialog::MnInfoDialog(QWidget *parent) :
     //setCssProperty(ui->scrollArea, "container-border");
 
     setCssProperty(ui->labelTitle, "text-title-dialog");
+    QList<QWidget*> lWidjets = {ui->labelName, ui->textName, ui->labelAddress, ui->textAddress, ui->labelPubKey, ui->textPubKey, ui->labelIP, ui->textIP,
+                               ui->labelTxId, ui->textTxId, ui->labelOutIndex, ui->textOutIndex, ui->labelStatus, ui->textStatus, ui->textExport};
+    for(int i = 0; i < lWidjets.size(); ++i)
+        setCssSubtitleScreen(lWidjets.at(i));
     setCssProperty({ui->labelDivider1, ui->labelDivider2, ui->labelDivider3, ui->labelDivider4, ui->labelDivider5, ui->labelDivider6, ui->labelDivider7, ui->labelDivider8}, "container-divider");
     setCssProperty({ui->pushCopyKey, ui->pushCopyId, ui->pushExport}, "ic-copy-big");
     setCssProperty(ui->btnEsc, "ic-close");
