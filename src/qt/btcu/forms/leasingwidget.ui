@@ -33,13 +33,13 @@
        <property name="minimumSize">
         <size>
          <width>400</width>
-         <height>400</height>
+         <height>385</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>400</height>
+         <height>385</height>
         </size>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -119,7 +119,7 @@
              <property name="sizeHint" stdset="0">
               <size>
                <width>20</width>
-               <height>500</height>
+               <height>350</height>
               </size>
              </property>
             </spacer>
@@ -252,7 +252,7 @@
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
-            <height>20</height>
+            <height>10</height>
            </size>
           </property>
          </spacer>
@@ -325,6 +325,19 @@
          </layout>
         </item>
         <item>
+         <spacer name="verticalSpacer_12">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>1</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <spacer name="verticalSpacer_2">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -345,13 +358,13 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>400</height>
+         <height>385</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>400</height>
+         <height>385</height>
         </size>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -440,12 +453,12 @@
          <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeType">
-         <enum>QSizePolicy::Minimum</enum>
+         <enum>QSizePolicy::Fixed</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
           <width>20</width>
-          <height>5</height>
+          <height>1</height>
          </size>
         </property>
        </spacer>

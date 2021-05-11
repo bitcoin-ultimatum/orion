@@ -199,8 +199,9 @@ void LeasingWidget::onBoxSortTypeClicked()
     QPoint point = ui->containerLeft->rect().bottomRight();
     widgetBoxSortType->setFixedSize(ui->lineEditSort->width() + 20,200);
 
-    pos.setY(point.y() + ui->lineEditSort->height() + 25);
-    pos.setX(point.x() + ui->containerRight->width() - widgetBoxSortType->width() + 15);
+    int delta = 422 - ui->containerbottom->mapToParent(ui->lineEditSort->mapToParent(ui->lineEditSort->pos())).y() ? 3 : -3;
+    pos.setY(point.y() + ui->lineEditSort->height()*1.5 + delta);
+    pos.setX(point.x() + (ui->containerRight->width() - ui->lineEditSort->width()));
     widgetBoxSortType->move(pos);
     widgetBoxSortType->show();
 }
