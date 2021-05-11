@@ -678,7 +678,7 @@ void LeasingWidget::onOwnerClicked()
     pos.setY((pos.y() + (ui->lineEditOwnerAddress->height() - 18) * 4));
 
     pos.setX(pos.x() + 20);
-    pos.setY(pos.y() - 20);
+    pos.setY(pos.y() - 14);
     menuOwner->move(pos);
     menuOwner->show();
 }
