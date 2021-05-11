@@ -48,6 +48,7 @@ public:
     QString getOutputIndex(QString MNname);
     QString getStatus(QString MNname);
     QString getPrivKey(QString MNname);
+    bool isCollateralAccepted(QString MNname);
 
     bool isMNsNetworkSynced();
     // Returns the MN activeState field.

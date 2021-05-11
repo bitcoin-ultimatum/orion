@@ -38,6 +38,11 @@ void MNRow::setIndex(QModelIndex index)
     this->index = index;
 }
 
+QModelIndex MNRow::getIndex()
+{
+    return this->index;
+}
+
 void MNRow::onPbnMenuClicked()
 {
    Q_EMIT onMenuClicked(index);

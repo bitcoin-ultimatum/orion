@@ -57,8 +57,7 @@ private Q_SLOTS:
     void onCreateMNClicked();
     void onStartAllClicked(int type);
     void changeTheme(bool isLightTheme, QString &theme) override;
-    void onMNClicked(const QModelIndex &index);
-    void onEditMNClicked();
+    void onUpgradeMNClicked();
     void onDeleteMNClicked();
     void onInfoMNClicked();
     void updateListState();
@@ -89,6 +88,7 @@ private:
     void startAlias(QString strAlias);
     bool startAll(QString& failedMN, bool onlyMissing);
     bool startMN(CMasternodeConfig::CMasternodeEntry mne, std::string& strError);
+    void removeMNLine();
 // temp
    bool bShowHistory = false;
    bool bShowHistoryMy = false;

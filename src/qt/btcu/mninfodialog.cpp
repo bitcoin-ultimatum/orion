@@ -22,7 +22,7 @@ MnInfoDialog::MnInfoDialog(QWidget *parent) :
     ui->frame->setContentsMargins(10,10,10,10);
 
     //setCssProperty(ui->layoutScroll, "container-border");
-    setCssProperty(ui->scrollArea, "container-border");
+    //setCssProperty(ui->scrollArea, "container-border");
 
     setCssProperty(ui->labelTitle, "text-title-dialog");
     setCssProperty({ui->labelDivider1, ui->labelDivider2, ui->labelDivider3, ui->labelDivider4, ui->labelDivider5, ui->labelDivider6, ui->labelDivider7, ui->labelDivider8}, "container-divider");

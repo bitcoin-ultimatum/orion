@@ -166,6 +166,22 @@ QString MNModel::getPrivKey(QString MNname)
     return QString::fromStdString(key);
 }
 
+bool MNModel::isCollateralAccepted(QString MNname)
+{
+    auto iter = nodes.find(MNname);
+    std::string txHash = iter->second->vin.prevout.hash.GetHex();
+    if(!collateralTxAccepted.value(txHash)){
+        bool txAccepted = false;
+        {
+            LOCK2(cs_main, pwalletMain->cs_wallet);
+            const CWalletTx *walletTx = pwalletMain->GetWalletTx(iter->second->vin.prevout.hash);
+            txAccepted = walletTx && walletTx->GetDepthInMainChain() > 0;
+        }
+        return txAccepted;
+    }
+    return true;
+}
+
 QModelIndex MNModel::index(int row, int column, const QModelIndex& parent) const
 {
     Q_UNUSED(parent);

@@ -23,6 +23,7 @@ public:
 
     void updateView(std::string name, std::string address, double leasing, int blockHeight, QString type, double profit);
     void setIndex(QModelIndex index);
+    QModelIndex getIndex();
 
 Q_SIGNALS:
     void onMenuClicked(QModelIndex index);
