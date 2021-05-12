@@ -191,6 +191,10 @@ bool XOnlyPubKey::CheckPayToContract(const XOnlyPubKey& base, const uint256& has
 
 bool CPubKey::Verify(const uint256& hash, const std::vector<unsigned char>& vchSig) const
 {
+   //On macos m1 silicon secp context destroyed for something reason in specified thread, try re-create context if it's null...
+   if(secp256k1_context_verify == nullptr)
+      secp256k1_context_verify = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
+
     if (!IsValid())
         return false;
     secp256k1_pubkey pubkey;
