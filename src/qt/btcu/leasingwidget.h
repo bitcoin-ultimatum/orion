@@ -85,6 +85,7 @@ private Q_SLOTS:
     void onSortTypeChanged(const QString& value);
     void onBoxSortTypeClicked();
     void BoxSortTypeClick(const QModelIndex &index);
+    void onResetForm();
 
 private:
     std::unique_ptr<Ui::LeasingWidget> ui;

@@ -120,7 +120,9 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
    /* Button*/
    setCssBtnSecondary(ui->pbnCONFIRM);
    setCssBtnPrimary(ui->pbnReset);
+
    connect(ui->pbnCONFIRM, SIGNAL(clicked()), this, SLOT(onpbnCONFIRM()));
+   connect(ui->pbnReset, SIGNAL(clicked()), this, SLOT(onResetForm()));
 
     // Transactions
     txHolder = new TxViewHolder(isLightTheme());
@@ -181,7 +183,7 @@ LeasingWidget::LeasingWidget(BTCUGUI* parent) :
     connect(listViewBoxSortType, SIGNAL(clicked(QModelIndex)), this, SLOT(BoxSortTypeClick(QModelIndex)));
     widgetBoxSortType->hide();
 
-    sendMultiRow =new SendMultiRow(this);
+    sendMultiRow = new SendMultiRow(this);
     sendMultiRow->setOnlyLeasingAddressAccepted(true);
     ((QVBoxLayout*)ui->containerSend->layout())->insertWidget(1, sendMultiRow);
     connect(sendMultiRow, &SendMultiRow::onContactsClicked, [this](){ onContactsClicked(); });
@@ -415,6 +417,13 @@ QWidget* LeasingWidget::createLeasingTop(int Nun, QString Address)
    Top->setLayout(Layout);
    return Top;
 }
+
+void LeasingWidget::onResetForm()
+{
+    ui->lineEditOwnerAddress->clear();
+    sendMultiRow->clear();
+}
+
 void LeasingWidget::onpbnCONFIRM()
 {
    bool ok;
@@ -424,7 +433,6 @@ void LeasingWidget::onpbnCONFIRM()
       return;
    }*/
    onSendClicked();
-
 }
 
 
