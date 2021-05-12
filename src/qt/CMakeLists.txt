@@ -372,7 +372,7 @@ target_link_libraries(btcu-qt
         Threads::Threads
     )
 
-if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(BUILD_STATIC)
     qt5_import_qml_plugins(btcu-qt)
     qt5_import_plugins(btcu-qt INCLUDE Qt5::QSvgPlugin Qt5::QSvgIconPlugin Qt5::QSvgIconPlugin Qt5::QGifPlugin Qt5::QJpegPlugin)
 endif()
@@ -860,7 +860,7 @@ if(ENABLE_TESTS)
 			${Qrcode_LIBRARIES}
 			Qt5::Gui Qt5::Core Qt5::Widgets Qt5::Network Qt5::Svg Qt5::Test ${QT_LIBRARIES}
 		)
-	if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	if(BUILD_STATIC)
 		qt5_import_qml_plugins(test_btcu-qt)
 		qt5_import_plugins(btcu-qt INCLUDE Qt5::QSvgPlugin Qt5::QSvgIconPlugin Qt5::QSvgIconPlugin Qt5::QGifPlugin Qt5::QJpegPlugin)
 	endif()
