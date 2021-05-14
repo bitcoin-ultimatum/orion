@@ -23,10 +23,9 @@ private:
     bool SetDefaultSignSenderAddress(CWallet* const pwallet, CTxDestination& destAddress);
     CKeyID GetKeyForDestination(const CCryptoKeyStore& store, const CTxDestination& dest);
     bool GetSenderDest(CWallet * const pwallet, const CTransaction& tx, CTxDestination& txSenderDest);
-    void  contacts();
 
 private Q_SLOTS:
-    void onLineEditClicked(bool ownerAdd);
+    void onLineEditClicked();
     void onClearAll();
     void onCreateContract();
     void onChange(int state);
@@ -37,8 +36,6 @@ private Q_SLOTS:
 
 private:
     Ui::CreateContract *ui;
-
-    bool isAddressSelected;
 
     ContactsDropdown *menuContacts = nullptr;
     SendMultiRow* sendMultiRow;

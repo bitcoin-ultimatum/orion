@@ -8,7 +8,7 @@
 #include "qt/btcu/registervalidator.h"
 #include "qt/btcu/ui_registervalidator.h"
 #include "qt/btcu/qtutils.h"
-
+#include <QRegExpValidator>
 #include "../rpc/server.h"
 
 RegisterValidator::RegisterValidator( WalletModel* walletModel, PWidget *parent) :
@@ -58,6 +58,7 @@ RegisterValidator::RegisterValidator( WalletModel* walletModel, PWidget *parent)
     SortEdit* lineEdit = new SortEdit(ui->comboBox);
     initComboBox(ui->comboBox, lineEdit);
     connect(lineEdit, &SortEdit::Mouse_Pressed, [this](){ui->comboBox->showPopup();});
+    ui->lineEditMNName->setReadOnly(true);
 
     fillComboBox();
 
@@ -185,9 +186,9 @@ void RegisterValidator::onBoxClicked() {
 
 void RegisterValidator::onComboBox(const QModelIndex &index) {
     QString value = index.data(0).toString();
-    if(value.length() > 22)
+    if(value.length() > 40)
     {
-        value = value.left(19) + "...";
+        value = value.left(37) + "...";
     }
     ui->lineEditMNName->setText(value);
     ui->comboBox->setCurrentIndex(index.row());

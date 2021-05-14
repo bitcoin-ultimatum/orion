@@ -532,7 +532,7 @@ void TopBar::setNumBlocks(int count) {
             timeBehindText = tr("%1 and %2").arg(tr("%n year(s)", "", years)).arg(
                     tr("%n week(s)", "", remainder / WEEK_IN_SECONDS));
         }
-        QString timeBehind(" behind. Scanning block ");
+        QString timeBehind(" behind.\nScanning block ");
         QString str = timeBehindText + timeBehind + QString::number(count);
         text = str.toStdString();
 
