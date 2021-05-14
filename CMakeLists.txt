@@ -2030,6 +2030,7 @@ if(ENABLE_TESTS)
     add_custom_target(test_btcu_hex ALL DEPENDS ${BTCU_HEX_TEST_FILES})
 
     add_executable(test_btcu ${BTCU_TEST_SOURCES})
+    target_compile_definitions(test_btcu PRIVATE TEST_BTCU)
 
     add_dependencies(test_btcu test_btcu_hex leveldb leveldb_sse42 memenv)
     target_include_directories(test_btcu PUBLIC ${BTCU_HEX_DESTDIR} ./src/test)
