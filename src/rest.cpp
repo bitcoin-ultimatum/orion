@@ -248,6 +248,12 @@ static bool rest_block(HTTPRequest* req,
         UniValue objBlock = blockToJSON(block, pblockindex, showTxDetails);
         std::string strJSON = objBlock.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
+
+        //Enable CORS in header for browser extensions
+        req->WriteHeader("Access-Control-Allow-Origin", "*");
+        req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+
         req->WriteReply(HTTP_OK, strJSON);
         return true;
     }
@@ -284,6 +290,12 @@ static bool rest_chaininfo(HTTPRequest* req, const std::string& strURIPart)
         UniValue chainInfoObject = getblockchaininfo(rpcParams, false);
         std::string strJSON = chainInfoObject.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
+
+        //Enable CORS in header for browser extensions
+        req->WriteHeader("Access-Control-Allow-Origin", "*");
+        req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+
         req->WriteReply(HTTP_OK, strJSON);
         return true;
     }
@@ -309,6 +321,12 @@ static bool rest_mempool_info(HTTPRequest* req, const std::string& strURIPart)
 
         std::string strJSON = mempoolInfoObject.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
+
+        //Enable CORS in header for browser extensions
+        req->WriteHeader("Access-Control-Allow-Origin", "*");
+        req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+
         req->WriteReply(HTTP_OK, strJSON);
         return true;
     }
@@ -334,6 +352,12 @@ static bool rest_mempool_contents(HTTPRequest* req, const std::string& strURIPar
 
         std::string strJSON = mempoolObject.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
+
+        //Enable CORS in header for browser extensions
+        req->WriteHeader("Access-Control-Allow-Origin", "*");
+        req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+
         req->WriteReply(HTTP_OK, strJSON);
         return true;
     }
@@ -386,6 +410,12 @@ static bool rest_tx(HTTPRequest* req, const std::string& strURIPart)
         TxToJSON(tx, hashBlock, objTx);
         std::string strJSON = objTx.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
+
+        //Enable CORS in header for browser extensions
+        req->WriteHeader("Access-Control-Allow-Origin", "*");
+        req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+
         req->WriteReply(HTTP_OK, strJSON);
         return true;
     }
@@ -583,6 +613,12 @@ static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
         // return json string
         std::string strJSON = objGetUTXOResponse.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
+
+        //Enable CORS in header for browser extensions
+        req->WriteHeader("Access-Control-Allow-Origin", "*");
+        req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+
         req->WriteReply(HTTP_OK, strJSON);
         return true;
     }
