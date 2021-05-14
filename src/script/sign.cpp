@@ -18,7 +18,7 @@
 
 typedef std::vector<unsigned char> valtype;
 
-bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
+bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet, std::vector<valtype>& ret)
 {
     CKey key;
     if (!keystore.GetKey(address, key))
@@ -28,21 +28,25 @@ bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int n
     if (!key.Sign(hash, vchSig))
         return false;
     vchSig.push_back((unsigned char)nHashType);
+    ret.push_back(std::move(CScript(vchSig.begin(), vchSig.end())));
     scriptSigRet << vchSig;
 
     return true;
 }
 
-bool SignN(const std::vector<valtype>& multisigdata, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
+bool SignN(const std::vector<valtype>& multisigdata, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet, std::vector<valtype>& ret)
 {
     int nSigned = 0;
     int nRequired = multisigdata.front()[0];
+    ret.push_back(valtype());
     for (unsigned int i = 1; i < multisigdata.size()-1 && nSigned < nRequired; i++)
     {
         const valtype& pubkey = multisigdata[i];
         CKeyID keyID = CPubKey(pubkey).GetID();
-        if (Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (Sign1(keyID, keystore, hash, nHashType, scriptSigRet,ret))
+        {
             ++nSigned;
+        }
     }
     return nSigned==nRequired;
 }
@@ -81,7 +85,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         return false;
     case TX_PUBKEY:
         keyID = CPubKey(vSolutions[0]).GetID();
-        if(!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if(!Sign1(keyID, keystore, hash, nHashType, scriptSigRet, ret))
         {
             LogPrintf("*** Sign1 failed \n");
             return false;
@@ -89,7 +93,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         return true;
     case TX_PUBKEYHASH:
         keyID = CKeyID(uint160(vSolutions[0]));
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet,ret))
         {
             LogPrintf("*** solver failed to sign \n");
             return false;
@@ -98,7 +102,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         {
             if (!keystore.GetPubKey(keyID, vch))
                 return error("%s : Unable to get public key from keyID", __func__);
-            ret.push_back(std::move( CScript(scriptSigRet.begin() + 1, scriptSigRet.end()) ));
+            //ret.push_back(std::move( CScript(scriptSigRet.begin() + 1, scriptSigRet.end()) ));
             ret.push_back(ToByteVector(vch));
             scriptSigRet << ToByteVector(vch);
         }
@@ -119,7 +123,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
 
     case TX_MULTISIG:
         scriptSigRet << OP_0; // workaround CHECKMULTISIG bug
-        return (SignN(vSolutions, keystore, hash, nHashType, scriptSigRet));
+        return (SignN(vSolutions, keystore, hash, nHashType, scriptSigRet,ret));
 
     case TX_COLDSTAKE: {
         if (fColdStake) {
@@ -129,7 +133,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
             // sign with the owner key
             keyID = CKeyID(uint160(vSolutions[1]));
         }
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet,ret))
             return error("*** %s: failed to sign with the %s key.",
                     __func__, fColdStake ? "cold staker" : "owner");
         CPubKey vch;
@@ -151,7 +155,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
             // sign with the owner key
             keyID = CKeyID(uint160(vSolutions[1]));
         }
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet, ret))
             return error("*** %s: failed to sign with the %s key.",
                          __func__, fLeasing ? "leaser" : "owner");
         CPubKey vch;
@@ -165,7 +169,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         // 0. TRXHASH
         // 1. N
         keyID = CKeyID(uint160(vSolutions[2]));
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet,ret))
         {
             LogPrintf("*** solver failed to sign leasing reward \n");
             return false;
