@@ -80,6 +80,7 @@ static void JSONErrorReply(HTTPRequest* req, const UniValue& objError, const Uni
     req->WriteHeader("Access-Control-Allow-Origin", "*");
     req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
     req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+    req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
     req->WriteReply(nStatus, strReply);
 }
@@ -151,6 +152,7 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
         req->WriteHeader("Access-Control-Allow-Origin", "*");
         req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+        req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
         req->WriteReply(HTTP_OK, strReply);
     } catch (const UniValue& objError) {

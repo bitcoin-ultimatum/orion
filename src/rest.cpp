@@ -184,6 +184,7 @@ static bool rest_headers(HTTPRequest* req,
         req->WriteHeader("Access-Control-Allow-Origin", "*");
         req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+        req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
         req->WriteReply(HTTP_OK, strJSON);
         return true;
@@ -253,6 +254,7 @@ static bool rest_block(HTTPRequest* req,
         req->WriteHeader("Access-Control-Allow-Origin", "*");
         req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+        req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
         req->WriteReply(HTTP_OK, strJSON);
         return true;
@@ -295,6 +297,7 @@ static bool rest_chaininfo(HTTPRequest* req, const std::string& strURIPart)
         req->WriteHeader("Access-Control-Allow-Origin", "*");
         req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+        req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
         req->WriteReply(HTTP_OK, strJSON);
         return true;
@@ -326,6 +329,7 @@ static bool rest_mempool_info(HTTPRequest* req, const std::string& strURIPart)
         req->WriteHeader("Access-Control-Allow-Origin", "*");
         req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+        req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
         req->WriteReply(HTTP_OK, strJSON);
         return true;
@@ -357,6 +361,7 @@ static bool rest_mempool_contents(HTTPRequest* req, const std::string& strURIPar
         req->WriteHeader("Access-Control-Allow-Origin", "*");
         req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+        req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
         req->WriteReply(HTTP_OK, strJSON);
         return true;
@@ -415,6 +420,7 @@ static bool rest_tx(HTTPRequest* req, const std::string& strURIPart)
         req->WriteHeader("Access-Control-Allow-Origin", "*");
         req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+        req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
         req->WriteReply(HTTP_OK, strJSON);
         return true;
@@ -618,6 +624,7 @@ static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
         req->WriteHeader("Access-Control-Allow-Origin", "*");
         req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+        req->WriteHeader("Access-Control-Allow-Credentials", "true");
 
         req->WriteReply(HTTP_OK, strJSON);
         return true;
