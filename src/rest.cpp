@@ -179,6 +179,12 @@ static bool rest_headers(HTTPRequest* req,
         }
         std::string strJSON = jsonHeaders.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
+
+        //Enable CORS in header for browser extensions
+        req->WriteHeader("Access-Control-Allow-Origin", "*");
+        req->WriteHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        req->WriteHeader("Access-Control-Allow-Headers", "content-type");
+
         req->WriteReply(HTTP_OK, strJSON);
         return true;
     }
