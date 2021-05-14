@@ -2116,9 +2116,27 @@ if(ENABLE_TESTS)
     endif()
     target_compile_definitions(SERVER_A_test PRIVATE TEST_BTCU)
 
+    add_library(WALLET_A_test STATIC ${BitcoinHeaders} ${WALLET_SOURCES})
+    target_include_directories(WALLET_A_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/jsoncpp/jsoncpp/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+            ${OPENSSL_INCLUDE_DIR}
+            ${BerkeleyDB_INCLUDE_DIRS}
+            ${Boost_INCLUDE_DIRS}
+            )
+    if(GMP_FOUND)
+        target_include_directories(WALLET_A_test PUBLIC ${GMP_INCLUDE_DIR})
+    endif()
+    target_compile_definitions(WALLET_A_test PRIVATE TEST_BTCU)
+
     target_link_libraries(test_btcu
             SERVER_A_test
-            WALLET_A
+            WALLET_A_test
             univalue
             COMMON_A
             ZEROCOIN_A
