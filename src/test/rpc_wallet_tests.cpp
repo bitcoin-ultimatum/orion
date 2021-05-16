@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(rpc_wallet)
     BOOST_CHECK_THROW(CallRPC("verifymessage " + demoAddress.ToString()), std::runtime_error);
     BOOST_CHECK_THROW(CallRPC("verifymessage " + demoAddress.ToString() + " " + retValue.get_str()), std::runtime_error);
     /* Illegal address */
-    BOOST_CHECK_THROW(CallRPC("verifymessage 1HWueZ9CbH41fjsBqdfyhWKQgbtSguSkNr " + retValue.get_str() + " mymessage"), std::runtime_error);
+    BOOST_CHECK_THROW(CallRPC("verifymessage 1HWueZ9CbH41fjsBqdfyhWKQgbtSguSkNz " + retValue.get_str() + " mymessage"), std::runtime_error);
     /* wrong address */
     BOOST_CHECK(CallRPC("verifymessage 1EmoXtVCCaJVm2msqSw1zPBbPJjRQhNqFF " + retValue.get_str() + " mymessage").get_bool() == false);
     /* Correct address and signature but wrong message */
