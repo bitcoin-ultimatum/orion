@@ -536,20 +536,20 @@ echo  ""
 echo  "[61%] Installing QT dependency: qttools5-dev-tools... Done!"
 
 echo  ""
-echo  "[61%] Installing QT dependency: libqt5svg5... "
+echo  "[61%] Installing QT dependency: libqt5svg5-dev... "
 
-install_package libqt5svg5
-
-echo  ""
-echo  "[62%] Installing QT dependency: libqt5svg5... Done!"
+install_package libqt5svg5-dev
 
 echo  ""
-echo  "[62%] Installing QT dependency: libqt5charts5... "
+echo  "[62%] Installing QT dependency: libqt5svg5-dev... Done!"
+
+echo  ""
+echo  "[62%] Installing QT dependency: libqt5charts5-dev... "
 
 install_package libqt5charts5-dev
 
 echo  ""
-echo  "[63%] Installing QT dependency: libqt5charts5... Done!"
+echo  "[63%] Installing QT dependency: libqt5charts5-dev... Done!"
 
 echo  ""
 echo  "[63%] All QT Components has been installed. "
