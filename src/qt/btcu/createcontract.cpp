@@ -32,9 +32,10 @@ CreateContract::CreateContract(BTCUGUI *parent) :
 
     /*TextEdit*/
     ui->textEditBytecode->setProperty("cssClass", "edit-primary-multi-book");
+    ui->textEditBytecode->setPlaceholderText(tr("Enter bytecode"));
 
     /*LineEdit*/
-    ui->lineEditSenderAddress->setPlaceholderText(tr("Sender Address"));
+    ui->lineEditSenderAddress->setPlaceholderText(tr("Enter address"));
     setShadow(ui->lineEditSenderAddress);
     ui->lineEditSenderAddress->setProperty("cssClass", "edit-primary-multi-book");
     btnAddressContact = ui->lineEditSenderAddress->addAction(getIconComboBox(isLightTheme(), false), QLineEdit::TrailingPosition);
@@ -46,8 +47,10 @@ CreateContract::CreateContract(BTCUGUI *parent) :
 
     ui->lineEditGasLimit->setProperty("cssClass", "edit-primary-multi-book");
     ui->lineEditGasLimit->setValidator(new QRegExpValidator(QRegExp("[0-9]+"), ui->lineEditGasLimit));
+    ui->lineEditGasLimit->setPlaceholderText(tr("Enter gas limit"));
     ui->lineEditGasPrice->setProperty("cssClass", "edit-primary-multi-book");
     ui->lineEditGasPrice->setValidator(new QRegExpValidator(QRegExp("[0-9]+"), ui->lineEditGasPrice));
+    ui->lineEditGasPrice->setPlaceholderText(tr("Enter gas price"));
 
     /*Button*/
     ui->pbnClearAll->setProperty("cssClass","btn-secundary-small");
@@ -188,10 +191,10 @@ void CreateContract::onLineEditClicked() {
 
     QPoint pos;
     pos = ui->lineEditSenderAddress->pos();
-    pos.setY((pos.y() + (ui->lineEditSenderAddress->height() - 18) * 4));
+    pos.setY((pos.y() + ui->lineEditSenderAddress->height() * 3));
 
     pos.setX(pos.x() + 9);
-    pos.setY(pos.y() - 22);
+    pos.setY(pos.y() + height + 8);
 
     menuContacts->move(pos);
     menuContacts->show();

@@ -499,7 +499,7 @@ void TopBar::setNumBlocks(int count) {
             int progress = nAttempt + (masternodeSync.RequestedMasternodeAssets - 1) * MASTERNODE_SYNC_THRESHOLD;
             if(progress >= 0){
                 // todo: MN progress..
-                text = strprintf("Synchronizing masternodes data... - Block: %d", count);
+                text = strprintf("Synchronizing masternodes\ndata... - Block: %d", count);
                 //progressBar->setMaximum(4 * MASTERNODE_SYNC_THRESHOLD);
                 //progressBar->setValue(progress);
                 needState = false;
