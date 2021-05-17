@@ -18,7 +18,7 @@
 
 typedef std::vector<unsigned char> valtype;
 
-bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
+bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet, std::vector<valtype>& ret)
 {
     CKey key;
     if (!keystore.GetKey(address, key))
@@ -28,21 +28,25 @@ bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int n
     if (!key.Sign(hash, vchSig))
         return false;
     vchSig.push_back((unsigned char)nHashType);
+    ret.push_back(std::move(CScript(vchSig.begin(), vchSig.end())));
     scriptSigRet << vchSig;
 
     return true;
 }
 
-bool SignN(const std::vector<valtype>& multisigdata, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
+bool SignN(const std::vector<valtype>& multisigdata, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet, std::vector<valtype>& ret)
 {
     int nSigned = 0;
     int nRequired = multisigdata.front()[0];
+    ret.push_back(valtype());
     for (unsigned int i = 1; i < multisigdata.size()-1 && nSigned < nRequired; i++)
     {
         const valtype& pubkey = multisigdata[i];
         CKeyID keyID = CPubKey(pubkey).GetID();
-        if (Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (Sign1(keyID, keystore, hash, nHashType, scriptSigRet,ret))
+        {
             ++nSigned;
+        }
     }
     return nSigned==nRequired;
 }
@@ -54,7 +58,7 @@ bool SignN(const std::vector<valtype>& multisigdata, const CKeyStore& keystore, 
  * Returns false if scriptPubKey could not be completely satisfied.
  */
 bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType,
-              CScript& scriptSigRet, txnouttype& whichTypeRet, bool fColdStake = false,
+              CScript& scriptSigRet, txnouttype& whichTypeRet, std::vector<valtype>& ret, bool fColdStake = false,
               bool fLeasing = false, bool fForceLeaserSign = false)
 {
     scriptSigRet.clear();
@@ -67,6 +71,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
     }
 
     CKeyID keyID;
+    CPubKey vch;
     switch (whichTypeRet)
     {
     case TX_NONSTANDARD:
@@ -80,7 +85,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         return false;
     case TX_PUBKEY:
         keyID = CPubKey(vSolutions[0]).GetID();
-        if(!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if(!Sign1(keyID, keystore, hash, nHashType, scriptSigRet, ret))
         {
             LogPrintf("*** Sign1 failed \n");
             return false;
@@ -88,18 +93,20 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         return true;
     case TX_PUBKEYHASH:
         keyID = CKeyID(uint160(vSolutions[0]));
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet,ret))
         {
             LogPrintf("*** solver failed to sign \n");
             return false;
         }
         else
         {
-            CPubKey vch;
             if (!keystore.GetPubKey(keyID, vch))
                 return error("%s : Unable to get public key from keyID", __func__);
+            //ret.push_back(std::move( CScript(scriptSigRet.begin() + 1, scriptSigRet.end()) ));
+            ret.push_back(ToByteVector(vch));
             scriptSigRet << ToByteVector(vch);
         }
+
         return true;
     case TX_SCRIPTHASH:
         return keystore.GetCScript(uint160(vSolutions[0]), scriptSigRet);
@@ -116,7 +123,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
 
     case TX_MULTISIG:
         scriptSigRet << OP_0; // workaround CHECKMULTISIG bug
-        return (SignN(vSolutions, keystore, hash, nHashType, scriptSigRet));
+        return (SignN(vSolutions, keystore, hash, nHashType, scriptSigRet,ret));
 
     case TX_COLDSTAKE: {
         if (fColdStake) {
@@ -126,7 +133,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
             // sign with the owner key
             keyID = CKeyID(uint160(vSolutions[1]));
         }
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet,ret))
             return error("*** %s: failed to sign with the %s key.",
                     __func__, fColdStake ? "cold staker" : "owner");
         CPubKey vch;
@@ -148,7 +155,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
             // sign with the owner key
             keyID = CKeyID(uint160(vSolutions[1]));
         }
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet, ret))
             return error("*** %s: failed to sign with the %s key.",
                          __func__, fLeasing ? "leaser" : "owner");
         CPubKey vch;
@@ -162,7 +169,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         // 0. TRXHASH
         // 1. N
         keyID = CKeyID(uint160(vSolutions[2]));
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet,ret))
         {
             LogPrintf("*** solver failed to sign leasing reward \n");
             return false;
@@ -187,13 +194,14 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
     assert(nIn < txTo.vin.size());
     CTxIn& txin = txTo.vin[nIn];
    CScript subscript;
+   std::vector<valtype> result;
    bool P2SH = false;
     // Leave out the signature from the hash, since a signature can't sign itself.
     // The checksig op will also drop the signatures from its hash.
     uint256 hash = SignatureHash(fromPubKey, txTo, nIn, nHashType);
 
     txnouttype whichType;
-    if (!SignStep(keystore, fromPubKey, hash, nHashType, txin.scriptSig, whichType, fColdStake, fLeasing,
+    if (!SignStep(keystore, fromPubKey, hash, nHashType, txin.scriptSig, whichType, result, fColdStake, fLeasing,
                   fForceLeaserSign))
         return false;
 
@@ -207,7 +215,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
         // Recompute txn hash using subscript in place of scriptPubKey:
         uint256 hash2 = SignatureHash(subscript, txTo, nIn, nHashType);
 
-        bool fSolved = SignStep(keystore, subscript, hash2, nHashType, txin.scriptSig, whichType)
+        bool fSolved = SignStep(keystore, subscript, hash2, nHashType, txin.scriptSig, whichType, result)
                        && whichType != TX_SCRIPTHASH;
 
         // Append serialized subscript whether or not it is completely signed:
@@ -230,7 +238,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
         uint256 hash2 = SignatureHash(subscript2, txTo, nIn, nHashType);
 
         txnouttype subType;
-        bool fSolved = SignStep(keystore, subscript2, hash2, nHashType, txin.scriptSig, subType);
+        bool fSolved = SignStep(keystore, subscript2, hash2, nHashType, txin.scriptSig, subType,result);
 
         // Append serialized subscript whether or not it is completely signed:
         //txin.scriptSig << static_cast<valtype>(subscript);
@@ -249,7 +257,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
         uint256 hash2 = SignatureHash(subscript2, txTo, nIn, nHashType);
 
         txnouttype subType;
-        bool fSolved = SignStep(keystore, subscript2, hash2, nHashType, txin.scriptSig, subType)
+        bool fSolved = SignStep(keystore, subscript2, hash2, nHashType, txin.scriptSig, subType, result)
                        && subType != TX_SCRIPTHASH
                        && subType != TX_WITNESS_V0_SCRIPTHASH
                        && subType != TX_WITNESS_V0_KEYHASH;
@@ -267,7 +275,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CMutabl
 
     CScriptWitness witness;
     witness.stack.clear();
-    std::vector<valtype> result;
+
     if(P2SH)
     {
        result.push_back(std::vector<unsigned char>(subscript.begin(), subscript.end()));
