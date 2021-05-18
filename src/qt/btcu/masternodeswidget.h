@@ -17,6 +17,9 @@
 #include <QTimer>
 #include <atomic>
 #include <QSpacerItem>
+#include <QSharedPointer>
+
+#define CREATE_MN_AMOUNT 1000
 
 class BTCUGUI;
 
@@ -54,13 +57,12 @@ private Q_SLOTS:
     void onCreateMNClicked();
     void onStartAllClicked(int type);
     void changeTheme(bool isLightTheme, QString &theme) override;
-    void onMNClicked(const QModelIndex &index);
-    void onEditMNClicked();
+    void onUpgradeMNClicked();
     void onDeleteMNClicked();
     void onInfoMNClicked();
     void updateListState();
     void updateModelAndInform(QString informText);
-   void onpbnMenuClicked();
+    void onpbnMenuClicked(QModelIndex index);
 
    void onTempADD();
    void onpbnMasternodeClicked();
@@ -86,6 +88,7 @@ private:
     void startAlias(QString strAlias);
     bool startAll(QString& failedMN, bool onlyMissing);
     bool startMN(CMasternodeConfig::CMasternodeEntry mne, std::string& strError);
+    void removeMNLine();
 // temp
    bool bShowHistory = false;
    bool bShowHistoryMy = false;
