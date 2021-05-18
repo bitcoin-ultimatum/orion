@@ -186,10 +186,6 @@ void RegisterValidator::onBoxClicked() {
 
 void RegisterValidator::onComboBox(const QModelIndex &index) {
     QString value = index.data(0).toString();
-    if(value.length() > 40)
-    {
-        value = value.left(37) + "...";
-    }
     ui->lineEditMNName->setText(value);
     ui->comboBox->setCurrentIndex(index.row());
     widgetBox->hide();
@@ -256,6 +252,10 @@ void RegisterValidator::fillComboBox()
                 if(address == "") continue;
                 MNs.push_back({name, address, hash});
                 QString text = QString::fromStdString(name) + ":" + QString::fromStdString(address);
+
+                if(text.length() > 40)
+                    text = text.left(37) + "...";
+
                 ui->comboBox->addItem(text);
             }
         }
