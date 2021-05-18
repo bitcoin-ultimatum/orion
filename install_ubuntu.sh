@@ -103,7 +103,7 @@ echo  "[13%] Installing dependency: python3... Done!"
 echo  ""
 echo  "[14%] Installing dependency: Boost 1.71.0... "
 
-wget https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz
+wget https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz
 tar -xf boost_1_71_0.tar.gz
 
 cd boost_1_71_0
