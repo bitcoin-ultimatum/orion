@@ -103,7 +103,7 @@ echo  "[13%] Installing dependency: python3... Done!"
 echo  ""
 echo  "[14%] Installing dependency: Boost 1.71.0... "
 
-wget https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz
+wget https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz
 tar -xf boost_1_71_0.tar.gz
 
 cd boost_1_71_0
@@ -536,20 +536,20 @@ echo  ""
 echo  "[61%] Installing QT dependency: qttools5-dev-tools... Done!"
 
 echo  ""
-echo  "[61%] Installing QT dependency: libqt5svg5... "
+echo  "[61%] Installing QT dependency: libqt5svg5-dev... "
 
-install_package libqt5svg5
-
-echo  ""
-echo  "[62%] Installing QT dependency: libqt5svg5... Done!"
+install_package libqt5svg5-dev
 
 echo  ""
-echo  "[62%] Installing QT dependency: libqt5charts5... "
+echo  "[62%] Installing QT dependency: libqt5svg5-dev... Done!"
+
+echo  ""
+echo  "[62%] Installing QT dependency: libqt5charts5-dev... "
 
 install_package libqt5charts5-dev
 
 echo  ""
-echo  "[63%] Installing QT dependency: libqt5charts5... Done!"
+echo  "[63%] Installing QT dependency: libqt5charts5-dev... Done!"
 
 echo  ""
 echo  "[63%] All QT Components has been installed. "
