@@ -59,8 +59,21 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
         set(ENV{target} "Linux")
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-          set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+            set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+                CACHE STRING "")
         endif()
+    endif()
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(VCPKG_DEFAULT_TRIPLET "x64-windows-static" CACHE STRING "Default triplet for the build" FORCE)
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "Default triplet for the build" FORCE)
+    if(DEFINED ENV{VCPKG_ROOT})
+        set(VCPKG_ROOT "$ENV{VCPKG_ROOT}"  CACHE STRING "VCPKG root" FORCE)
+    elseif(DEFINED _VCPKG_ROOT_DIR)
+        set(_VCPKG_ROOT_DIR "${_VCPKG_ROOT_DIR}"  CACHE STRING "VCPKG root" FORCE)
+    else()
+        message(WARNING "Can't find VCKPG root!")
     endif()
 endif()
 
@@ -83,8 +96,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     if (CMAKE_GENERATOR MATCHES "Visual Studio" OR MSVC)
         message(WARNING "Important: Sometimes Visual Studio may get accidental crush due to low RAM memory. Please make sure you have enough free RAM for the build. Also is it recommended to turn off Real time protection of the Windows Defender in a build time.")
     endif()
-    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "Default triplet for the build" FORCE)
-    set(VCPKG_ROOT "$ENV{VCPKG_ROOT}"  CACHE STRING "VCPKG root" FORCE)
 
     set(CMAKE_CXX_FLAGS_RELEASE "/MT /O2 /Ob2" CACHE STRING "Enforced CXX static flag for release" FORCE)
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd  /Zi /Ob0 /Od /RTC1" CACHE STRING "Enforced CXX static flag for debug" FORCE)
@@ -172,6 +183,7 @@ option(EXTRA_WARNINGS "Enable extra warnings" OFF)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     option(BUILD_STATIC "Build dependencies as static libs" ON)
+    set(BUILD_STATIC ON CACHE BOOL "" FORCE)
 endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     option(BUILTIN_QTDEPLOY "Use qt native qtdeploy script" OFF)
@@ -493,6 +505,7 @@ if (MSVC)
     add_compile_options(-DNTDDI_VERSION=0x0A000001) # declare Windows API requirement
     add_compile_options(-DNOMINMAX)                 # undefine windows.h MAX && MIN macros cause it cause conflicts with std::min && std::max functions
     add_compile_options(-DMINIUPNP_STATICLIB)       # define miniupnp static library
+    add_compile_options(-DZMQ_STATIC)               # define zmq static library
 
 	add_compile_definitions(
 		# Define WIN32_LEAN_AND_MEAN to exclude APIs such as Cryptography, DDE,
@@ -745,13 +758,15 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
     if(${CMAKE_BUILD_TYPE} MATCHES "DEBUG" OR ${CMAKE_BUILD_TYPE} MATCHES "Debug")
 	    list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/debug/lib")
+        set( OPENSSL_ROOT_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/debug" CACHE STRING "OpenSSL root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/debug")
     else()
 	    list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib")
+        set( OPENSSL_ROOT_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}" CACHE STRING "OpenSSL root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/debug")
     endif()
+
+	set( ZeroMQ_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/zeromq"  CACHE STRING "ZeroMQ root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/zeromq")
     
 	set( CURL_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/curl"  CACHE STRING "Curl root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/curl")
-
-	set( OPENSSL_ROOT_DIR "${VCPKG_ROOT}/packages/openssl_${VCPKG_TARGET_TRIPLET}" CACHE STRING "OpenSSL root dir is ${VCPKG_ROOT}/packages/openssl_${VCPKG_TARGET_TRIPLET}")
     
 	set( Qt5Core_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/cmake/Qt5Core" CACHE STRING "QT5Core root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/cmake/Qt5Core")
     set( Qt5Widgets_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/cmake/Qt5Widgets" CACHE STRING "Qt5Widgets root dir is ${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/share/cmake/Qt5Widgets")
@@ -774,6 +789,8 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	    set( MHD_LIBRARY "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib" )
 	    set( GMP_LIBRARY "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib" )
     endif()
+
+	set( OPENSSL_INCLUDE_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/include" )
 
 	set( CURL_INCLUDE_DIR "${VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/include" )
 
@@ -927,6 +944,15 @@ find_package(Qrcode REQUIRED)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     find_package(ZeroMQ CONFIG)
+    if(BUILD_STATIC)
+        set_target_properties(libzmq-static PROPERTIES IMPORTED_GLOBAL TRUE)
+        set( ZeroMQ_LIBRARY "${ZeroMQ_STATIC_LIBRARY}" CACHE STRING "" FORCE)
+        add_library(ZeroMQ::zmq ALIAS libzmq-static)
+    else()
+        set_target_properties(libzmq PROPERTIES IMPORTED_GLOBAL TRUE)
+        set( ZeroMQ_LIBRARY "${ZeroMQ_STATIC_LIBRARY}" CACHE STRING "" FORCE)
+        add_library(ZeroMQ::zmq ALIAS libzmq)
+    endif()
 else()
     find_package(ZeroMQ)
 endif()
@@ -2017,6 +2043,7 @@ if(ENABLE_TESTS)
     add_custom_target(test_btcu_hex ALL DEPENDS ${BTCU_HEX_TEST_FILES})
 
     add_executable(test_btcu ${BTCU_TEST_SOURCES})
+    target_compile_definitions(test_btcu PRIVATE TEST_BTCU)
 
     add_dependencies(test_btcu test_btcu_hex leveldb leveldb_sse42 memenv)
     target_include_directories(test_btcu PUBLIC ${BTCU_HEX_DESTDIR} ./src/test)
@@ -2102,9 +2129,27 @@ if(ENABLE_TESTS)
     endif()
     target_compile_definitions(SERVER_A_test PRIVATE TEST_BTCU)
 
+    add_library(WALLET_A_test STATIC ${BitcoinHeaders} ${WALLET_SOURCES})
+    target_include_directories(WALLET_A_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/jsoncpp/jsoncpp/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+            ${OPENSSL_INCLUDE_DIR}
+            ${BerkeleyDB_INCLUDE_DIRS}
+            ${Boost_INCLUDE_DIRS}
+            )
+    if(GMP_FOUND)
+        target_include_directories(WALLET_A_test PUBLIC ${GMP_INCLUDE_DIR})
+    endif()
+    target_compile_definitions(WALLET_A_test PRIVATE TEST_BTCU)
+
     target_link_libraries(test_btcu
             SERVER_A_test
-            WALLET_A
+            WALLET_A_test
             univalue
             COMMON_A
             ZEROCOIN_A

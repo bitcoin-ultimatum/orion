@@ -89,6 +89,8 @@ TestingSetup::TestingSetup() : BasicTestingSetup()
         bool fFirstRun;
         pwalletMain = new CWallet("wallet.dat");
         pwalletMain->LoadWallet(fFirstRun);
+        auto zwalletMain = new CzBTCUWallet(pwalletMain->strWalletFile);
+        pwalletMain->setZWallet(zwalletMain);
         RegisterValidationInterface(pwalletMain);
 #endif
         nScriptCheckThreads = 3;
