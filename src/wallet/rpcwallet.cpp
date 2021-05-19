@@ -1923,9 +1923,10 @@ UniValue signmessage(const UniValue& params, bool fHelp)
             HelpExampleRpc("signmessage", "\"DMJRSsuU9zfyrvxVaAEFQqK4MxZg6vgeS6\", \"my message\""));
 
     LOCK2(cs_main, pwalletMain->cs_wallet);
-
+#ifndef TEST_BTCU
     if (!pwalletMain->IsCrypted()  && !Params().IsRegTestNet())
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an not encrypted wallet. Run encryptwallet first");
+#endif
 
     EnsureWalletIsUnlocked();
 
