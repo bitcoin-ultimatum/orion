@@ -107,7 +107,7 @@ To do this please run commands:
 ```shell
     alias nproc="sysctl -n hw.logicalcpu"
 
-    curl https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz -o boost_1_71_0.tar.gz
+    curl https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz -o boost_1_71_0.tar.gz
     tar -xf boost_1_71_0.tar.gz
 
     cd boost_1_71_0
