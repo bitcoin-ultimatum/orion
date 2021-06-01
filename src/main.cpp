@@ -2955,32 +2955,29 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 }
             }
 
-            if (!exec.performByteCode()) {
-                return state.Error("ConnectBlock(): Unknown error during contract execution");
-            }
-
-            std::vector<ResultExecute> resultExec(exec.getResult());
-            ByteCodeExecResult bcer;
-            if (!exec.processingResults(bcer)) {
-                return state.Error("ConnectBlock(): Error processing VM execution results");
-            }
-            blockGasUsed += bcer.usedGas;
-            if (blockGasUsed > blockGasLimit) {
-                return state.Invalid("ConnectBlock(): Block exceeds gas limit");
-            }
-            for (CTxOut refundVout : bcer.refundOutputs) {
-                gasRefunds += refundVout.nValue;
-            }
+            if (fAlreadyChecked) {
             
-            if (fRecordLogOpcodes && !fJustCheck) {
-                writeVMlog(resultExec, tx, block);
-            }
+                if (!exec.performByteCode()) {
+                    return state.Error("ConnectBlock(): Unknown error during contract execution");
+                }
 
-            /*for (ResultExecute& re : resultExec) {
-                if (re.execRes.newAddress != dev::Address() && !fJustCheck)
-                    dev::g_logPost(std::string("Address : " + re.execRes.newAddress.hex()), NULL);
-            }*/
+                std::vector<ResultExecute> resultExec(exec.getResult());
+                ByteCodeExecResult bcer;
+                if (!exec.processingResults(bcer)) {
+                    return state.Error("ConnectBlock(): Error processing VM execution results");
+                }
+                blockGasUsed += bcer.usedGas;
+                if (blockGasUsed > blockGasLimit) {
+                    return state.Invalid("ConnectBlock(): Block exceeds gas limit");
+                }
+                for (CTxOut refundVout : bcer.refundOutputs) {
+                    gasRefunds += refundVout.nValue;
+                }
             
+                if (fRecordLogOpcodes && !fJustCheck) {
+                    writeVMlog(resultExec, tx, block);
+                }
+            }
         }
     }
 

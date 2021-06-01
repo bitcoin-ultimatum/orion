@@ -82,8 +82,9 @@ bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
     if (tx.vout.size() < 2) {
         return false;
     }
-    
-    if (view.AccessCoins(tx.vin[0].prevout.hash)->vout.size() > 0) {
+
+    auto coins =  view.AccessCoins(tx.vin[0].prevout.hash);
+    if (coins && coins->vout.size() > 0) {
         CScript script = view.AccessCoins(tx.vin[0].prevout.hash)->vout[tx.vin[0].prevout.n].scriptPubKey;
         if(!script.IsPayToPubkeyHash() && !script.IsPayToPubkey()){
             return false;
@@ -260,9 +261,9 @@ valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsVie
         }
     }
     if(!scriptFilled && coinsView){
-        if (coinsView->AccessCoins(tx.vin[0].prevout.hash)->vout.size() > 0) {
-            script = coinsView->AccessCoins(tx.vin[0].prevout.hash)->vout[tx.vin[0].prevout.n].scriptPubKey;
-            //script = coinsView->AccessCoin(tx.vin[0].prevout).out.scriptPubKey;
+        auto coins = coinsView->AccessCoins(tx.vin[0].prevout.hash);
+        if (coins && coins->vout.size() > 0) {
+            script = coins->vout[tx.vin[0].prevout.n].scriptPubKey;
             scriptFilled = true;
         }
     }

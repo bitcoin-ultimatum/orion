@@ -1964,6 +1964,16 @@ if(ENABLE_TESTS)
             ./src/test/accounting_tests.cpp
             ./src/wallet/test/wallet_tests.cpp
             ./src/test/rpc_wallet_tests.cpp
+
+            # contract tests
+            #./src/test/qtumtests/btcecrecoverfork_tests.cpp
+            ./src/test/qtumtests/bytecodeexec_tests.cpp
+            #./src/test/qtumtests/condensingtransaction_tests.cpp
+            #./src/test/qtumtests/constantinoplefork_tests.cpp
+            #./src/test/qtumtests/delegations_tests.cpp
+            #./src/test/qtumtests/dgp_tests.cpp
+            #./src/test/qtumtests/istanbulfork_tests.cpp
+            #./src/test/qtumtests/qtumtxconverter_tests.cpp
         )
 
     set(BTCU_JSON_TEST_FILES
