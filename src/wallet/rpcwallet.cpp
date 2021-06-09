@@ -378,7 +378,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
     std::vector<std::pair<CScript, CAmount> > vecSend;
     vecSend.push_back(std::make_pair(scriptPubKey, 0));
 
-    if (!pwalletMain->CreateTransactionSC(vecSend, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+    if (!pwalletMain->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, strError, NULL, ALL_COINS, false, nGasFee, false, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);

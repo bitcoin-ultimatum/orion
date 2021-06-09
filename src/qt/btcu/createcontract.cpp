@@ -354,7 +354,7 @@ void CreateContract::onCreateContract()
     std::vector<std::pair<CScript, CAmount> > vecSend;
     vecSend.push_back(std::make_pair(scriptPubKey, nValue));
 
-    if (!pwalletMain->CreateTransactionSC(vecSend, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, true, nGasFee, true, true, true, signSenderAddress)) {
+    if (!pwalletMain->CreateTransactionSC(vecSend, wtx, reservekey, nFeeRequired, strError, coinControl.get(), ALL_COINS, false, nGasFee, false, true, false, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         informError(tr(strError.c_str()));
