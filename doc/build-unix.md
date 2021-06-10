@@ -190,7 +190,7 @@ Please make sure you have installed Boost 1.71.0.
 
 Alternativetely you can build Boost from a source code:
 ```bash
-        wget https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz
+        wget https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz
         tar -xf boost_1_71_0.tar.gz
 
         cd boost_1_71_0

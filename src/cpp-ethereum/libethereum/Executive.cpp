@@ -32,6 +32,8 @@
 
 #include <numeric>
 
+#include "util.h"
+
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
@@ -292,8 +294,8 @@ bool Executive::execute()
     // Entry point for a user-executed transaction.
 
     // Pay...
-    LOG(m_detailsLogger) << "Paying " << formatBalance(m_gasCost) << " from sender for gas ("
-                         << m_t.gas() << " gas at " << formatBalance(m_t.gasPrice()) << ")";
+    LogPrint("sc", "Paying %s from sender for gas (%d gas at %s)\n",formatBalance(m_gasCost), m_t.gas(), formatBalance(m_t.gasPrice()));
+
     m_s.subBalance(m_t.sender(), m_gasCost);
 
     assert(m_t.gas() >= (u256)m_baseGasRequired);

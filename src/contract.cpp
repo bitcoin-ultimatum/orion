@@ -85,7 +85,13 @@ bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
 
     auto coins =  view.AccessCoins(tx.vin[0].prevout.hash);
     if (coins && coins->vout.size() > 0) {
-        CScript script = view.AccessCoins(tx.vin[0].prevout.hash)->vout[tx.vin[0].prevout.n].scriptPubKey;
+
+        //CScript script = view.AccessCoins(tx.vin[0].prevout.hash)->vout[tx.vin[0].prevout.n].scriptPubKey;
+        // First try finding the previous transaction in database
+        CTransaction txPrev; uint256 hashBlock;
+        if (!GetTransaction(tx.vin[0].prevout.hash, txPrev, hashBlock, true))
+           return false;
+        CScript script = txPrev.vout[tx.vin[0].prevout.n].scriptPubKey;
         if(!script.IsPayToPubkeyHash() && !script.IsPayToPubkey()){
             return false;
         }

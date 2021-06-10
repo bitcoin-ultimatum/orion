@@ -3,6 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 set(PACKAGE_NAME "btcu qt")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/scripts)
+list(APPEND CMAKE_PREFIX_PATH ./src/cpp-ethereum/ethash)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/forms ${CMAKE_CURRENT_SOURCE_DIR}/btcu/forms ${CMAKE_CURRENT_SOURCE_DIR}/btcu/settings/forms)
@@ -25,7 +26,7 @@ if(BUILD_STATIC)
 endif()
 include_directories ( ${Qrcode_INCLUDE_DIRS} )
 
-# you can remove check for the Darwin if you'd build 
+# you can remove check for the Darwin if you'd build
 # a static QT version by yourself
 if (BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	set(Qt5_USE_STATIC_LIBS ON)
@@ -38,14 +39,14 @@ if(BUILD_STATIC AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	message(STATUS "GRAPHITE2_LIBRARY: ${GRAPHITE2_LIBRARY}")
 
 	set(TMP_CMAKE_CXX_STANDARD_LIBRARIES ${CMAKE_CXX_STANDARD_LIBRARIES})
-	
+
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 		# we don't want tp link qt5 statically since it is quite unstable
 		set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" CACHE STRING "CMake search suffix" FORCE)
 		find_package( X11 REQUIRED )
 		message(STATUS "X11_LIBRARIES: ${X11_LIBRARIES}")
 		message(STATUS "X11_Xdmcp_LIB: ${X11_Xdmcp_LIB}")
-	
+
 		# This is required to fix libm.a incorrect import in QT
 		list(APPEND CMAKE_CXX_STANDARD_LIBRARIES "m")
 	endif()
@@ -56,7 +57,7 @@ foreach(comp Widgets Core Gui Network LinguistTools DBus Svg Charts Test)
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
 		find_package(
 						Qt5${comp}
-					PATHS 
+					PATHS
 						${qt5_ROOT_DIR}
 						${qt5_ROOT_DIR}/lib
 						${qt5_ROOT_DIR}/lib/cmake
@@ -218,6 +219,7 @@ SET(QT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/validatorwidget.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/registervalidator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/validatorrow.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/btcu/createcontract.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/sendchangeaddressdialog.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/sendconfirmdialog.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/sendcustomfeedialog.cpp
@@ -263,6 +265,81 @@ SET(QT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/btcu/cbtocendropdown.cpp
         )
 
+set(SERVER_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccak.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/ethash.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccakf1600.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/primes.c
+
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/ethash.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccak.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccakf800.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/keccakf1600.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/managed.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/primes.c
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash/progpow.cpp
+        )
+add_library(SERVER_B STATIC ${BitcoinHeaders} ${SERVER_SOURCES})
+
+target_include_directories(SERVER_B
+    PUBLIC
+        ${ZeroMQ_INCLUDE_DIRS}
+        ${LibEvent_INCLUDE_DIR}
+        ${BerkeleyDB_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}/filesystem
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+        ${CMAKE_SOURCE_DIR}/src/qtum
+        )
+
+set(BITCOIN_CRYPTO_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/crypto/keccak.c
+        )
+add_library(BITCOIN_CRYPTO_B ${BITCOIN_CRYPTO_SOURCES})
+
+target_link_libraries(BITCOIN_CRYPTO_B
+            univalue
+            ${Boost_LIBRARIES}
+            ${OPENSSL_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            Threads::Threads
+            )
+target_include_directories(BITCOIN_CRYPTO_B PUBLIC
+        ${CMAKE_SOURCE_DIR}/src
+        ${OPENSSL_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+        )
+
+set(COMMON_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal/Ethash.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal/EthashCPUMiner.cpp
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal/EthashProofOfWork.cpp
+
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal/GenesisInfo.cpp
+        )
+
+add_library(COMMON_B STATIC ${BitcoinHeaders} ${COMMON_SOURCES})
+
+target_include_directories(COMMON_B
+    PUBLIC
+        ${OPENSSL_INCLUDE_DIR}
+        ${BerkeleyDB_INCLUDE_DIRS}
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+        ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+        ${CMAKE_SOURCE_DIR}/src/qtum
+        )
+target_link_libraries(COMMON_B
+            BITCOIN_CRYPTO_B
+            ${Boost_LIBRARIES}
+            ${OPENSSL_LIBRARIES}
+            ${LibEvent_LIBRARIES}
+            SERVER_B
+            )
+
 # Workaround until the old rpcconsole UI window is fully removed
 set_property(SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/btcu/settings/settingsconsolewidget.cpp PROPERTY SKIP_AUTOMOC ON)
 execute_process(
@@ -282,13 +359,18 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     list(APPEND QT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/macos_appnap.mm)
 endif()
 
-add_library(qt_stuff STATIC ${BitcoinHeaders} ${QtHeaders} ${QT_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS})
-target_include_directories(qt_stuff 
+add_library(qt_stuff STATIC ${BitcoinHeaders} ${QtHeaders} ${QT_SOURCES} ${PROTO_SRCS} ${PROTO_HDRS} ${SERVER_SOURCES} ${COMMON_SOURCES} ${BITCOIN_CRYPTO_SOURCES})
+target_include_directories(qt_stuff
 		PUBLIC 
 			${CMAKE_SOURCE_DIR}/src
 			${CMAKE_SOURCE_DIR}/src/leveldb/include
 			${CMAKE_SOURCE_DIR}/src/univalue/include
 			${CMAKE_SOURCE_DIR}/src/secp256k1/include
+            ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/lib/ethash
+            ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/libethashseal
+            ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/ethash/include
+            ${CMAKE_SOURCE_DIR}/src/cpp-ethereum/evmc/include
+            ${CMAKE_SOURCE_DIR}/src/qtum
 			${CMAKE_CURRENT_SOURCE_DIR}
 			${CMAKE_CURRENT_SOURCE_DIR}/btcu
 			${CMAKE_CURRENT_SOURCE_DIR}/btcu/settings
@@ -344,7 +426,7 @@ add_custom_target(translations_target ALL DEPENDS ${QM})
 QT5_ADD_RESOURCES(QRC_RESOURCE ${PROJECT_SOURCE_DIR}/src/qt/btcu.qrc)
 QT5_ADD_RESOURCES(QRC_LOCALE_RESOURCE ${PROJECT_SOURCE_DIR}/src/qt/btcu_locale.qrc)
 
-add_executable(btcu-qt btcu.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE} ${PROJECT_SOURCE_DIR}/src/qt/btcu.qrc)
+add_executable(btcu-qt btcu.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE} ${PROJECT_SOURCE_DIR}/src/qt/btcu.qrc  ../interfaces/node.h)
 if(BUILD_STATIC)
 	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_START_STATIC 1)
 	set_target_properties(btcu-qt PROPERTIES LINK_SEARCH_END_STATIC 1)
@@ -364,7 +446,7 @@ target_include_directories(btcu-qt PUBLIC ${ENDIAN_INCLUDES} ${CMAKE_SOURCE_DIR}
 target_link_libraries(btcu-qt
         qt_stuff
         univalue
-        SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A
+        SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A COMMON_B BITCOIN_CRYPTO_B SERVER_B
         leveldb leveldb_sse42 memenv secp256k1
         ${BerkeleyDB_Cxx_LIBRARY}
         ${OPENSSL_LIBRARIES}
@@ -442,7 +524,7 @@ endif()
 if(ZeroMQ_FOUND)
     target_link_libraries(btcu-qt ZMQ_A)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
-		target_link_libraries(btcu-qt 
+		target_link_libraries(btcu-qt
 			ZeroMQ::zmq
 			)
 	else()
@@ -807,7 +889,7 @@ endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND BUILD_STATIC)
         # TODO: add custom deb command
         # add_custom_target(btcu-qt_deb_package
-        #     COMMAND "${CMAKE_CPACK_COMMAND}" 
+        #     COMMAND "${CMAKE_CPACK_COMMAND}"
         #     "--config" "${CMAKE_SOURCE_DIR}/cmake/scripts/CPackConfig.cmake")
 	install(TARGETS btcu-qt
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/btcu
@@ -853,7 +935,7 @@ if(ENABLE_TESTS)
 	target_link_libraries(test_btcu-qt PUBLIC
 			qt_stuff
 			univalue
-			SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A
+			SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A COMMON_B BITCOIN_CRYPTO_B SERVER_B
 			leveldb leveldb_sse42 memenv secp256k1
 			${BerkeleyDB_Cxx_LIBRARY}
 			${OPENSSL_LIBRARIES}
@@ -867,7 +949,7 @@ if(ENABLE_TESTS)
 		qt5_import_qml_plugins(test_btcu-qt)
 		qt5_import_plugins(btcu-qt INCLUDE Qt5::QSvgPlugin Qt5::QSvgIconPlugin Qt5::QSvgIconPlugin Qt5::QGifPlugin Qt5::QJpegPlugin)
 	endif()
-	
+
 	if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 		target_link_libraries(test_btcu-qt PUBLIC pthread)
 	endif()

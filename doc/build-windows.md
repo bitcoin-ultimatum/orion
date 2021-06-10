@@ -91,7 +91,7 @@ To install project dependencies open the project folder in the Powershell termin
 
 In order to build Boost firstly please open the project folder in Powershell terminal and run: 
 ```cmd
-    (new-object System.Net.WebClient).DownloadFile("https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.zip","${PWD}\depends\packages\static\boost_1_71_0.zip")
+    (new-object System.Net.WebClient).DownloadFile("https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.zip","${PWD}\depends\packages\static\boost_1_71_0.zip")
 
     cd depends\packages\static\  # The folder where
                                  # the Boost files would be

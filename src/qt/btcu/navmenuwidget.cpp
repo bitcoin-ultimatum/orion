@@ -49,10 +49,12 @@ NavMenuWidget::NavMenuWidget(BTCUGUI *mainWindow, QWidget *parent) :
     ui->btnValidator->setProperty("name", "master");
     ui->btnValidator->setText(tr("VALIDATOR"));
     ui->btnValidator->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    ui->btnValidator->hide();
 
     ui->btnContract->setProperty("name", "master");
     ui->btnContract->setText(tr("SMART\r\nCONTRACTS"));
     ui->btnContract->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    ui->btnContract->hide();
 
     ui->btnColdStaking->setProperty("name", "cold-staking");
     ui->btnColdStaking->setText(tr("COLD\r\nSTAKING"));

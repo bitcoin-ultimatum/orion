@@ -32,9 +32,20 @@ void MNRow::updateView(std::string name, std::string address, double leasing, in
     ui->labelType->setText(type);
     ui->labelProfit->setText(profit > 0 ? QString::number(profit, 'g', 12) : "-");
 }
+
+void MNRow::setIndex(QModelIndex index)
+{
+    this->index = index;
+}
+
+QModelIndex MNRow::getIndex()
+{
+    return this->index;
+}
+
 void MNRow::onPbnMenuClicked()
 {
-   Q_EMIT onMenuClicked();
+   Q_EMIT onMenuClicked(index);
 }
 
 MNRow::~MNRow(){
