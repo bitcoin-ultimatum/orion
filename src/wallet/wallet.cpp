@@ -2488,7 +2488,7 @@ bool CWallet::SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const 
 {
     // Note: this function should never be used for "always free" tx types like dstx
     std::vector<COutput> vCoins;
-    AvailableCoins(&vCoins, true, coinControl, false, coin_type, useIX, 1, fIncludeColdStaking, fIncludeDelegated, true, fIncludeLeased);
+    AvailableCoins(&vCoins, true, coinControl, false, coin_type, useIX, 1, fIncludeColdStaking, fIncludeDelegated, false, fIncludeLeased);
 
     // coin control -> return all selected outputs (we want all selected to go into the transaction for sure)
     if (coinControl && coinControl->HasSelected() && !coinControl->fAllowOtherInputs) {
