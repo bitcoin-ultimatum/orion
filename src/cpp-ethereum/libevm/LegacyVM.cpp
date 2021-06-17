@@ -310,8 +310,8 @@ void LegacyVM::interpretCases()
         CASE(REVERT)
         {
             // Pre-byzantium
-            if (!m_schedule->haveRevert)
-                throwBadInstruction();
+            //if (!m_schedule->haveRevert)
+            //    throwBadInstruction();
 
             ON_OP();
             m_copyMemSize = 0;
