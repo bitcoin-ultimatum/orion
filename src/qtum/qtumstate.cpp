@@ -50,8 +50,8 @@ ResultExecute QtumState::execute(EnvInfo const& _envInfo, SealEngineFace const& 
     const CChainParams& consensusParams = Params();
     try{
         //TO_FIX: Uncomment this check
-        if (_t.isCreation() && _t.value())
-            BOOST_THROW_EXCEPTION(CreateWithValue());
+        //if (_t.isCreation() && _t.value())
+        //    BOOST_THROW_EXCEPTION(CreateWithValue());
 
         e.initialize(_t);
         // OK - transaction looks valid - execute.

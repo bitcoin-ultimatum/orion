@@ -1,19 +1,6 @@
-/*
-    This file is part of cpp-ethereum.
-
-    cpp-ethereum is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    cpp-ethereum is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
-*/
+// Aleth: Ethereum C++ client, tools and libraries.
+// Copyright 2018-2019 Aleth Authors.
+// Licensed under the GNU General Public License, Version 3.
 
 #include "RocksDB.h"
 #include "Assertions.h"
@@ -141,13 +128,8 @@ bool RocksDB::exists(Slice _key) const
 {
     std::string value;
     rocksdb::Slice const key(_key.data(), _key.size());
-#if defined(__APPLE__) || defined(WIN32)
     if (!m_db->KeyMayExist(m_readOptions, key, &value, nullptr, nullptr))
         return false;
-#else /* __APPLE__ */
-    if (!m_db->KeyMayExist(m_readOptions, key, &value, nullptr))
-        return false;
-#endif
 
     auto const status = m_db->Get(m_readOptions, key, &value);
     if (status.IsNotFound())

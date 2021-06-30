@@ -28,8 +28,8 @@ void ContractStateInit()
     dev::eth::BaseState existsQtumstate = fStatus ? dev::eth::BaseState::PreExisting : dev::eth::BaseState::Empty;
     globalState = std::unique_ptr<QtumState>(new QtumState(dev::u256(0), QtumState::openDB(dirQtum, hashDB, dev::WithExisting::Trust), dirQtum, existsQtumstate));
     auto geni = chainparams.EVMGenesisInfo(dev::eth::Network::qtumMainNetwork);
-    dev::eth::ChainParams cp((geni));
-    globalSealEngine = std::unique_ptr<dev::eth::SealEngineFace>(cp.createSealEngine());
+    dev::eth::ChainParams cp(geni);
+    //globalSealEngine = std::unique_ptr<dev::eth::SealEngineFace>(cp.createSealEngine());
 
     if(chainActive.Tip() != nullptr){
         auto hash = uintToh256(chainActive.Tip()->hashStateRoot);
@@ -38,7 +38,7 @@ void ContractStateInit()
     } else {
         globalState->setRoot(dev::sha3(dev::rlp("")));
         globalState->setRootUTXO(uintToh256(chainparams.GenesisBlock().hashUTXORoot));
-        globalState->populateFrom(cp.genesisState);
+        //globalState->populateFrom(cp.genesisState);
     }
 
     globalState->db().commit();
@@ -472,7 +472,7 @@ dev::eth::EnvInfo ByteCodeExec::BuildEVMEnvironment(){
         header.setAuthor(EthAddrFromScript(block.vtx[0].vout[0].scriptPubKey));
     }
     dev::u256 gasUsed;
-    dev::eth::EnvInfo env(header, lastHashes, gasUsed);
+    dev::eth::EnvInfo env(header, lastHashes, gasUsed, globalSealEngine->chainParams().chainID);
     return env;
 }
 
