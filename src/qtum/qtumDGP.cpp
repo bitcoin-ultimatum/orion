@@ -214,7 +214,7 @@ dev::eth::EVMSchedule QtumDGP::createEVMSchedule(const dev::eth::EVMSchedule &_s
 
     if(uint32Values.size() >= 39){
         schedule.tierStepGas = {{uint32Values[0], uint32Values[1], uint32Values[2], uint32Values[3],
-                                uint32Values[4], uint32Values[5], uint32Values[6], uint32Values[7]}};
+                                        uint32Values[4], uint32Values[5], uint32Values[6], uint32Values[7]}};
         schedule.expGas = uint32Values[8];
         schedule.expByteGas = uint32Values[9];
         schedule.sha3Gas = uint32Values[10];
