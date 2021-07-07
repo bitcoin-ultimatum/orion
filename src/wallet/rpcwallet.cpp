@@ -220,15 +220,15 @@ UniValue createcontract(const UniValue& params, bool fHelp){
 
     if (fHelp || params.size() < 1)
         throw std::runtime_error("createcontract"
-               "\nCreate a contract with bytcode." +
+               "\nCreate a contract with bytcode.\n" +
                HelpRequiringPassphrase() + "\n"
 
-                       "bytecode"//, RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "contract bytcode."},
-                       "gasLimit"//, RPCArg::Type::AMOUNT, RPCArg::Optional::OMITTED, "gasLimit, default: "+i64tostr(DEFAULT_GAS_LIMIT_OP_CREATE)+", max: "+i64tostr(blockGasLimit)},
-                       "gasPrice"//, RPCArg::Type::AMOUNT, RPCArg::Optional::OMITTED, "gasPrice QTUM price per gas unit, default: "+FormatMoney(nGasPrice)+", min:"+FormatMoney(minGasPrice)},
-                       "senderaddress"//, RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "The qtum address that will be used to create the contract."},
-                       "broadcast"//, RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "Whether to broadcast the transaction or not."},
-                       "changeToSender"//, RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "Return the change to the sender."},
+                       "bytecode - STR_HEX. Contract bytcode.\n"
+                       "gasLimit - AMOUNT. default: DEFAULT_GAS_LIMIT_OP_CREATE)\n"
+                       "gasPrice - AMOUNT. GasPrice BTCU price per gas unit.\n"
+                       "senderaddress - STR_HEX. The btcu address that will be used to create the contract.\n"
+                       "broadcast - BOOL. Whether to broadcast the transaction or not.\n"
+                       "changeToSender - BOOL. Return the change to the sender.\n"
 
                        "[\n"
                        "  {\n"
@@ -240,7 +240,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
                                                                       "]\n" +
 
                        HelpExampleCli("createcontract", "\"60606040525b33600060006101000a81548173ffffffffffffffffffffffffffffffffffffffff02191690836c010000000000000000000000009081020402179055506103786001600050819055505b600c80605b6000396000f360606040526008565b600256\"")
-                       + HelpExampleCli("createcontract", "\"60606040525b33600060006101000a81548173ffffffffffffffffffffffffffffffffffffffff02191690836c010000000000000000000000009081020402179055506103786001600050819055505b600c80605b6000396000f360606040526008565b600256\" 6000000 +FormatMoney(minGasPrice)+\"QM72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" true")
+                       + HelpExampleCli("createcontract", "\"60606040525b33600060006101000a81548173ffffffffffffffffffffffffffffffffffffffff02191690836c010000000000000000000000009081020402179055506103786001600050819055505b600c80605b6000396000f360606040526008565b600256\" 6000000 40 \"QM72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" true")
     );
 
 
@@ -440,17 +440,17 @@ UniValue sendtocontract(const UniValue& params, bool fHelp){
 
     if (fHelp || params.size() < 2) {
         throw std::runtime_error(std::string("sendtocontract"
-                                             "\nSend funds and data to a contract.") +
+                                             "\nSend funds and data to a contract.\n") +
 
                                  std::string(
-                                         "contractaddress" //RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The contract address that will receive the funds and data."},
-                                         "datahex"//, RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "data to send."},
-                                         "amount"//, RPCArg::Type::AMOUNT, RPCArg::Optional::OMITTED, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1, default: 0"},
-                                         "gasLimit"//, RPCArg::Type::AMOUNT, RPCArg::Optional::OMITTED, "gasLimit, default: "+i64tostr(DEFAULT_GAS_LIMIT_OP_SEND)+", max: "+i64tostr(blockGasLimit)},
-                                         "gasPrice"//, RPCArg::Type::AMOUNT, RPCArg::Optional::OMITTED, "gasPrice Qtum price per gas unit, default: "+FormatMoney(nGasPrice)+", min:"+FormatMoney(minGasPrice)},
-                                         "senderaddress"//, RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "The qtum address that will be used as sender."},
-                                         "broadcast"//, RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "Whether to broadcast the transaction or not."},
-                                         "changeToSender"//, RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "Return the change to the sender."},
+                                         "\ncontractaddress - STR_HEX. The contract address that will receive the funds and data.\n"
+                                         "datahex - STR_HEX. Data to send.\n"
+                                         "amount - AMOUNT. The amount in CURRENCY_UNIT  to send. eg 0.1, default: 0\n"
+                                         "gasLimit - AMOUNT. Default: DEFAULT_GAS_LIMIT_OP_SEND\n"
+                                         "gasPrice - AMOUNT. GasPrice Qtum price per gas unit, default: +FormatMoney(nGasPrice)\n"
+                                         "senderaddress - STR_HEX. The qtum address that will be used as sender.\n"
+                                         "broadcast - BOOL. Whether to broadcast the transaction or not.\n"
+                                         "changeToSender - BOOL. Return the change to the sender.\n"
                                          //},
                                          //RPCResult{
                                          "[\n"
