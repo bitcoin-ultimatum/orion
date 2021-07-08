@@ -765,7 +765,7 @@ UniValue transactionReceiptToJSON(const QtumTransactionReceipt& txRec)
 
 UniValue callcontract(const UniValue& params, bool fHelp)
 {
-    if (fHelp || params.size() > 2)
+    if (fHelp || params.size() > 4 || params.size() < 2)
         throw std::runtime_error(std::string("callcontract\n"
                "\nCall contract methods offline.\n"
                //{
