@@ -550,7 +550,7 @@ UniValue sendtocontract(const UniValue& params, bool fHelp){
         for (const COutput& out : vecOutputs) {
 
             CTxDestination destAdress;
-            const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
+            const CScript& scriptPubKey = out.tx->vout[out.i].scriptPubKey;
             bool fValidAddress = ExtractDestination(scriptPubKey, destAdress);
 
             if (!fValidAddress || senderAddress != destAdress)
