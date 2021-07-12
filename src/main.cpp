@@ -2318,6 +2318,9 @@ bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex
         DataBaseAccChecksum(pindex, false);
     }
 
+    globalState->setRoot(uintToh256(pindex->pprev->hashStateRoot)); // qtum
+    globalState->setRootUTXO(uintToh256(pindex->pprev->hashUTXORoot)); // qtum
+
     if (pfClean) {
         *pfClean = fClean;
         return true;
@@ -3085,6 +3088,23 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (!pblocktree->WriteTxIndex(vPos))
             return AbortNode(state, "Failed to write transaction index");
 
+
+   /////////////////////////////////////////////////////qtum
+   if (fJustCheck)
+   {
+      dev::h256 prevHashStateRoot(dev::sha3(dev::rlp("")));
+      dev::h256 prevHashUTXORoot(dev::sha3(dev::rlp("")));
+      if(pindex->pprev->hashStateRoot != uint256() && pindex->pprev->hashUTXORoot != uint256()){
+         prevHashStateRoot = uintToh256(pindex->pprev->hashStateRoot);
+         prevHashUTXORoot = uintToh256(pindex->pprev->hashUTXORoot);
+      }
+      globalState->setRoot(prevHashStateRoot);
+      globalState->setRootUTXO(prevHashUTXORoot);
+      return true;
+   }
+   ///////////////////////////////////////////////////
+
+
     // add this block to the view's block chain
     view.SetBestBlock(pindex->GetBlockHash());
 
@@ -3309,12 +3329,19 @@ bool static ConnectTip(CValidationState& state, CBlockIndex* pindexNew, CBlock* 
     int64_t nTime3;
     LogPrint("bench", "  - Load block from disk: %.2fms [%.2fs]\n", (nTime2 - nTime1) * 0.001, nTimeReadFromDisk * 0.000001);
     {
+        dev::h256 oldHashStateRoot(globalState->rootHash()); // qtum
+        dev::h256 oldHashUTXORoot(globalState->rootHashUTXO()); // qtum
+
         CInv inv(MSG_BLOCK, pindexNew->GetBlockHash());
         bool rv = ConnectBlock(*pblock, state, pindexNew, view, false, fAlreadyChecked);
         GetMainSignals().BlockChecked(*pblock, state);
         if (!rv) {
             if (state.IsInvalid())
                 InvalidBlockFound(pindexNew, state);
+
+           globalState->setRoot(oldHashStateRoot); // qtum
+           globalState->setRootUTXO(oldHashUTXORoot); // qtum
+
             return error("ConnectTip() : ConnectBlock %s failed", pindexNew->GetBlockHash().ToString());
         }
         mapBlockSource.erase(inv.hash);
@@ -4916,8 +4943,17 @@ bool TestBlockValidity(CValidationState& state, const CBlock& block, CBlockIndex
         return false;
     if (!ContextualCheckBlock(block, state, pindexPrev))
         return false;
+
+    dev::h256 oldHashStateRoot(globalState->rootHash()); // qtum
+    dev::h256 oldHashUTXORoot(globalState->rootHashUTXO()); // qtum
+
+
     if (!ConnectBlock(block, state, &indexDummy, viewNew, true))
-        return false;
+    {
+       globalState->setRoot(oldHashStateRoot); // qtum
+       globalState->setRootUTXO(oldHashUTXORoot); // qtum
+       return false;
+    }
     assert(state.IsValid());
 
     return true;
@@ -5133,6 +5169,12 @@ bool CVerifyDB::VerifyDB(CCoinsView* coinsview, int nCheckLevel, int nCheckDepth
     int nGoodTransactions = 0;
     CValidationState state;
 
+   ////////////////////////////////////////////////////////////////////////// // qtum
+   dev::h256 oldHashStateRoot(globalState->rootHash());
+   dev::h256 oldHashUTXORoot(globalState->rootHashUTXO());
+   QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
+   //////////////////////////////////////////////////////////////////////////
+
     for (CBlockIndex* pindex = chainActive.Tip(); pindex && pindex->pprev; pindex = pindex->pprev) {
         boost::this_thread::interruption_point();
         uiInterface.ShowProgress(_("Verifying blocks..."), std::max(1, std::min(99, (int)(((double)(chainHeight - pindex->nHeight)) / (double)nCheckDepth * (nCheckLevel >= 4 ? 50 : 100)))));
@@ -5183,10 +5225,18 @@ bool CVerifyDB::VerifyDB(CCoinsView* coinsview, int nCheckLevel, int nCheckDepth
             if (!ReadBlockFromDisk(block, pindex))
                 return error("VerifyDB() : *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
 
+            dev::h256 oldHashStateRoot(globalState->rootHash()); // qtum
+            dev::h256 oldHashUTXORoot(globalState->rootHashUTXO()); // qtum
+
             if (!ConnectBlock(block, state, pindex, coins, false)){
+                globalState->setRoot(oldHashStateRoot); // qtum
+                globalState->setRootUTXO(oldHashUTXORoot); // qtum
                 return error("VerifyDB() : *** found unconnectable block at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
             }
         }
+    } else {
+       globalState->setRoot(oldHashStateRoot); // qtum
+       globalState->setRootUTXO(oldHashUTXORoot); // qtum
     }
 
     LogPrintf("No coin database inconsistencies in last %i blocks (%i transactions)\n", chainHeight - pindexState->nHeight, nGoodTransactions);
