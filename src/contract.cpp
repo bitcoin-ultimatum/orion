@@ -32,7 +32,11 @@ void ContractStateInit()
     globalSealEngine = std::unique_ptr<dev::eth::SealEngineFace>(cp.createSealEngine());
 
     if(chainActive.Tip() != nullptr){
-        auto hash = uintToh256(chainActive.Tip()->hashStateRoot);
+        auto hashStRoot = uintToh256(chainActive.Tip()->hashStateRoot);
+        auto hashUTXORoot = uintToh256(chainActive.Tip()->hashUTXORoot);
+        LogPrint("sc", "%s: chainActive.Tip()->hashStateRoot: %s, chainActive.Tip()->hashUTXORoot: %s\n", __func__, hashStRoot.hex().c_str(), hashUTXORoot.hex().c_str());
+
+        //globalState->setRoot(dev::sha3(dev::rlp("")));
         globalState->setRoot(uintToh256(chainActive.Tip()->hashStateRoot));
         globalState->setRootUTXO(uintToh256(chainActive.Tip()->hashUTXORoot));
     } else {
@@ -47,6 +51,15 @@ void ContractStateInit()
 
 void ContractStateShutdown()
 {
+   if(chainActive.Tip() != nullptr)
+   {
+      auto hashStRoot = uintToh256(chainActive.Tip()->hashStateRoot);
+      auto hashUTXORoot = uintToh256(chainActive.Tip()->hashUTXORoot);
+      LogPrint("sc", "%s: chainActive.Tip()->hashStateRoot: %s, chainActive.Tip()->hashUTXORoot: %s\n", __func__,
+               hashStRoot.hex().c_str(), hashUTXORoot.hex().c_str());
+      LogPrint("sc","%s : SC: rootHash: %s, rootHashUTXO: %s\n",__func__, globalState->rootHash().hex().c_str(), globalState->rootHashUTXO().hex().c_str());
+   }
+
     globalState.reset();
 }
 
