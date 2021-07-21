@@ -261,7 +261,7 @@ bool CheckReward(const CBlock& block, CValidationState& state, int nHeight, cons
    return true;
 }
 */
-valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsView, const std::vector<CTransactionRef>* blockTxs, int nOut = -1){
+valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsView, const std::vector<CTransactionRef>* blockTxs, int nOut){
     CScript script;
     bool scriptFilled=false; //can't use script.empty() because an empty script is technically valid
 

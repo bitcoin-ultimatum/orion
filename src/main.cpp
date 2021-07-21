@@ -2878,109 +2878,154 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         unsigned int contractflags = SCRIPT_EXEC_BYTE_CODE;
         
 
-        if (tx.HasCreateOrCall() && !hasOpSpend) {
-            if (!CheckSenderScript(view, tx)) {
-                return state.Error("bad-txns-invalid-sender-script");
-            }
+        //checks for smart contracts trxs
+        bool bSCValidatorFound = true;
 
-            std::vector<CTransactionRef> blockTransactions;
-            for (auto t : block.vtx) {
-                blockTransactions.push_back(std::make_shared<const CTransaction>(t));
-            }
+        //check if create contract allowed for all
+        if (!sporkManager.IsSporkActive(SPORK_1019_CREATECONTRACT_ANY_ALLOWED)){
+           if (tx.HasCreateOrCall() && !hasOpSpend) {
+              //check that only validator can create contract
+              if(tx.HasOpCreate()) {
+                 bSCValidatorFound = false;
+                 //case for create contract, loop in vouts
+                 int nOut = 0;
+                 for(const CTxOut& v : tx.vout){
+                    if(v.scriptPubKey.HasOpCreate()){
+                       //good we've vout with smartcontract
+                       CPubKey pubkey(GetSenderAddress(tx, &view, NULL, nOut));
 
-            QtumTxConverter convert(tx, &view, NULL, contractflags); //&block.vtx return as 3rd parametr
+                       //okay, seek trx pubkey in validators
+                       //genesis validators
+                       auto genesisValidators = Params().GenesisBlock().vtx[0].validatorRegister;
+                       for(auto &gv : genesisValidators){
+                          if(pubkey == gv.pubKey){
+                             bSCValidatorFound = true;
+                             break;
+                          }
+                       }
 
-            ExtractQtumTX resultConvertQtumTX;
-            if (!convert.extractionQtumTransactions(resultConvertQtumTX)) {
-                return state.Error("ConnectBlock(): Contract transaction of the wrong format");
-            }
-            if (!CheckMinGasPrice(resultConvertQtumTX.second, minGasPrice))
-                return state.Error("ConnectBlock(): Contract execution has lower gas price than allowed");
-
-
-            dev::u256 gasAllTxs = dev::u256(0);
-            ByteCodeExec exec(block, resultConvertQtumTX.first, blockGasLimit, pindex->pprev);
-            //validate VM version and other ETH params before execution
-            //Reject anything unknown (could be changed later by DGP)
-            //TODO evaluate if this should be relaxed for soft-fork purposes
-            bool nonZeroVersion = false;
-            dev::u256 sumGas = dev::u256(0);
-            //CAmount nTxFee = view.GetValueIn(tx) - tx.GetValueOut();
-            for (QtumTransaction& qtx : resultConvertQtumTX.first) {
-                sumGas += qtx.gas() * qtx.gasPrice();
-
-                if (sumGas > dev::u256(INT64_MAX)) {
-                    return state.Error("ConnectBlock(): Transaction's gas stipend overflows");
-                }
-
-                //if (sumGas > dev::u256(nTxFee)) {
-                //    return state.Error("ConnectBlock(): Transaction fee does not cover the gas stipend");
-                //}
-
-                VersionVM v = qtx.getVersion();
-                if (v.format != 0)
-                    return state.Error("ConnectBlock(): Contract execution uses unknown version format");
-                if (v.rootVM != 0) {
-                    nonZeroVersion = true;
-                } else {
-                    if (nonZeroVersion) {
-                        //If an output is version 0, then do not allow any other versions in the same tx
-                        return state.Error("ConnectBlock(): Contract tx has mixed version 0 and non-0 VM executions");
+                       //voted validators
+                       if(!bSCValidatorFound)
+                       {
+                          auto validatorsRegistrationList = g_ValidatorsState.get_validators();
+                          for (auto& rv: validatorsRegistrationList)
+                          {
+                             if(pubkey == rv.pubKey){
+                                bSCValidatorFound = true;
+                                break;
+                             }
+                          }
+                       }
+                       //if key found - break;
+                       if(bSCValidatorFound)
+                          break;
                     }
-                }
-                if (!(v.rootVM == 0 || v.rootVM == 1))
+                    ++nOut;
+                 }
+              }
+
+              if(!bSCValidatorFound)
+                 return state.DoS(100, error("ConnectBlock() : Non-validator create contract not allowed"),
+                                  REJECT_INVALID, "sc-create-invalid");
+
+              if (!CheckSenderScript(view, tx)) {
+                 return state.Error("bad-txns-invalid-sender-script");
+              }
+
+              QtumTxConverter convert(tx, &view, NULL, contractflags); //&block.vtx return as 3rd parametr
+
+              ExtractQtumTX resultConvertQtumTX;
+              if (!convert.extractionQtumTransactions(resultConvertQtumTX)) {
+                 return state.Error("ConnectBlock(): Contract transaction of the wrong format");
+              }
+              if (!CheckMinGasPrice(resultConvertQtumTX.second, minGasPrice))
+                 return state.Error("ConnectBlock(): Contract execution has lower gas price than allowed");
+
+
+              dev::u256 gasAllTxs = dev::u256(0);
+              ByteCodeExec exec(block, resultConvertQtumTX.first, blockGasLimit, pindex->pprev);
+              //validate VM version and other ETH params before execution
+              //Reject anything unknown (could be changed later by DGP)
+              //TODO evaluate if this should be relaxed for soft-fork purposes
+              bool nonZeroVersion = false;
+              dev::u256 sumGas = dev::u256(0);
+              //CAmount nTxFee = view.GetValueIn(tx) - tx.GetValueOut();
+              for (QtumTransaction& qtx : resultConvertQtumTX.first) {
+                 sumGas += qtx.gas() * qtx.gasPrice();
+
+                 if (sumGas > dev::u256(INT64_MAX)) {
+                    return state.Error("ConnectBlock(): Transaction's gas stipend overflows");
+                 }
+
+                 //if (sumGas > dev::u256(nTxFee)) {
+                 //    return state.Error("ConnectBlock(): Transaction fee does not cover the gas stipend");
+                 //}
+
+                 VersionVM v = qtx.getVersion();
+                 if (v.format != 0)
+                    return state.Error("ConnectBlock(): Contract execution uses unknown version format");
+                 if (v.rootVM != 0) {
+                    nonZeroVersion = true;
+                 } else {
+                    if (nonZeroVersion) {
+                       //If an output is version 0, then do not allow any other versions in the same tx
+                       return state.Error("ConnectBlock(): Contract tx has mixed version 0 and non-0 VM executions");
+                    }
+                 }
+                 if (!(v.rootVM == 0 || v.rootVM == 1))
                     return state.Error("ConnectBlock(): Contract execution uses unknown root VM");
-                if (v.vmVersion != 0)
+                 if (v.vmVersion != 0)
                     return state.Error("ConnectBlock(): Contract execution uses unknown VM version");
-                if (v.flagOptions != 0)
+                 if (v.flagOptions != 0)
                     return state.Error("ConnectBlock(): Contract execution uses unknown flag options");
 
-                //check gas limit is not less than minimum gas limit (unless it is a no-exec tx)
-                if (qtx.gas() < MINIMUM_GAS_LIMIT && v.rootVM != 0)
+                 //check gas limit is not less than minimum gas limit (unless it is a no-exec tx)
+                 if (qtx.gas() < MINIMUM_GAS_LIMIT && v.rootVM != 0)
                     return state.Error("ConnectBlock(): Contract execution has lower gas limit than allowed");
 
-                if (qtx.gas() > UINT32_MAX)
+                 if (qtx.gas() > UINT32_MAX)
                     return state.Invalid("ConnectBlock(): Contract execution can not specify greater gas limit than can fit in 32-bits");
 
-                gasAllTxs += qtx.gas();
-                if (gasAllTxs > dev::u256(blockGasLimit))
+                 gasAllTxs += qtx.gas();
+                 if (gasAllTxs > dev::u256(blockGasLimit))
                     return state.Error("bad-txns-gas-exceeds-blockgaslimit");
 
-                //don't allow less than DGP set minimum gas price to prevent MPoS greedy mining/spammers
-                if (v.rootVM != 0 && (uint64_t)qtx.gasPrice() < minGasPrice)
+                 //don't allow less than DGP set minimum gas price to prevent MPoS greedy mining/spammers
+                 if (v.rootVM != 0 && (uint64_t)qtx.gasPrice() < minGasPrice)
                     return state.Error("ConnectBlock(): Contract execution has lower gas price than allowed");
-            }
+              }
 
-            if (!nonZeroVersion) {
-                //if tx is 0 version, then the tx must already have been added by a previous contract execution
-                if (!tx.HasOpSpend()) {
+              if (!nonZeroVersion) {
+                 //if tx is 0 version, then the tx must already have been added by a previous contract execution
+                 if (!tx.HasOpSpend()) {
                     return state.Error("ConnectBlock(): Version 0 contract executions are not allowed unless created by the AAL ");
-                }
-            }
+                 }
+              }
 
-            if (fAlreadyChecked) {
-            
-                if (!exec.performByteCode()) {
+              if (fAlreadyChecked) {
+
+                 if (!exec.performByteCode()) {
                     return state.Error("ConnectBlock(): Unknown error during contract execution");
-                }
+                 }
 
-                std::vector<ResultExecute> resultExec(exec.getResult());
-                ByteCodeExecResult bcer;
-                if (!exec.processingResults(bcer)) {
+                 std::vector<ResultExecute> resultExec(exec.getResult());
+                 ByteCodeExecResult bcer;
+                 if (!exec.processingResults(bcer)) {
                     return state.Error("ConnectBlock(): Error processing VM execution results");
-                }
-                blockGasUsed += bcer.usedGas;
-                if (blockGasUsed > blockGasLimit) {
+                 }
+                 blockGasUsed += bcer.usedGas;
+                 if (blockGasUsed > blockGasLimit) {
                     return state.Invalid("ConnectBlock(): Block exceeds gas limit");
-                }
-                for (CTxOut refundVout : bcer.refundOutputs) {
+                 }
+                 for (CTxOut refundVout : bcer.refundOutputs) {
                     gasRefunds += refundVout.nValue;
-                }
-            
-                if (fRecordLogOpcodes && !fJustCheck) {
+                 }
+
+                 if (fRecordLogOpcodes && !fJustCheck) {
                     writeVMlog(resultExec, tx, block);
-                }
-            }
+                 }
+              }
+           }
         }
     }
 

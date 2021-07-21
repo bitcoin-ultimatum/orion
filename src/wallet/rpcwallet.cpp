@@ -354,6 +354,36 @@ UniValue createcontract(const UniValue& params, bool fHelp){
         if (!pwalletMain->GetKey(key_id, key)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Private key not available");
         }
+
+        //check if sender is validator or if create contract allowed for all
+       if (!sporkManager.IsSporkActive(SPORK_1019_CREATECONTRACT_ANY_ALLOWED)){
+          CPubKey pubkey = key.GetPubKey();
+          bool bSCValidatorFound = false;
+          //genesis validators
+          auto genesisValidators = Params().GenesisBlock().vtx[0].validatorRegister;
+          for(auto &gv : genesisValidators){
+             if(pubkey == gv.pubKey){
+                bSCValidatorFound = true;
+                break;
+             }
+          }
+
+          //voted validators
+          if(!bSCValidatorFound)
+          {
+             auto validatorsRegistrationList = g_ValidatorsState.get_validators();
+             for (auto& rv: validatorsRegistrationList)
+             {
+                if(pubkey == rv.pubKey){
+                   bSCValidatorFound = true;
+                   break;
+                }
+             }
+          }
+
+          if(!bSCValidatorFound)
+             throw JSONRPCError(RPC_WALLET_CREATECONTRACT_DISABLED, "Create smart contract allowed only for validators");
+       }
         std::vector<unsigned char> scriptSig;
         scriptSig.push_back(0);
         scriptPubKey = (CScript() << CScriptNum(addresstype::PUBKEYHASH) << ToByteVector(key_id) << ToByteVector(scriptSig) << OP_SENDER) + scriptPubKey;
