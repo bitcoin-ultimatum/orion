@@ -2880,25 +2880,23 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
         //checks for smart contracts trxs
         bool bSCValidatorFound = true;
-
-        //check if create contract allowed for all
-        if (!sporkManager.IsSporkActive(SPORK_1019_CREATECONTRACT_ANY_ALLOWED)){
-           if (tx.HasCreateOrCall() && !hasOpSpend) {
+        if (tx.HasCreateOrCall() && !hasOpSpend) {
               //check that only validator can create contract
-              if(tx.HasOpCreate()) {
+              if(tx.HasOpCreate() && !sporkManager.IsSporkActive(SPORK_1019_CREATECONTRACT_ANY_ALLOWED)) {
+                 //check if create contract allowed for all
                  bSCValidatorFound = false;
                  //case for create contract, loop in vouts
                  int nOut = 0;
                  for(const CTxOut& v : tx.vout){
                     if(v.scriptPubKey.HasOpCreate()){
                        //good we've vout with smartcontract
-                       CPubKey pubkey(GetSenderAddress(tx, &view, NULL, nOut));
+                       CKeyID senderAddr = CKeyID(uint160(GetSenderAddress(tx, &view, NULL, nOut)));
 
                        //okay, seek trx pubkey in validators
                        //genesis validators
                        auto genesisValidators = Params().GenesisBlock().vtx[0].validatorRegister;
                        for(auto &gv : genesisValidators){
-                          if(pubkey == gv.pubKey){
+                          if(senderAddr == gv.pubKey.GetID()){
                              bSCValidatorFound = true;
                              break;
                           }
@@ -2910,7 +2908,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                           auto validatorsRegistrationList = g_ValidatorsState.get_validators();
                           for (auto& rv: validatorsRegistrationList)
                           {
-                             if(pubkey == rv.pubKey){
+                             if(senderAddr == rv.pubKey.GetID()){
                                 bSCValidatorFound = true;
                                 break;
                              }
@@ -3026,7 +3024,6 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  }
               }
            }
-        }
     }
 
     //Track zBTCU money supply in the block index
