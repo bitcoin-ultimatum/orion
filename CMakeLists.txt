@@ -1281,6 +1281,7 @@ set(SERVER_SOURCES
         ./src/cpp-ethereum/libdevcore/CommonData.cpp
         ./src/qtum/qtumDGP.cpp
         ./src/qtum/qtumstate.cpp
+        ./src/qtum/qtumutils.cpp
         #./src/cpp-ethereum/libethereum/State.cpp
 
         ./src/cpp-ethereum/aleth/buildinfo.c
