@@ -1980,12 +1980,17 @@ UniValue signmessage(const UniValue& params, bool fHelp)
     ss << strMessageMagic;
     ss << strMessage;
 
+    UniValue obj(UniValue::VOBJ);
     std::vector<unsigned char> vchSig;
-    if (!key.SignCompact(ss.GetHash(), vchSig))
+    uint256 msgHash = ss.GetHash();
+
+    if (!key.SignCompact(msgHash, vchSig))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed");
 
     pwalletMain->Lock();
-    return EncodeBase64(&vchSig[0], vchSig.size());
+    obj.push_back(Pair("signature", EncodeBase64(&vchSig[0], vchSig.size())));
+    obj.push_back(Pair("msghash", msgHash.ToString()));
+    return obj;
 }
 
 UniValue getreceivedbyaddress(const UniValue& params, bool fHelp)
