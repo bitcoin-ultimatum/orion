@@ -444,4 +444,9 @@ extern uint256 g_hashChainstate;
 
 #define MN_ALIAS_NAME "MN"
 
+
+//Validator API
+boost::optional<std::pair<CTxIn, CKey>> GetGenesisVinKey();
+boost::optional<std::pair<CTxIn, CKey>> GetRegisteredValidatorVinKey();
+
 #endif // BITCOIN_MAIN_H

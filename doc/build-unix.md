@@ -468,7 +468,7 @@ non-wallet distribution of the latest changes on Arch Linux:
 
 ```bash
     pacman -S base-devel boost cmake git libevent ninja python
-    git clone https://github.com/btcu-ultimatum/orion
+    git clone https://github.com/btcu-ultimatum/pegasus
     cd btcu/
     mkdir build
     cd build

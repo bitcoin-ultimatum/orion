@@ -26,7 +26,7 @@ project(btcu
 
 # Package information
 set(PACKAGE_NAME "BTCU")
-set(PACKAGE_BUGREPORT "https://github.com/bitcoin-ultimatum/pegasus/issues")
+set(PACKAGE_BUGREPORT "https://github.com/bitcoin-ultimatum/orion/issues")
 
 if (CMAKE_GENERATOR MATCHES "Xcode")
     set_property(GLOBAL PROPERTY XCODE_ATTRIBUTE_SKIP_INSTALL "Yes")
@@ -77,7 +77,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     endif()
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG 1)
 cmake_policy(SET CMP0077 NEW)
@@ -1281,6 +1281,7 @@ set(SERVER_SOURCES
         ./src/cpp-ethereum/libdevcore/CommonData.cpp
         ./src/qtum/qtumDGP.cpp
         ./src/qtum/qtumstate.cpp
+        ./src/qtum/qtumutils.cpp
         #./src/cpp-ethereum/libethereum/State.cpp
 
         ./src/cpp-ethereum/aleth/buildinfo.c
@@ -1296,6 +1297,7 @@ set(SERVER_SOURCES
         ./src/cpp-ethereum/libdevcore/FixedHash.cpp
         ./src/cpp-ethereum/libdevcore/Guards.cpp
         ./src/cpp-ethereum/libdevcrypto/Hash.cpp
+        ./src/cpp-ethereum/libdevcrypto/Blake2.cpp
         ./src/cpp-ethereum/libdevcore/Log.cpp
         ./src/cpp-ethereum/libdevcore/LevelDB.cpp
         ./src/cpp-ethereum/libdevcore/MemoryDB.cpp
@@ -1325,6 +1327,7 @@ set(SERVER_SOURCES
         ./src/cpp-ethereum/libethcore/ABI.cpp
         ./src/cpp-ethereum/libethcore/ChainOperationParams.cpp
         ./src/cpp-ethereum/libethcore/Common.cpp
+        ./src/cpp-ethereum/libethcore/EVMSchedule.cpp
         ./src/cpp-ethereum/libethcore/Precompiled.cpp
         ./src/cpp-ethereum/libethcore/TransactionBase.cpp
         ./src/cpp-ethereum/libdevcrypto/Common.cpp
@@ -1332,6 +1335,7 @@ set(SERVER_SOURCES
         ./src/cpp-ethereum/libdevcrypto/AES.cpp
         ./src/cpp-ethereum/libdevcrypto/LibSnark.cpp
         ./src/cpp-ethereum/libethereum/ChainParams.cpp
+        ./src/cpp-ethereum/libethereum/DatabasePaths.cpp
         ./src/cpp-ethereum/libethereum/Transaction.cpp
         ./src/cpp-ethereum/libethereum/Executive.cpp
         ./src/cpp-ethereum/libethereum/ExtVM.cpp

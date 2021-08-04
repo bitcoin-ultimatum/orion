@@ -38,6 +38,8 @@ std::vector<ResultExecute> CallContract(const dev::Address& addrContract, std::v
 
 //bool CheckOpSender(const CTransaction& tx, const CChainParams& chainparams, int nHeight);
 //
+valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsView, const std::vector<CTransactionRef>* blockTxs, int nOut = -1);
+
 bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx);
 //
 bool CheckMinGasPrice(std::vector<EthTransactionParams>& etps, const uint64_t& minGasPrice);

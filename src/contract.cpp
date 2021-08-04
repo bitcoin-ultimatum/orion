@@ -28,11 +28,15 @@ void ContractStateInit()
     dev::eth::BaseState existsQtumstate = fStatus ? dev::eth::BaseState::PreExisting : dev::eth::BaseState::Empty;
     globalState = std::unique_ptr<QtumState>(new QtumState(dev::u256(0), QtumState::openDB(dirQtum, hashDB, dev::WithExisting::Trust), dirQtum, existsQtumstate));
     auto geni = chainparams.EVMGenesisInfo(dev::eth::Network::qtumMainNetwork);
-    dev::eth::ChainParams cp((geni));
+    dev::eth::ChainParams cp(geni);
     globalSealEngine = std::unique_ptr<dev::eth::SealEngineFace>(cp.createSealEngine());
 
     if(chainActive.Tip() != nullptr){
-        auto hash = uintToh256(chainActive.Tip()->hashStateRoot);
+        auto hashStRoot = uintToh256(chainActive.Tip()->hashStateRoot);
+        auto hashUTXORoot = uintToh256(chainActive.Tip()->hashUTXORoot);
+        LogPrint("sc", "%s: chainActive.Tip()->hashStateRoot: %s, chainActive.Tip()->hashUTXORoot: %s\n", __func__, hashStRoot.hex().c_str(), hashUTXORoot.hex().c_str());
+
+        //globalState->setRoot(dev::sha3(dev::rlp("")));
         globalState->setRoot(uintToh256(chainActive.Tip()->hashStateRoot));
         globalState->setRootUTXO(uintToh256(chainActive.Tip()->hashUTXORoot));
     } else {
@@ -47,6 +51,15 @@ void ContractStateInit()
 
 void ContractStateShutdown()
 {
+   if(chainActive.Tip() != nullptr)
+   {
+      auto hashStRoot = uintToh256(chainActive.Tip()->hashStateRoot);
+      auto hashUTXORoot = uintToh256(chainActive.Tip()->hashUTXORoot);
+      LogPrint("sc", "%s: chainActive.Tip()->hashStateRoot: %s, chainActive.Tip()->hashUTXORoot: %s\n", __func__,
+               hashStRoot.hex().c_str(), hashUTXORoot.hex().c_str());
+      LogPrint("sc","%s : SC: rootHash: %s, rootHashUTXO: %s\n",__func__, globalState->rootHash().hex().c_str(), globalState->rootHashUTXO().hex().c_str());
+   }
+
     globalState.reset();
 }
 
@@ -248,7 +261,7 @@ bool CheckReward(const CBlock& block, CValidationState& state, int nHeight, cons
    return true;
 }
 */
-valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsView, const std::vector<CTransactionRef>* blockTxs, int nOut = -1){
+valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsView, const std::vector<CTransactionRef>* blockTxs, int nOut){
     CScript script;
     bool scriptFilled=false; //can't use script.empty() because an empty script is technically valid
 
@@ -472,7 +485,7 @@ dev::eth::EnvInfo ByteCodeExec::BuildEVMEnvironment(){
         header.setAuthor(EthAddrFromScript(block.vtx[0].vout[0].scriptPubKey));
     }
     dev::u256 gasUsed;
-    dev::eth::EnvInfo env(header, lastHashes, gasUsed);
+    dev::eth::EnvInfo env(header, lastHashes, gasUsed, globalSealEngine->chainParams().chainID);
     return env;
 }
 
