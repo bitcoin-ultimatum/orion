@@ -38,12 +38,13 @@ bool qtumutils::btc_ecrecover(const dev::h256 &hash, const dev::u256 &v, const d
     return false;
 }
 
-h256 qtumutils::btc_sha256(bytesConstRef _input) noexcept
+h256 qtumutils::btc_strhash2sha256(bytesConstRef _input) noexcept
 {
+   std::string str_hex = dev::toHex(_input).substr(0,64);
    CHashWriter ss(SER_GETHASH, 0);
    ss << strMessageMagic;
-   ss << _input.toString();
-   uint256 msgHash = ss.GetHash();
+   ss << str_hex;
+   uint256 msgHash = uint256(ss.GetHash().ToStringReverseEndian());
    h256 hash = uintToh256(msgHash);
    return hash;
 }

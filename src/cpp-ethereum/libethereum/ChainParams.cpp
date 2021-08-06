@@ -166,7 +166,7 @@ void ChainParams::loadConfig(
     precompiled.insert(
         {Address{0x9}, PrecompiledContract{"blake2_compression", istanbulForkBlock}});
     precompiled.insert({Address{0x85}, PrecompiledContract{"btc_ecrecover"}});
-    precompiled.insert({Address{0x86}, PrecompiledContract{"btc_sha256"}});
+    precompiled.insert({Address{0x86}, PrecompiledContract{"btc_strhash2sha256"}});
 
     stateRoot = _stateRoot ? _stateRoot : calculateStateRoot(true);
 }
