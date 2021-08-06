@@ -2,6 +2,7 @@
 #include <libdevcore/CommonData.h>
 #include <pubkey.h>
 #include <util/convert.h>
+#include <main.h>
 
 using namespace dev;
 
@@ -35,4 +36,14 @@ bool qtumutils::btc_ecrecover(const dev::h256 &hash, const dev::u256 &v, const d
     }
 
     return false;
+}
+
+h256 qtumutils::btc_sha256(bytesConstRef _input) noexcept
+{
+   CHashWriter ss(SER_GETHASH, 0);
+   ss << strMessageMagic;
+   ss << _input.toString();
+   uint256 msgHash = ss.GetHash();
+   h256 hash = uintToh256(msgHash);
+   return hash;
 }

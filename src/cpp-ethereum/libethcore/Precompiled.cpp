@@ -132,6 +132,17 @@ ETH_REGISTER_PRECOMPILED(sha256)(bytesConstRef _in)
     return {true, dev::sha256(_in).asBytes()};
 }
 
+ETH_REGISTER_PRECOMPILED_PRICER(btc_sha256)
+(bytesConstRef _in, ChainOperationParams const& /*_chainParams*/, u256 const& /*_blockNumber*/)
+{
+   return linearPricer(60, 12, _in);
+}
+
+ETH_REGISTER_PRECOMPILED(btc_sha256)(bytesConstRef _in)
+{
+   return {true, qtumutils::btc_sha256(_in).asBytes()};
+}
+
 ETH_REGISTER_PRECOMPILED_PRICER(ripemd160)
 (bytesConstRef _in, ChainOperationParams const& /*_chainParams*/, u256 const& /*_blockNumber*/)
 {
