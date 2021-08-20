@@ -2864,9 +2864,11 @@ bool CWallet::CreateCoinStake(
     // Parse utxos into CBTCUStakes
     std::list<std::unique_ptr<CStakeInput> > listInputs;
     for (const COutput &out : vCoins) {
-        std::unique_ptr<CBTCUStake> input(new CBTCUStake());
-        input->SetInput((CTransaction) *out.tx, out.i);
-        listInputs.emplace_back(std::move(input));
+        if ((out.i == 1) && (out.tx->vout.size() == 2)) {
+            std::unique_ptr<CBTCUStake> input(new CBTCUStake());
+            input->SetInput((CTransaction) *out.tx, out.i);
+            listInputs.emplace_back(std::move(input));
+        }
     }
 
     // Mark coin stake transaction
