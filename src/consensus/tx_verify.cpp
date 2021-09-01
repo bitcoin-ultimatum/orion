@@ -169,5 +169,11 @@ bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fReject
                 return state.DoS(10, error("CheckTransaction() : prevout is null"),
                     REJECT_INVALID, "bad-txns-prevout-null");
     }
+
+    //check tx version, bitcoin version disabled
+    if(tx.nVersion == CTransaction::BITCOIN_VERSION){
+       return state.DoS(10, error("CheckTransaction() : version too old"),
+                        REJECT_INVALID, "bad-txns-version-too-old");
+    }
     return true;
 }
