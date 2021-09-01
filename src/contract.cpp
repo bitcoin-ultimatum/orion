@@ -55,9 +55,6 @@ void ContractStateShutdown()
    {
       auto hashStRoot = uintToh256(chainActive.Tip()->hashStateRoot);
       auto hashUTXORoot = uintToh256(chainActive.Tip()->hashUTXORoot);
-      LogPrint("sc", "%s: chainActive.Tip()->hashStateRoot: %s, chainActive.Tip()->hashUTXORoot: %s\n", __func__,
-               hashStRoot.hex().c_str(), hashUTXORoot.hex().c_str());
-      LogPrint("sc","%s : SC: rootHash: %s, rootHashUTXO: %s\n",__func__, globalState->rootHash().hex().c_str(), globalState->rootHashUTXO().hex().c_str());
    }
 
     globalState.reset();
