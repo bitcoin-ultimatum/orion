@@ -1622,7 +1622,7 @@ bool GetOutput(const uint256& hash, unsigned int index, CValidationState& state,
 }
 
 /** Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock */
-bool GetTransaction(const uint256& hash, CTransaction& txOut, uint256& hashBlock, bool fAllowSlow, CBlockIndex* blockIndex)
+bool GetTransaction(const uint256& hash, CTransaction& txOut, uint256& hashBlock, bool fAllowSlow, CBlockIndex* blockIndex, bool fRawTrx)
 {
     CBlockIndex* pindexSlow = blockIndex;
 
@@ -1638,7 +1638,7 @@ bool GetTransaction(const uint256& hash, CTransaction& txOut, uint256& hashBlock
             {
                 CCoinsViewCache& view = *pcoinsTip;
                 const CCoins* coins = view.AccessCoins(hash);
-                if (coins) {
+                if (coins && !fRawTrx) {
                     if (coins->nVersion == CTransaction::BITCOIN_VERSION) {
                         hashBlock = Params().HashGenesisBlock();
                         txOut = CTransaction(hash, *coins);
