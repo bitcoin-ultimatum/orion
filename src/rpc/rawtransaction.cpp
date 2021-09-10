@@ -855,10 +855,6 @@ UniValue sendrawtransaction(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     uint256 hashTx = tx.GetHash();
 
-    if(tx.nVersion == CTransaction::BITCOIN_VERSION){
-       throw JSONRPCError(RPC_TRANSACTION_ERROR, "TX version too old");
-    }
-
     bool fOverrideFees = false;
     if (params.size() > 1)
         fOverrideFees = params[1].get_bool();
