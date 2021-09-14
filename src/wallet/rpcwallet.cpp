@@ -5510,6 +5510,7 @@ UniValue getsha256(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_TYPE_ERROR, "Line is too short");
 
     CHashWriter ss(SER_GETHASH, 0);
+    ss << strMessageMagic;
     ss << bytecode;
 
     UniValue ret(UniValue::VOBJ);
