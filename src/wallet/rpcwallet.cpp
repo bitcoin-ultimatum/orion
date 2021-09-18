@@ -5514,7 +5514,7 @@ UniValue getsha256(const UniValue& params, bool fHelp)
     ss << bytecode;
 
     UniValue ret(UniValue::VOBJ);
-    auto t = ss.GetSHA256().GetHex();
+    auto t = ss.GetSHA256();
     std::string sha256(t.begin(),t.end());
     ret.pushKV("sha256", sha256);
     return ret;
