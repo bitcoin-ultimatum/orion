@@ -17,9 +17,12 @@ namespace {
 class TxInputStream
 {
 public:
+   int nType;
+   int nVersion;
+
     TxInputStream(int nTypeIn, int nVersionIn, const unsigned char *txTo, size_t txToLen) :
-    m_type(nTypeIn),
-    m_version(nVersionIn),
+    nType(nTypeIn),
+    nVersion(nVersionIn),
     m_data(txTo),
     m_remaining(txToLen)
     {}
@@ -44,13 +47,11 @@ public:
     template<typename T>
     TxInputStream& operator>>(T& obj)
     {
-        ::Unserialize(*this, obj, m_type, m_version);
+        ::Unserialize(*this, obj, nType, nVersion);
         return *this;
     }
 
 private:
-    const int m_type;
-    const int m_version;
     const unsigned char* m_data;
     size_t m_remaining;
 };

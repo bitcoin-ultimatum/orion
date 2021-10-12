@@ -1350,8 +1350,9 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
         }
 
         if (fRejectInsaneFee && nFees > ::minRelayTxFee.GetFee(nSize) * 1000000)
-            return error("%s : insane fees %s, %d > %d",
-                    __func__, hash.ToString(), nFees, ::minRelayTxFee.GetFee(nSize) * 1000000);
+            return state.DoS(0, error("%s : insane fees %s, %d > %d",
+                                      __func__, hash.ToString(), nFees, ::minRelayTxFee.GetFee(nSize) * 1000000), REJECT_INSANE, "insane fee");
+
 
         // As zero fee transactions are not going to be accepted in the near future (4.0) and the code will be fully refactored soon.
         // This is just a quick inline towards that goal, the mempool by default will not accept them. Blocking
@@ -1376,11 +1377,11 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
         // verification flags, in case of bugs in the standard flags that cause
         // transactions to pass as valid when they're actually invalid. For
         // instance the STRICTENC flag was incorrectly allowing certain
-        // CHECKSIG NOT scripts to pass, even though they were invalid.
+        // CHECKSIG NOT scripts to pass, even though they were invalid.F
         //
         // There is a similar check in CreateNewBlock() to prevent creating
         // invalid blocks, however allowing such transactions into the mempool
-        // can be exploited as a DoS attack.
+        // can be exploited as a DoS attack.F
         flags = MANDATORY_SCRIPT_VERIFY_FLAGS;
         if (fCLTVIsActivated)
             flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
@@ -1622,7 +1623,7 @@ bool GetOutput(const uint256& hash, unsigned int index, CValidationState& state,
 }
 
 /** Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock */
-bool GetTransaction(const uint256& hash, CTransaction& txOut, uint256& hashBlock, bool fAllowSlow, CBlockIndex* blockIndex)
+bool GetTransaction(const uint256& hash, CTransaction& txOut, uint256& hashBlock, bool fAllowSlow, CBlockIndex* blockIndex, bool fRawTrx)
 {
     CBlockIndex* pindexSlow = blockIndex;
 
@@ -1638,7 +1639,7 @@ bool GetTransaction(const uint256& hash, CTransaction& txOut, uint256& hashBlock
             {
                 CCoinsViewCache& view = *pcoinsTip;
                 const CCoins* coins = view.AccessCoins(hash);
-                if (coins) {
+                if (coins && !fRawTrx) {
                     if (coins->nVersion == CTransaction::BITCOIN_VERSION) {
                         hashBlock = Params().HashGenesisBlock();
                         txOut = CTransaction(hash, *coins);
@@ -4403,7 +4404,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     const int chainHeight = chainActive.Height();
 
     //If this is a reorg, check that it is not too deep
-    int nMaxReorgDepth = GetArg("-maxreorg", Params().MaxReorganizationDepth());
+       int nMaxReorgDepth = GetArg("-maxreorg", Params().MaxReorganizationDepth());
     if (chainHeight - nHeight >= nMaxReorgDepth)
         return state.DoS(1, error("%s: forked chain older than max reorganization depth (height %d)", __func__, chainHeight - nHeight));
 

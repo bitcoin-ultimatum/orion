@@ -179,7 +179,7 @@ UniValue getrawtransaction(const UniValue& params, bool fHelp)
 
     CTransaction tx;
     uint256 hash_block;
-    if (!GetTransaction(hash, tx, hash_block, true, blockindex)) {
+    if (!GetTransaction(hash, tx, hash_block, true, blockindex, true)) {
         std::string errmsg;
         if (blockindex) {
             if (!(blockindex->nStatus & BLOCK_HAVE_DATA)) {
