@@ -2783,7 +2783,6 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                             //SignatureData sigdata;
 
                             if (!SignSignature(*pwalletMain, scriptPubKey, txNew, nOut, SIGHASH_ALL, false))
-                            //if (!ProduceSignature(*pwalletMain, MutableTransactionSignatureOutputCreator(&txNew, nOut, output.nValue, SIGHASH_ALL), scriptPubKey, sigdata))
                             {
                                 strFailReason = _("Signing transaction output failed");
                                 return false;

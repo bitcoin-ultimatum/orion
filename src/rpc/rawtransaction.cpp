@@ -795,21 +795,29 @@ UniValue signrawtransaction(const UniValue& params, bool fHelp)
             fLeasing = !bool(IsMine(keystore, prevPubKey) & ISMINE_LEASED);
         }
 
-        // Only sign SIGHASH_SINGLE if there's a corresponding output:
-        if (!fHashSingle || (i < mergedTx.vout.size()))
-            SignSignature(keystore, prevPubKey, mergedTx, i, nHashType, fColdStake, fLeasing, fForceLeaserSign);
-
-
         const CAmount& amount = coins->vout[txin.prevout.n].nValue;
         SignatureData sigdata;
+        // Only sign SIGHASH_SINGLE if there's a corresponding output:
+        if (!fHashSingle || (i < mergedTx.vout.size()))
+           BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(&keystore, &mergedTx, i, amount, nHashType), prevPubKey, sigdata);
+            //SignSignature(keystore, prevPubKey, mergedTx, i, nHashType, fColdStake, fLeasing, fForceLeaserSign);
+
+
+
         // ... and merge in other signatures:
         for (const CMutableTransaction& txv : txVariants) {
             //txin.scriptSig = CombineSignatures(prevPubKey, mergedTx, i, txin.scriptSig, txv.vin[i].scriptSig);
-           sigdata = BTC::CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i), sigdata, BTC::DataFromTransaction(mergedTx, i));
+           sigdata = BTC::CombineSignatures(prevPubKey, BTC::TransactionSignatureChecker(&txConst, i, amount), sigdata, BTC::DataFromTransaction(mergedTx, i));
            BTC::UpdateTransaction(mergedTx, i, sigdata);
         }
+
+       // amount must be specified for valid segwit signature
+       if (amount == MAX_MONEY_OUT && !txin.scriptWitness.IsNull()) {
+          throw JSONRPCError(RPC_TYPE_ERROR, strprintf("Missing amount for %s", coins->vout[txin.prevout.n].ToString()));
+       }
+
         ScriptError serror = SCRIPT_ERR_OK;
-        if (!BTC::VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&mergedTx, i), &serror)) {
+       if (!BTC::VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, BTC::TransactionSignatureChecker(&txConst, i, amount), &serror)) {
             TxInErrorToJSON(txin, vErrors, ScriptErrorString(serror));
         }
     }
