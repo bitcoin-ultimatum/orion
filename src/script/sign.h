@@ -19,6 +19,14 @@ class CTransaction;
 
 struct CMutableTransaction;
 
+struct SignatureData {
+   CScript scriptSig;
+   CScriptWitness scriptWitness;
+
+   SignatureData() {}
+   explicit SignatureData(const CScript& script) : scriptSig(script) {}
+};
+
 bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet);
 bool SignSignature(const CKeyStore& keystore, const CScript& fromPubKey, CMutableTransaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
 bool SignSignature(const CKeyStore& keystore, const CTransaction& txFrom, CMutableTransaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
@@ -29,4 +37,11 @@ bool SignSignature(const CKeyStore& keystore, const CTransaction& txFrom, CMutab
  */
 CScript CombineSignatures(const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, const CScript& scriptSig1, const CScript& scriptSig2);
 static CScript PushAll(const std::vector<valtype>& values);
+
+namespace BTC {
+   SignatureData CombineSignatures(const CScript& scriptPubKey, const BaseSignatureChecker& checker,
+                                   const SignatureData& scriptSig1, const SignatureData& scriptSig2);
+   void UpdateTransaction(CMutableTransaction& tx, unsigned int nIn, const SignatureData& data);
+   SignatureData DataFromTransaction(const CMutableTransaction& tx, unsigned int nIn);
+}
 #endif // BITCOIN_SCRIPT_SIGN_H

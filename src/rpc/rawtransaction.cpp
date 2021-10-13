@@ -760,7 +760,7 @@ UniValue signrawtransaction(const UniValue& params, bool fHelp)
 
     // Script verification errors
     UniValue vErrors(UniValue::VARR);
-
+    const CTransaction txConst(mergedTx);
     // Sign what we can:
     for (unsigned int i = 0; i < mergedTx.vin.size(); i++) {
         CTxIn& txin = mergedTx.vin[i];
@@ -799,13 +799,17 @@ UniValue signrawtransaction(const UniValue& params, bool fHelp)
         if (!fHashSingle || (i < mergedTx.vout.size()))
             SignSignature(keystore, prevPubKey, mergedTx, i, nHashType, fColdStake, fLeasing, fForceLeaserSign);
 
+
+        const CAmount& amount = coins->vout[txin.prevout.n].nValue;
+        SignatureData sigdata;
         // ... and merge in other signatures:
         for (const CMutableTransaction& txv : txVariants) {
-            txin.scriptSig = CombineSignatures(prevPubKey, mergedTx, i, txin.scriptSig, txv.vin[i].scriptSig);
+            //txin.scriptSig = CombineSignatures(prevPubKey, mergedTx, i, txin.scriptSig, txv.vin[i].scriptSig);
+           sigdata = BTC::CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i), sigdata, BTC::DataFromTransaction(mergedTx, i));
+           BTC::UpdateTransaction(mergedTx, i, sigdata);
         }
         ScriptError serror = SCRIPT_ERR_OK;
-        CScriptWitness witness;
-        if (!BTC::VerifyScript(txin.scriptSig, prevPubKey, &witness, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&mergedTx, i), &serror)) {
+        if (!BTC::VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, MutableTransactionSignatureChecker(&mergedTx, i), &serror)) {
             TxInErrorToJSON(txin, vErrors, ScriptErrorString(serror));
         }
     }
