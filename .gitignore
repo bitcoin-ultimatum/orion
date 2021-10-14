@@ -189,3 +189,11 @@ btcu.xcodeproj/
 
 CPackConfig.cmake
 CPackSourceConfig.cmake
+
+src/cpp-ethereum/ethash/test/benchmarks/CMakeFiles/ethash-bench.dir/link.txt
+src/cpp-ethereum/ethash/test/fakeminer/CMakeFiles/ethash-fakeminer.dir/link.txt
+src/cpp-ethereum/ethash/test/tools/CMakeFiles/kiss99-tester.dir/link.txt
+src/cpp-ethereum/ethash/test/unittests/CMakeFiles/ethash-test.dir/link.txt
+src/cpp-ethereum/ethash/test/ethash-bench
+src/cpp-ethereum/ethash/test/ethash-test
+src/cpp-ethereum/ethash/test/kiss99-tester
