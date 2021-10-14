@@ -82,6 +82,6 @@ class TransactionSignatureCreator : public BTC::BaseSignatureCreator {
    };
 
    /** Produce a script signature using a generic signature creator. */
-   bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& scriptPubKey, SignatureData& sigdata);
+   bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& scriptPubKey, SignatureData& sigdata, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
 }
 #endif // BITCOIN_SCRIPT_SIGN_H

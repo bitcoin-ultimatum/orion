@@ -447,6 +447,21 @@ namespace BTC {
    namespace
    {
 
+      static CScript PushAll(const std::vector<valtype>& values)
+      {
+         CScript result;
+         for (const valtype& v : values) {
+            if (v.size() == 0) {
+               result << OP_0;
+            } else if (v.size() == 1 && v[0] >= 1 && v[0] <= 16) {
+               result << CScript::EncodeOP_N(v[0]);
+            } else {
+               result << v;
+            }
+         }
+         return result;
+      }
+
       struct Stacks
       {
          std::vector<valtype> script;
@@ -455,14 +470,12 @@ namespace BTC {
          Stacks() {}
          explicit Stacks(const std::vector<valtype>& scriptSigStack_) : script(scriptSigStack_), witness() {}
          explicit Stacks(const SignatureData& data) : witness(data.scriptWitness.stack) {
-            //EvalScript(script, data.scriptSig, SCRIPT_VERIFY_STRICTENC, BaseSignatureChecker(), SIGVERSION_BASE);
-            std::vector<valtype> stack1;
-            BTC::EvalScript(stack1, data.scriptSig, SCRIPT_VERIFY_STRICTENC, BTC::BaseSignatureChecker(), SigVersion::BASE, nullptr);
+            BTC::EvalScript(script, data.scriptSig, SCRIPT_VERIFY_STRICTENC, BTC::BaseSignatureChecker(), SigVersion::BASE, nullptr);
          }
 
          SignatureData Output() const {
             SignatureData result;
-            result.scriptSig = PushAll(script);
+            result.scriptSig = BTC::PushAll(script);
             result.scriptWitness.stack = witness;
             return result;
          }
@@ -809,12 +822,12 @@ namespace BTC {
       }
    }
 
-   bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata)
+   bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, bool fColdStake, bool fLeasing, bool fForceLeaserSign)
    {
       CScript script = fromPubKey;
       std::vector<valtype> result;
       txnouttype whichType;
-      bool solved = BTC::SignStep(creator, script, result, whichType, SigVersion::BASE);
+      bool solved = BTC::SignStep(creator, script, result, whichType, SigVersion::BASE, fColdStake, fLeasing, fForceLeaserSign);
       bool P2SH = false;
       CScript subscript;
       sigdata.scriptWitness.stack.clear();
