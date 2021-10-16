@@ -126,7 +126,7 @@ bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
 
             // Get the signature stack
             std::vector <std::vector<unsigned char> > stack;
-            if (!EvalScript(stack, senderSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker()))
+            if (!BTC::EvalScript(stack, senderSig, SCRIPT_VERIFY_NONE, BTC::BaseSignatureChecker(), SigVersion::BASE))
                 return false;
 
             // Check that the items size is no more than 80 bytes
@@ -530,7 +530,7 @@ bool QtumTxConverter::extractionQtumTransactions(ExtractQtumTX& qtumtx){
 bool QtumTxConverter::receiveStack(const CScript& scriptPubKey){
     sender = false;
     // FIX: hardcoded flag value
-    EvalScript(stack, scriptPubKey, 1610612736, BaseSignatureChecker());
+    BTC::EvalScript(stack, scriptPubKey, 1610612736, BTC::BaseSignatureChecker(), SigVersion::BASE);
     if (stack.empty())
         return false;
 

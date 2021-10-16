@@ -470,7 +470,7 @@ namespace BTC {
          Stacks() {}
          explicit Stacks(const std::vector<valtype>& scriptSigStack_) : script(scriptSigStack_), witness() {}
          explicit Stacks(const SignatureData& data) : witness(data.scriptWitness.stack) {
-            BTC::EvalScript(script, data.scriptSig, SCRIPT_VERIFY_STRICTENC, BTC::BaseSignatureChecker(), SigVersion::BASE, nullptr);
+            BTC::EvalScript(script, data.scriptSig, SCRIPT_VERIFY_STRICTENC, BTC::BaseSignatureChecker(), SigVersion::BASE);
          }
 
          SignatureData Output() const {
