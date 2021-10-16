@@ -867,7 +867,7 @@ namespace BTC {
       sigdata.scriptSig = PushAll(result);
 
       // Test solution
-      return solved && VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
+      return solved && BTC::VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
    }
 }
 
