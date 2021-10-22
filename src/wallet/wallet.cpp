@@ -3035,8 +3035,19 @@ bool CWallet::CreateCoinStake(
     if (!txNew.vin[0].scriptSig.IsZerocoinSpend()) {
         for (CTxIn txIn : txNew.vin) {
             const CWalletTx *wtx = GetWalletTx(txIn.prevout.hash);
-            if (!SignSignature(*this, *wtx, txNew, nIn++, SIGHASH_ALL, true, false))
-                return error("CreateCoinStake : failed to sign coinstake");
+            SignatureData sigdata;
+            assert(nIn < txNew.vin.size());
+            CTxIn& txin = txNew.vin[nIn];
+            assert(txin.prevout.n < wtx->vout.size());
+            const CTxOut& txout = wtx->vout[txin.prevout.n];
+
+            if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+            {
+               return error("CreateCoinStake : failed to sign coinstake");
+            } else {
+               BTC::UpdateTransaction(txNew, nIn, sigdata);
+            }
+            nIn++;
         }
     } else {
         //Update the mint database with tx hash and height
@@ -3108,6 +3119,10 @@ bool CWallet::CreateLeasingRewards(
         tx.vout.clear();
         return true;
     }
+
+   const CScript& scriptPubKey = GetScriptForDestination(pubKeySelf.GetID());
+   SignatureData sigdata;
+   if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata))
 
     if (!SignSignature(*this, GetScriptForDestination(pubKeySelf.GetID()), tx, 0, SIGHASH_ALL, false, true)) {
         return error("%s : failed to sign leasing reward", __func__);
