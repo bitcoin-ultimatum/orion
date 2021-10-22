@@ -3124,10 +3124,6 @@ bool CWallet::CreateLeasingRewards(
    SignatureData sigdata;
    if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata))
 
-    if (!SignSignature(*this, GetScriptForDestination(pubKeySelf.GetID()), tx, 0, SIGHASH_ALL, false, true)) {
-        return error("%s : failed to sign leasing reward", __func__);
-    }
-
 #endif
     return true;
 }
