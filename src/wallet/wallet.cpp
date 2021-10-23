@@ -3123,7 +3123,11 @@ bool CWallet::CreateLeasingRewards(
    const CScript& scriptPubKey = GetScriptForDestination(pubKeySelf.GetID());
    SignatureData sigdata;
    if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata))
-
+   {
+      return false;
+   } else {
+      BTC::UpdateTransaction(tx, 0, sigdata);
+   }
 #endif
     return true;
 }
