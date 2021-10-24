@@ -764,8 +764,9 @@ namespace BTC {
             CPubKey vch;
             if (!creator.KeyStore().GetPubKey(keyID, vch))
                return error("%s : Unable to get public key from keyID", __func__);
-            scriptRet.clear();
+            scriptRet << ret[0];
             scriptRet << (fColdStake ? (int)OP_TRUE : OP_FALSE) << ToByteVector(vch);
+            ret.clear();
             ret.push_back(std::vector<unsigned char>(scriptRet.begin(), scriptRet.end()));
             return true;
          }
@@ -790,9 +791,9 @@ namespace BTC {
             if (!creator.KeyStore().GetPubKey(keyID, vch))
                return error("%s : Unable to get public key from keyID", __func__);
 
-
-            scriptRet.clear();
+            scriptRet << ret[0];
             scriptRet << (fLeasing ? (int)OP_TRUE : OP_FALSE) << ToByteVector(vch);
+            ret.clear();
             ret.push_back(std::vector<unsigned char>(scriptRet.begin(), scriptRet.end()));
             return true;
          }
@@ -864,7 +865,10 @@ namespace BTC {
       if (P2SH) {
          result.push_back(std::vector<unsigned char>(subscript.begin(), subscript.end()));
       }
-      sigdata.scriptSig = PushAll(result);
+      if(solved && (whichType == TX_LEASE || whichType == TX_COLDSTAKE))
+         sigdata.scriptSig = CScript(result[0].begin(), result[0].end());
+      else
+         sigdata.scriptSig = PushAll(result);
 
       // Test solution
       return solved && BTC::VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
