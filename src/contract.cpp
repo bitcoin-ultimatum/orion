@@ -278,7 +278,7 @@ valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsVie
     }
     if(!scriptFilled && coinsView){
         auto coins = coinsView->AccessCoins(tx.vin[0].prevout.hash);
-        if (coins && coins->vout.size() > 0) {
+       if (coins && tx.vin[0].prevout.n < coins->vout.size()) {
             script = coins->vout[tx.vin[0].prevout.n].scriptPubKey;
             scriptFilled = true;
         }
