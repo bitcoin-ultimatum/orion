@@ -102,7 +102,8 @@ public:
           /* Try to read the vin. In case the dummy is there, this will be read as an empty vector. */
           READWRITE(*const_cast<std::vector<CTxIn>*>(&vin));
 
-          if (vin.size() == 0 && fAllowWitness) {
+          //witness transaction must to be version 2
+          if (vin.size() == 0 && fAllowWitness && this->nVersion != CTransaction::BITCOIN_VERSION) {
              /* We read a dummy or an empty vin. */
 
              READWRITE(*const_cast<unsigned char*>(&flags));
