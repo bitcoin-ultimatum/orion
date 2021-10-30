@@ -873,6 +873,62 @@ namespace BTC {
       // Test solution
       return solved && BTC::VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
    }
+
+
+   namespace {
+/** Dummy signature checker which accepts all signatures. */
+      class DummySignatureChecker : public BaseSignatureChecker
+      {
+      public:
+         DummySignatureChecker() {}
+
+         bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override
+         {
+            return true;
+         }
+      };
+      const DummySignatureChecker dummyChecker;
+   } // namespace
+
+   const BaseSignatureChecker& DummySignatureCreator::Checker() const
+   {
+      return dummyChecker;
+   }
+
+   bool DummySignatureCreator::CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const
+   {
+      // Create a dummy signature that is a valid DER-encoding
+      vchSig.assign(72, '\000');
+      vchSig[0] = 0x30;
+      vchSig[1] = 69;
+      vchSig[2] = 0x02;
+      vchSig[3] = 33;
+      vchSig[4] = 0x01;
+      vchSig[4 + 33] = 0x02;
+      vchSig[5 + 33] = 32;
+      vchSig[6 + 33] = 0x01;
+      vchSig[6 + 33 + 32] = SIGHASH_ALL;
+      return true;
+   }
+
+   bool IsSolvable(const CKeyStore& store, const CScript& script)
+   {
+      // This check is to make sure that the script we created can actually be solved for and signed by us
+      // if we were to have the private keys. This is just to make sure that the script is valid and that,
+      // if found in a transaction, we would still accept and relay that transaction. In particular,
+      // it will reject witness outputs that require signing with an uncompressed public key.
+      DummySignatureCreator creator(&store);
+      SignatureData sigs;
+      // Make sure that STANDARD_SCRIPT_VERIFY_FLAGS includes SCRIPT_VERIFY_WITNESS_PUBKEYTYPE, the most
+      // important property this function is designed to test for.
+      static_assert(STANDARD_SCRIPT_VERIFY_FLAGS & SCRIPT_VERIFY_WITNESS_PUBKEYTYPE, "IsSolvable requires standard script flags to include WITNESS_PUBKEYTYPE");
+      if (ProduceSignature(creator, script, sigs)) {
+         // VerifyScript check is just defensive, and should never fail.
+         assert(VerifyScript(sigs.scriptSig, script, &sigs.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker()));
+         return true;
+      }
+      return false;
+   }
 }
 
 

@@ -26,6 +26,7 @@
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
+#include <key_io.h>
 
 /**
  * Settings
@@ -3296,10 +3297,10 @@ bool CWallet::SetAddressBook(const CTxDestination& address, const std::string& s
         strPurpose, (fUpdated ? CT_UPDATED : CT_NEW));
     if (!fFileBacked)
         return false;
-    std::string addressStr = ParseIntoAddress(address, strPurpose).ToString();
-    if (!strPurpose.empty() && !CWalletDB(strWalletFile).WritePurpose(addressStr, strPurpose))
+
+    if (!strPurpose.empty() && !CWalletDB(strWalletFile).WritePurpose(EncodeDestination(address), strPurpose))
         return false;
-    return CWalletDB(strWalletFile).WriteName(addressStr, strName);
+    return CWalletDB(strWalletFile).WriteName(EncodeDestination(address), strName);
 }
 
 bool CWallet::DelAddressBook(const CTxDestination& address, const CChainParams::Base58Type addrType)
@@ -4451,6 +4452,25 @@ int CWallet::GetVersion()
     LOCK(cs_wallet);
     return nWalletVersion;
 }
+
+void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
+{
+   if (key.IsCompressed() && (type == OUTPUT_TYPE_P2SH_SEGWIT || type == OUTPUT_TYPE_BECH32)) {
+      CTxDestination witdest = WitnessV0KeyHash(key.GetID());
+      CScript witprog = GetScriptForDestination(witdest);
+      // Make sure the resulting program is solvable.
+      assert(BTC::IsSolvable(*this, witprog));
+      AddCScript(witprog);
+   }
+}
+
+void CWallet::LearnAllRelatedScripts(const CPubKey& key)
+{
+   // OUTPUT_TYPE_P2SH_SEGWIT always adds all necessary scripts for all types.
+   LearnRelatedScripts(key, OUTPUT_TYPE_P2SH_SEGWIT);
+}
+
+
 /*
 bool CWallet::GetKeyOrigin(const CKeyID& keyID, KeyOriginInfo& info) const
 {
@@ -4655,4 +4675,16 @@ CAmount CWalletTx::GetChange() const
 bool CWalletTx::IsFromMe(const isminefilter& filter) const
 {
     return (GetDebit(filter) > 0);
+}
+
+std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
+{
+   CKeyID keyid = key.GetID();
+   if (key.IsCompressed()) {
+      CTxDestination segwit = WitnessV0KeyHash(keyid);
+      CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
+      return std::vector<CTxDestination>{std::move(keyid), std::move(p2sh), std::move(segwit)};
+   } else {
+      return std::vector<CTxDestination>{std::move(keyid)};
+   }
 }

@@ -121,10 +121,15 @@ UniValue importprivkey(const UniValue& params, bool fHelp)
         EnsureWalletIsUnlocked();
 
         pwalletMain->MarkDirty();
-        pwalletMain->SetAddressBook(vchAddress, strLabel, (
-                fStakingAddress ?
-                        AddressBook::AddressBookPurpose::COLD_STAKING :
-                        AddressBook::AddressBookPurpose::RECEIVE));
+
+       // We don't know which corresponding address will be used; label them all
+       for (const auto& dest : GetAllDestinationsForKey(pubkey)) {
+          pwalletMain->SetAddressBook(vchAddress, strLabel, (
+          fStakingAddress ?
+          AddressBook::AddressBookPurpose::COLD_STAKING :
+          AddressBook::AddressBookPurpose::RECEIVE));
+       }
+
 
         // Don't throw error in case a key is already there
         if (pwalletMain->HaveKey(vchAddress))
@@ -138,6 +143,8 @@ UniValue importprivkey(const UniValue& params, bool fHelp)
         // whenever a key is imported, we need to scan the whole chain
         pwalletMain->nTimeFirstKey = 1; // 0 would be considered 'no value'
 
+        pwalletMain->LearnAllRelatedScripts(pubkey);
+
         if (fRescan) {
             auto *pIndex = chainActive.Genesis();
             if (fStakingAddress && !Params().IsRegTestNet()) {
@@ -147,8 +154,9 @@ UniValue importprivkey(const UniValue& params, bool fHelp)
             pwalletMain->ScanForWalletTransactions(pcoinsTip->SeekToFirst(), pIndex, true);
         }
     }
-    
-    return CBTCUAddress(vchAddress).ToString();
+
+    return NullUniValue;
+    //return CBTCUAddress(vchAddress).ToString();
 }
 
 UniValue importaddress(const UniValue& params, bool fHelp)

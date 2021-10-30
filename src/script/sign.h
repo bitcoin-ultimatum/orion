@@ -81,7 +81,21 @@ class TransactionSignatureCreator : public BTC::BaseSignatureCreator {
       MutableTransactionSignatureCreator(const CKeyStore* keystoreIn, const CMutableTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, int nHashTypeIn) : TransactionSignatureCreator(keystoreIn, &tx, nInIn, amountIn, nHashTypeIn), tx(*txToIn) {}
    };
 
+   /** A signature creator that just produces 72-byte empty signatures. */
+   class DummySignatureCreator : public BaseSignatureCreator {
+   public:
+      explicit DummySignatureCreator(const CKeyStore* keystoreIn) : BaseSignatureCreator(keystoreIn) {}
+      const BaseSignatureChecker& Checker() const override;
+      bool CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const override;
+   };
+
    /** Produce a script signature using a generic signature creator. */
    bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& scriptPubKey, SignatureData& sigdata, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
+
+   /* Check whether we know how to sign for an output like this, assuming we
+ * have all private keys. While this function does not need private keys, the passed
+ * keystore is used to look up public keys and redeemscripts by hash.
+ * Solvability is unrelated to whether we consider this output to be ours. */
+   bool IsSolvable(const CKeyStore& store, const CScript& script);
 }
 #endif // BITCOIN_SCRIPT_SIGN_H
