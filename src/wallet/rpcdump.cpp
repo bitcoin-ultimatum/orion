@@ -25,6 +25,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <univalue.h>
+#include <key_io.h>
 
 
 std::string static EncodeDumpTime(int64_t nTime)
@@ -380,14 +381,16 @@ UniValue dumpprivkey(const UniValue& params, bool fHelp)
     EnsureWalletIsUnlocked();
 
     std::string strAddress = params[0].get_str();
-    CBTCUAddress address;
-    if (!address.SetString(strAddress))
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU address");
-    CKeyID keyID;
-    if (!address.GetKeyID(keyID))
-        throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");
+   CTxDestination dest = DecodeDestination(strAddress);
+   if (!IsValidDestination(dest)) {
+      throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address");
+   }
+   auto keyid = GetKeyForDestination(*pwalletMain, dest);
+   if (keyid.IsNull()) {
+      throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");
+   }
     CKey vchSecret;
-    if (!pwalletMain->GetKey(keyID, vchSecret))
+    if (!pwalletMain->GetKey(keyid, vchSecret))
         throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + strAddress + " is not known");
     return CBTCUSecret(vchSecret).ToString();
 }

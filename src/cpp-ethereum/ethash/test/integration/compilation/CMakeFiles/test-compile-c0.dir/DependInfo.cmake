@@ -4,11 +4,11 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/lib/ethash/keccak.c" "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/__/__/__/lib/ethash/keccak.c.o"
-  "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/lib/ethash/keccakf1600.c" "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/__/__/__/lib/ethash/keccakf1600.c.o"
-  "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/lib/ethash/keccakf800.c" "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/__/__/__/lib/ethash/keccakf800.c.o"
-  "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/lib/ethash/primes.c" "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/__/__/__/lib/ethash/primes.c.o"
-  "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/test/integration/compilation/ethash_header_test.c" "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/ethash_header_test.c.o"
+  "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/lib/ethash/keccak.c" "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/__/__/__/lib/ethash/keccak.c.o"
+  "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/lib/ethash/keccakf1600.c" "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/__/__/__/lib/ethash/keccakf1600.c.o"
+  "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/lib/ethash/keccakf800.c" "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/__/__/__/lib/ethash/keccakf800.c.o"
+  "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/lib/ethash/primes.c" "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/__/__/__/lib/ethash/primes.c.o"
+  "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/test/integration/compilation/ethash_header_test.c" "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/test/integration/compilation/CMakeFiles/test-compile-c0.dir/ethash_header_test.c.o"
   )
 set(CMAKE_C_COMPILER_ID "AppleClang")
 
@@ -32,7 +32,7 @@ set(CMAKE_C_TARGET_INCLUDE_PATH
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
-  "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/lib/ethash/CMakeFiles/ethash.dir/DependInfo.cmake"
+  "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/lib/ethash/CMakeFiles/ethash.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

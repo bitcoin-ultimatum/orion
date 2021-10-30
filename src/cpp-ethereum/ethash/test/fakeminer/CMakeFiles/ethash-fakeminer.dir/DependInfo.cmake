@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/test/fakeminer/fakeminer.cpp" "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/test/fakeminer/CMakeFiles/ethash-fakeminer.dir/fakeminer.cpp.o"
+  "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/test/fakeminer/fakeminer.cpp" "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/test/fakeminer/CMakeFiles/ethash-fakeminer.dir/fakeminer.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "AppleClang")
 
@@ -28,7 +28,7 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
-  "/Users/dim4egster/work/bitcoin_ultimatum/orion/src/cpp-ethereum/ethash/lib/ethash/CMakeFiles/ethash.dir/DependInfo.cmake"
+  "/Users/dim4egster/work/bitcoin_ultimatum/pegasus/src/cpp-ethereum/ethash/lib/ethash/CMakeFiles/ethash.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.
