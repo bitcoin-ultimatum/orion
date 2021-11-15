@@ -2635,9 +2635,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     if (!fAlreadyChecked && !CheckBlock(block, state, !fJustCheck, !fJustCheck))
         return false;
 
-    uint64_t blockGasLimit = 40000000; //= qtumDGP.getBlockGasLimit(::ChainActive().Height());
-    uint64_t minGasPrice = 40;         //CAmount(qtumDGP.getMinGasPrice(::ChainActive().Height()));
-    CAmount nGasPrice = 40;            //(minGasPrice>DEFAULT_GAS_PRICE)?minGasPrice:DEFAULT_GAS_PRICE;
+    //////////////////////////////////////////////////////// qtum
+    QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
+    globalSealEngine->setQtumSchedule(qtumDGP.getGasSchedule(pindex->nHeight));
+    uint64_t blockGasLimit = qtumDGP.getBlockGasLimit(pindex->nHeight);
+    uint64_t minGasPrice = qtumDGP.getMinGasPrice(pindex->nHeight);
+    ////////////////////////////////////////////////////////////////
+
 
     // verify that the view's current state corresponds to the previous block
     // we start from bitcoin chainstate therefore shouldn't check previous for the first block
