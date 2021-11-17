@@ -2640,11 +2640,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     globalSealEngine->setQtumSchedule(qtumDGP.getGasSchedule(pindex->nHeight));
     uint64_t blockGasLimit = qtumDGP.getBlockGasLimit(pindex->nHeight);
     uint64_t minGasPrice = qtumDGP.getMinGasPrice(pindex->nHeight);
+    CBlock checkBlock(block.GetBlockHeader());
+    std::vector<CTxOut> checkVouts;
     ////////////////////////////////////////////////////////////////
 
 
     // verify that the view's current state corresponds to the previous block
-    // we start from bitcoin chainstate therefore shouldn't check previous for the first block
+    // we start from bitcoin chainstate theundoDummyrefore shouldn't check previous for the first block
     if(pindex->nHeight > 0)
     {
        uint256 hashPrevBlock = pindex->pprev == NULL ? uint256(0): pindex->pprev->GetBlockHash();
@@ -2879,9 +2881,14 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
 
         bool hasOpSpend = tx.HasOpSpend();
-
         unsigned int contractflags = SCRIPT_EXEC_BYTE_CODE;
-        
+
+       if(!CheckOpSender(tx, Params(), pindex->nHeight)){
+          state.Invalid(false, REJECT_INVALID, "bad-txns-invalid-sender");
+       }
+       if(!tx.HasOpSpend()){
+          checkBlock.vtx.push_back(block.vtx[i]);
+       }
 
         //checks for smart contracts trxs
         bool bSCValidatorFound = true;
@@ -3023,7 +3030,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  for (CTxOut refundVout : bcer.refundOutputs) {
                     gasRefunds += refundVout.nValue;
                  }
-
+                 for(CTransaction& t : bcer.valueTransfers){
+                    checkBlock.vtx.push_back(t);
+                 }
                  if (fRecordLogOpcodes && !fJustCheck) {
                     writeVMlog(resultExec, tx, block);
                  }
@@ -3136,7 +3145,65 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             return AbortNode(state, "Failed to write transaction index");
 
 
-   /////////////////////////////////////////////////////qtum
+
+   ////////////////////////////////////////////////////////////////// // qtum
+   checkBlock.hashMerkleRoot = BlockMerkleRoot(checkBlock);
+   checkBlock.hashStateRoot = h256Touint(globalState->rootHash());
+   checkBlock.hashUTXORoot = h256Touint(globalState->rootHashUTXO());
+
+   //If this error happens, it probably means that something with AAL created transactions didn't match up to what is expected
+   if((checkBlock.GetHash() != block.GetHash()) && !fJustCheck)
+   {
+      LogPrintf("Actual block data does not match block expected by AAL\n");
+      //Something went wrong with AAL, compare different elements and determine what the problem is
+      if(checkBlock.hashMerkleRoot != block.hashMerkleRoot){
+         //there is a mismatched tx, so go through and determine which txs
+         if(block.vtx.size() > checkBlock.vtx.size()){
+            LogPrintf("Unexpected AAL transactions in block. Actual txs: %i, expected txs: %i\n", block.vtx.size(), checkBlock.vtx.size());
+            for(size_t i=0;i<block.vtx.size();i++){
+               if(i > checkBlock.vtx.size()-1){
+                  LogPrintf("Unexpected transaction: %s\n", block.vtx[i].ToString());
+               }else {
+                  if (block.vtx[i].GetHash() != checkBlock.vtx[i].GetHash()) {
+                     LogPrintf("Mismatched transaction at entry %i\n", i);
+                     LogPrintf("Actual: %s\n", block.vtx[i].ToString());
+                     LogPrintf("Expected: %s\n", checkBlock.vtx[i].ToString());
+                  }
+               }
+            }
+         }else if(block.vtx.size() < checkBlock.vtx.size()){
+            LogPrintf("Actual block is missing AAL transactions. Actual txs: %i, expected txs: %i\n", block.vtx.size(), checkBlock.vtx.size());
+            for(size_t i=0;i<checkBlock.vtx.size();i++){
+               if(i > block.vtx.size()-1){
+                  LogPrintf("Missing transaction: %s\n", checkBlock.vtx[i].ToString());
+               }else {
+                  if (block.vtx[i].GetHash() != checkBlock.vtx[i].GetHash()) {
+                     LogPrintf("Mismatched transaction at entry %i\n", i);
+                     LogPrintf("Actual: %s\n", block.vtx[i].ToString());
+                     LogPrintf("Expected: %s\n", checkBlock.vtx[i].ToString());
+                  }
+               }
+            }
+         }else{
+            //count is correct, but a tx is wrong
+            for(size_t i=0;i<checkBlock.vtx.size();i++){
+               if (block.vtx[i].GetHash() != checkBlock.vtx[i].GetHash()) {
+                  LogPrintf("Mismatched transaction at entry %i\n", i);
+                  LogPrintf("Actual: %s\n", block.vtx[i].ToString());
+                  LogPrintf("Expected: %s\n", checkBlock.vtx[i].ToString());
+               }
+            }
+         }
+      }
+      if(checkBlock.hashUTXORoot != block.hashUTXORoot){
+         LogPrintf("Actual block data does not match hashUTXORoot expected by AAL block\n");
+      }
+      if(checkBlock.hashStateRoot != block.hashStateRoot){
+         LogPrintf("Actual block data does not match hashStateRoot expected by AAL block\n");
+      }
+
+      return state.Invalid(error("ConnectBlock(): Incorrect AAL transactions or hashes (hashStateRoot, hashUTXORoot)"), REJECT_INVALID, "incorrect-transactions-or-hashes-block");
+   }
    if (fJustCheck)
    {
       dev::h256 prevHashStateRoot(dev::sha3(dev::rlp("")));
@@ -4965,7 +5032,7 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
 
     LogPrintf("%s : ACCEPTED Block %ld in %ld milliseconds with size=%d\n", __func__, GetHeight(), GetTimeMillis() - nStartTime,
               pblock->GetSerializeSize(SER_DISK, CLIENT_VERSION));
-    LogPrint("sc","%s : SC: rootHash: %s, rootHashUTXO: %s\n",__func__, globalState->rootHash().hex().c_str(), globalState->rootHashUTXO().hex().c_str());
+    //LogPrint("sc","%s : SC: rootHash: %s, rootHashUTXO: %s\n",__func__, globalState->rootHash().hex().c_str(), globalState->rootHashUTXO().hex().c_str());
 
 
     return true;
