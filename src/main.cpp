@@ -3015,7 +3015,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  }
               }
 
-              //if (fAlreadyChecked) {
+              if (fAlreadyChecked) {
 
                  if (!exec.performByteCode()) {
                     return state.Error("ConnectBlock(): Unknown error during contract execution");
@@ -3039,7 +3039,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  if (fRecordLogOpcodes && !fJustCheck) {
                     writeVMlog(resultExec, tx, block);
                  }
-              //}
+              }
            }
     }
 
