@@ -2638,8 +2638,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     //////////////////////////////////////////////////////// qtum
     QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
     globalSealEngine->setQtumSchedule(qtumDGP.getGasSchedule(pindex->nHeight));
-    uint64_t blockGasLimit = qtumDGP.getBlockGasLimit(pindex->nHeight);
+    uint32_t sizeBlockDGP = qtumDGP.getBlockSize(pindex->nHeight);
     uint64_t minGasPrice = qtumDGP.getMinGasPrice(pindex->nHeight);
+    uint64_t blockGasLimit = qtumDGP.getBlockGasLimit(pindex->nHeight);
+    dgpMaxBlockSize = sizeBlockDGP ? sizeBlockDGP : dgpMaxBlockSize;
+    updateBlockSizeParams(dgpMaxBlockSize);
     CBlock checkBlock(block.GetBlockHeader());
     std::vector<CTxOut> checkVouts;
     ////////////////////////////////////////////////////////////////
