@@ -1124,6 +1124,19 @@ CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowF
     return nMinFee;
 }
 
+CBlockIndex* LookupBlockIndex(const uint256& hash)
+{
+   AssertLockHeld(cs_main);
+   BlockMap::const_iterator it = mapBlockIndex.find(hash);
+   return it == mapBlockIndex.end() ? nullptr : it->second;
+}
+
+int GetSpendHeight(const CCoinsViewCache& inputs)
+{
+   LOCK(cs_main);
+   CBlockIndex* pindexPrev = LookupBlockIndex(inputs.GetBestBlock());
+   return pindexPrev->nHeight + 1;
+}
 
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransaction& tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee, bool ignoreFees)
 {
@@ -1306,6 +1319,96 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
         double dPriority = 0;
         if (!hasZcSpendInputs)
             view.GetPriority(tx, chainHeight);
+
+
+       //////////////////////////////////////////////////////////// // qtum
+       dev::u256 txMinGasPrice = 0;
+       if(!CheckOpSender(tx, Params(), GetSpendHeight(view))){
+          return state.Invalid(false, REJECT_INVALID, "bad-txns-invalid-sender");
+       }
+       if(tx.HasCreateOrCall()){
+
+          if(!CheckSenderScript(view, tx)){
+             return state.Invalid(false, REJECT_INVALID, "bad-txns-invalid-sender-script");
+          }
+
+          QtumDGP qtumDGP(globalState.get(), fGettingValuesDGP);
+          uint64_t minGasPrice = qtumDGP.getMinGasPrice(::chainActive.Tip()->nHeight + 1);
+          uint64_t blockGasLimit = qtumDGP.getBlockGasLimit(::chainActive.Tip()->nHeight + 1);
+          size_t count = 0;
+          for(const CTxOut& o : tx.vout)
+             count += o.scriptPubKey.HasOpCreate() || o.scriptPubKey.HasOpCall() ? 1 : 0;
+          unsigned int contractflags = SCRIPT_EXEC_BYTE_CODE;//= GetContractScriptFlags(nHeight, chainparams.GetConsensus());
+          contractflags |= SCRIPT_OUTPUT_SENDER;
+          QtumTxConverter converter(tx, NULL, NULL, contractflags);
+          ExtractQtumTX resultConverter;
+          if(!converter.extractionQtumTransactions(resultConverter)){
+             return state.Invalid(error("AcceptToMempool(): Contract transaction of the wrong format"), REJECT_INVALID, "bad-tx-bad-contract-format");
+          }
+          std::vector<QtumTransaction> qtumTransactions = resultConverter.first;
+          std::vector<EthTransactionParams> qtumETP = resultConverter.second;
+
+          dev::u256 sumGas = dev::u256(0);
+          dev::u256 gasAllTxs = dev::u256(0);
+          for(QtumTransaction qtumTransaction : qtumTransactions){
+             sumGas += qtumTransaction.gas() * qtumTransaction.gasPrice();
+
+             if(sumGas > dev::u256(INT64_MAX)) {
+                return state.Invalid(error("AcceptToMempool(): Transaction's gas stipend overflows"), REJECT_INVALID, "bad-tx-gas-stipend-overflow");
+             }
+
+             if(sumGas > dev::u256(nFees)) {
+                return state.Invalid(error("AcceptToMempool(): Transaction fee does not cover the gas stipend"), REJECT_INVALID, "bad-txns-fee-notenough");
+             }
+
+             if(txMinGasPrice != 0) {
+                txMinGasPrice = std::min(txMinGasPrice, qtumTransaction.gasPrice());
+             } else {
+                txMinGasPrice = qtumTransaction.gasPrice();
+             }
+             VersionVM v = qtumTransaction.getVersion();
+             if(v.format!=0)
+                return state.Invalid(error("AcceptToMempool(): Contract execution uses unknown version format"), REJECT_INVALID, "bad-tx-version-format");
+             if(v.rootVM != 1)
+                return state.Invalid(error("AcceptToMempool(): Contract execution uses unknown root VM"), REJECT_INVALID, "bad-tx-version-rootvm");
+             if(v.vmVersion != 0)
+                return state.Invalid(error("AcceptToMempool(): Contract execution uses unknown VM version"), REJECT_INVALID, "bad-tx-version-vmversion");
+             if(v.flagOptions != 0)
+                return state.Invalid(error("AcceptToMempool(): Contract execution uses unknown flag options"), REJECT_INVALID, "bad-tx-version-flags");
+
+             //check gas limit is not less than minimum mempool gas limit
+             if(qtumTransaction.gas() < GetArg("-minmempoolgaslimit", MEMPOOL_MIN_GAS_LIMIT))
+                return state.Invalid(error("AcceptToMempool(): Contract execution has lower gas limit than allowed to accept into mempool"), REJECT_INVALID, "bad-tx-too-little-mempool-gas");
+
+             //check gas limit is not less than minimum gas limit (unless it is a no-exec tx)
+             if(qtumTransaction.gas() < MINIMUM_GAS_LIMIT && v.rootVM != 0)
+                return state.Invalid(error("AcceptToMempool(): Contract execution has lower gas limit than allowed"), REJECT_INVALID, "bad-tx-too-little-gas");
+
+             if(qtumTransaction.gas() > UINT32_MAX)
+                return state.Invalid(error("AcceptToMempool(): Contract execution can not specify greater gas limit than can fit in 32-bits"), REJECT_INVALID, "bad-tx-too-much-gas");
+
+             gasAllTxs += qtumTransaction.gas();
+             if(gasAllTxs > dev::u256(blockGasLimit))
+                return state.Invalid(false, REJECT_INVALID, "bad-txns-gas-exceeds-blockgaslimit");
+
+             //don't allow less than DGP set minimum gas price to prevent MPoS greedy mining/spammers
+             if(v.rootVM!=0 && (uint64_t)qtumTransaction.gasPrice() < minGasPrice)
+                return state.Invalid(error("AcceptToMempool(): Contract execution has lower gas price than allowed"), REJECT_INVALID, "bad-tx-low-gas-price");
+          }
+
+          if(!CheckMinGasPrice(qtumETP, minGasPrice))
+             return state.Invalid(false, REJECT_INVALID, "bad-txns-small-gasprice");
+
+          if(count > qtumTransactions.size())
+             return state.Invalid(false, REJECT_INVALID, "bad-txns-incorrect-format");
+
+          /*if (rawTx && nAbsurdFee && dev::u256(nFees) > dev::u256(nAbsurdFee) + sumGas)
+             return state.Invalid(false,
+                                  REJECT_HIGHFEE, "absurdly-high-fee",
+                                  strprintf("%d > %d", nFees, nAbsurdFee));*/
+       }
+       ////////////////////////////////////////////////////////////
+
 
         CTxMemPoolEntry entry(tx, nFees, GetTime(), dPriority, chainHeight);
         unsigned int nSize = entry.GetTxSize();
@@ -3015,7 +3118,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  }
               }
 
-              if (fAlreadyChecked) {
+              //if (fAlreadyChecked) {
 
                  if (!exec.performByteCode()) {
                     return state.Error("ConnectBlock(): Unknown error during contract execution");
@@ -3039,7 +3142,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  if (fRecordLogOpcodes && !fJustCheck) {
                     writeVMlog(resultExec, tx, block);
                  }
-              }
+             // }
            }
     }
 

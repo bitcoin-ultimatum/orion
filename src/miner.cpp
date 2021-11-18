@@ -137,6 +137,7 @@ bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* 
     uint64_t nBlockSigOpsCost =0;//= pblock->nBlockSigOpsCost;
 
     unsigned int contractflags = SCRIPT_EXEC_BYTE_CODE;//= GetContractScriptFlags(nHeight, chainparams.GetConsensus());
+    contractflags |= SCRIPT_OUTPUT_SENDER;
 
     std::vector<CTransactionRef> blockTransactions;
     for (auto t: pblock->vtx)
@@ -638,11 +639,11 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
             }
         }
 
-        /*for (CTransaction tx: pblock->vtx){
+        for (CTransaction tx: pblock->vtx){
             if(tx.HasCreateOrCall()){
-                AttemptToAddContractToBlock(mempool.mapTx.begin()->second, tx,pblock,40);
+                AttemptToAddContractToBlock(mempool.mapTx.begin()->second, tx,pblock, minGasPrice);
             }
-        }*/
+        }
 
         CValidationState state;
         if (!TestBlockValidity(state, *pblock, pindexPrev, false, false)) {
