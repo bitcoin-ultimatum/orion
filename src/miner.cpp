@@ -614,6 +614,24 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
 
         pblocktemplate->vTxSigOps[0] = GetLegacySigOpCount(pblock->vtx[0]);
 
+        ////////////qtum
+       for (CTransaction tx: pblock->vtx){
+          if(tx.HasCreateOrCall()){
+             AttemptToAddContractToBlock(mempool.mapTx.begin()->second, tx,pblock, minGasPrice);
+          }
+       }
+
+       dev::h256 oldHashStateRoot(globalState->rootHash());
+       dev::h256 oldHashUTXORoot(globalState->rootHashUTXO());
+       int nPackagesSelected = 0;
+       int nDescendantsUpdated = 0;
+       //addPackageTxs(nPackagesSelected, nDescendantsUpdated, minGasPrice);
+       pblock->hashStateRoot = uint256(h256Touint(dev::h256(globalState->rootHash())));
+       pblock->hashUTXORoot = uint256(h256Touint(dev::h256(globalState->rootHashUTXO())));
+       globalState->setRoot(oldHashStateRoot);
+       globalState->setRootUTXO(oldHashUTXORoot);
+       ///////////////////////////////////////////////
+
         if (fProofOfStake) {
             unsigned int nExtraNonce = 0;
             IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
@@ -628,22 +646,6 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
                 return nullptr; // TODO: commented just for testing purposes to enable unsigned blocks
             }
         }
-
-        for (CTransaction tx: pblock->vtx){
-            if(tx.HasCreateOrCall()){
-                AttemptToAddContractToBlock(mempool.mapTx.begin()->second, tx,pblock, minGasPrice);
-            }
-        }
-
-        dev::h256 oldHashStateRoot(globalState->rootHash());
-        dev::h256 oldHashUTXORoot(globalState->rootHashUTXO());
-        int nPackagesSelected = 0;
-        int nDescendantsUpdated = 0;
-        //addPackageTxs(nPackagesSelected, nDescendantsUpdated, minGasPrice);
-        pblock->hashStateRoot = uint256(h256Touint(dev::h256(globalState->rootHash())));
-        pblock->hashUTXORoot = uint256(h256Touint(dev::h256(globalState->rootHashUTXO())));
-        globalState->setRoot(oldHashStateRoot);
-        globalState->setRootUTXO(oldHashUTXORoot);
 
         CValidationState state;
         if (!TestBlockValidity(state, *pblock, pindexPrev, false, false)) {
