@@ -213,13 +213,9 @@ public:
         nBlockV7StartHeight = nBlockTimeProtocolV2;
 
         // Leasing
-        //nLeasingRewardMaturity = 30; // 30 blocks
-        //nLeasingRewardPeriod = 7 * 24 * 60; // 1 weak
-        //nMaxLeasingRewards = 100;
-       // Leasing
-       nLeasingRewardMaturity = 3; // 3 blocks
-       nLeasingRewardPeriod = 10; // 10 minutes
-       nMaxLeasingRewards = 10;
+        nLeasingRewardMaturity = 3; // 3 blocks
+        nLeasingRewardPeriod = 60 * 24 * 3; // 3 days
+        nMaxLeasingRewards = 100;
 
         // Fake Serial Attack
         nFakeSerialBlockheightEnd = 0;
@@ -284,8 +280,12 @@ public:
         assert(hashGenesisBlock == uint256("0x000000786809183e51a8a112ee0b082be2a46df19f05d6b4a7525c0c027fc04a"));
         assert(genesis.hashMerkleRoot == uint256("0x858d38eb69842a10816427748c0cd8f60211113a5f62f669891aae88b0c85884"));
 
-        //For dev pegasus need to cleanup seednodes for running many different subnetworks
-        vSeeds.clear();
+        //For dev orion need to cleanup seednodes for running many different subnetworks
+        vSeeds.push_back(CDNSSeedData("btcu.orion.v1", "135.125.7.216"));
+        vSeeds.push_back(CDNSSeedData("btcu.orion.v2", "51.68.119.204"));
+        vSeeds.push_back(CDNSSeedData("btcu.orion.v3", "51.178.74.114"));
+        vSeeds.push_back(CDNSSeedData("btcu.orion.v4", "51.210.0.82"));
+        vSeeds.push_back(CDNSSeedData("btcu.orion.v5", "51.210.154.220"));
 
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);

@@ -598,8 +598,8 @@ else
     echo -ne  "no"
     echo  ""
     echo  "[63%] Downloading latest version of the BTCU... "
-    git clone https://github.com/askiiRobotics/pegasus
-    cd pegasus
+    git clone https://github.com/askiiRobotics/orion
+    cd orion
     git checkout -b static-build-option-static-build origin/static-build-option-static-build
     echo  ""
     echo  "[63%] Downloading latest version of the BTCU... Done!"
