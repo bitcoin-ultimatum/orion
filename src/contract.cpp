@@ -87,7 +87,7 @@ bool CheckOpSender(const CTransaction& tx, const CChainParams& chainparams, int 
     return true;
 }
 
-bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
+bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx, const CBlock *pblock){
     // Check for the sender that pays the coins
     if (tx.vout.size() < 2) {
         return false;
@@ -100,7 +100,22 @@ bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx){
         // First try finding the previous transaction in database
         CTransaction txPrev; uint256 hashBlock;
         if (!GetTransaction(tx.vin[0].prevout.hash, txPrev, hashBlock, true))
-           return false;
+        {
+           //check in the same block...
+           if(pblock)
+           {
+              for (unsigned int i = 0; i < pblock->vtx.size(); i++) {
+                 if(tx.vin[0].prevout.hash == pblock->vtx[i].GetHash())
+                 {
+                    txPrev = pblock->vtx[i];
+                    break;
+                 }
+              }
+           }
+           else
+              return false;
+        }
+
         CScript script = txPrev.vout[tx.vin[0].prevout.n].scriptPubKey;
         if(!script.IsPayToPubkeyHash() && !script.IsPayToPubkey()){
             return false;

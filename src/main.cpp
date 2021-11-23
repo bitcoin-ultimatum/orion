@@ -3044,7 +3044,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  return state.DoS(100, error("ConnectBlock() : Non-validator create contract not allowed"),
                                   REJECT_INVALID, "sc-create-invalid");
 
-              if (!CheckSenderScript(view, tx)) {
+              if (!CheckSenderScript(view, tx, &block)) {
                  return state.Error("bad-txns-invalid-sender-script");
               }
 
