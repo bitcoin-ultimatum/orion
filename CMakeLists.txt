@@ -1472,6 +1472,7 @@ set(WALLET_SOURCES
         ./src/zbtcu/zerocoin.cpp
         ./src/wallet/rpcwallet.cpp
         ./src/kernel.cpp
+        ./src/key_io.cpp
         ./src/wallet/wallet.cpp
         ./src/wallet/wallet_zerocoin.cpp
         ./src/wallet/wallet_ismine.cpp
