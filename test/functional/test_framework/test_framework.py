@@ -919,7 +919,8 @@ class BtcuTestFramework():
         assert_greater_than(len(self.nodes), node_id)
         nHeight = self.nodes[node_id].getblockcount()
         prevHhash = self.nodes[node_id].getblockhash(nHeight)
-        prevModifier = self.nodes[node_id].getblock(prevHhash)['stakeModifier']
+        block = self.nodes[node_id].getblock(prevHhash)
+        prevModifier = self.nodes[node_id].getblock(prevHhash)['modifierV2']
         return self.stake_block(node_id,
                                 nHeight+1,
                                 prevHhash,
