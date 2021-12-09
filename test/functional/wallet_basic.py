@@ -3,6 +3,8 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the wallet."""
+import decimal
+
 from test_framework.test_framework import BtcuTestFramework
 from test_framework.util import *
 
@@ -185,21 +187,22 @@ class WalletTest(BtcuTestFramework):
         #4. check if recipient (node0) can list the zero value tx
         usp = self.nodes[1].listunspent()
         inputs = [{"txid":usp[0]['txid'], "vout":usp[0]['vout']}]
-        outputs = {self.nodes[1].getnewaddress(): 49.998, self.nodes[0].getnewaddress(): 11.11}
+        test = self.nodes[1].getbalance()
+        outputs = {self.nodes[1].getnewaddress(): float(self.nodes[1].getbalance()) - float(decimal.Decimal(11.11)) - float(fee), self.nodes[0].getnewaddress(): 11.11}
 
         rawTx = self.nodes[1].createrawtransaction(inputs, outputs).replace("c0833842", "00000000") #replace 11.11 with 0.0 (int32)
         decRawTx = self.nodes[1].decoderawtransaction(rawTx)
         signedRawTx = self.nodes[1].signrawtransaction(rawTx)
         decRawTx = self.nodes[1].decoderawtransaction(signedRawTx['hex'])
         zeroValueTxid= decRawTx['txid']
-        assert_raises_rpc_error(-25, "", self.nodes[1].sendrawtransaction, signedRawTx['hex'])
+        assert_raises_rpc_error(-26, "", self.nodes[1].sendrawtransaction, signedRawTx['hex'])
 
         self.sync_all([self.nodes[0:3]])
         self.nodes[1].generate(1) #mine a block
         self.sync_all([self.nodes[0:3]])
 
-        #unspentTxs = self.nodes[0].listunspent() #zero value tx must be in listunspents output
-        #found = False
+        unspentTxs = self.nodes[0].listunspent() #zero value tx must be in listunspents output
+        found = False
         #for uTx in unspentTxs:
         #    if uTx['txid'] == zeroValueTxid:
         #        found = True
@@ -218,7 +221,7 @@ class WalletTest(BtcuTestFramework):
 
         txIdNotBroadcasted  = self.nodes[0].sendtoaddress(self.nodes[2].getnewaddress(), 2)
         txObjNotBroadcasted = self.nodes[0].gettransaction(txIdNotBroadcasted)
-        self.nodes[1].generate(1) #mine a block, tx should not be in there
+        #self.nodes[1].generate(1) #mine a block, tx should not be in there
         self.sync_all([self.nodes[0:3]])
         assert_equal(self.nodes[2].getbalance(), node_2_bal + (fee * 3)) #should not be changed because tx was not broadcasted
 
