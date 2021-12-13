@@ -121,8 +121,8 @@ class ReorgStakeTest(BtcuTestFramework):
             stakeinput["txid"][:9], stakeinput["txid"][-4:], stakeinput["vout"]))
 
         # Relay zerocoin spends
-        self.nodes[0].sendrawtransaction(tx_A0)
-        self.nodes[0].sendrawtransaction(tx_A1)
+        #self.nodes[0].sendrawtransaction(tx_A0)
+        #self.nodes[0].sendrawtransaction(tx_A1)
 
         # Stake 10 more blocks with node-0 and check balances
         self.log.info("Staking 10 more blocks with node 0...")
