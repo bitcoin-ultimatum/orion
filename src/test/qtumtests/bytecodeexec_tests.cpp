@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(bytecodeexec_create_contract){
     std::vector<dev::Address> addrs = {createQtumAddress(txs[0].getHashWith(), txs[0].getNVout())};
     valtype code = ParseHex("60606040525b600b5b5b565b0000a165627a7a723058209cedb722bf57a30e3eb00eeefc392103ea791a2001deed29f5c3809ff10eb1dd0029");
     checkExecResult(result.first, 1, 1, dev::eth::TransactionException::None, addrs, code, dev::u256(0));
-    checkBCEResult(result.second, 69382, 430618, 1, CAmount(GASLIMIT));
+    checkBCEResult(result.second, 65638, 434362, 1, CAmount(GASLIMIT));
 }
 
 BOOST_AUTO_TEST_CASE(bytecodeexec_create_contract_OutOfGasIntrinsic){
@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(bytecodeexec_OutOfGasIntrinsic_create_contract_normal_creat
 
     valtype code = ParseHex("60606040525b600b5b5b565b0000a165627a7a723058209cedb722bf57a30e3eb00eeefc392103ea791a2001deed29f5c3809ff10eb1dd0029");
     checkExecResult(result.first, 10, 5, dev::eth::TransactionException::OutOfGasIntrinsic, newAddressGen, code, dev::u256(0), true);
-    checkBCEResult(result.second, 347410, 2153090, 5, CAmount(GASLIMIT * 5 + 500));
+    checkBCEResult(result.second, 328690, 2171810, 5, CAmount(GASLIMIT * 5 + 500));
 }
 
 BOOST_AUTO_TEST_CASE(bytecodeexec_OutOfGas_create_contract_normal_create_contract){
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(bytecodeexec_OutOfGas_create_contract_normal_create_contrac
     
     valtype code = ParseHex("60606040525b600b5b5b565b0000a165627a7a723058209cedb722bf57a30e3eb00eeefc392103ea791a2001deed29f5c3809ff10eb1dd0029");
     checkExecResult(result.first, 10, 5, dev::eth::TransactionException::OutOfGas, newAddressGen, code, dev::u256(0), true);
-    checkBCEResult(result.second, 2846910, 2153090, 5, CAmount(GASLIMIT * 10));
+    checkBCEResult(result.second, 2828190, 2171810, 5, CAmount(GASLIMIT * 10));
 }
 
 BOOST_AUTO_TEST_CASE(bytecodeexec_create_contract_many){
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(bytecodeexec_create_contract_many){
 
     valtype code = ParseHex("60606040525b600b5b5b565b0000a165627a7a723058209cedb722bf57a30e3eb00eeefc392103ea791a2001deed29f5c3809ff10eb1dd0029");
     checkExecResult(result.first, 130, 130, dev::eth::TransactionException::None, newAddressGen, code, dev::u256(0));
-    checkBCEResult(result.second, 9019660, 55980340, 130, CAmount(GASLIMIT * 130));
+    checkBCEResult(result.second, 8532940, 56467060, 130, CAmount(GASLIMIT * 130));
 }
 
 BOOST_AUTO_TEST_CASE(bytecodeexec_call_contract_transfer){
@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE(bytecodeexec_suicide){
     auto result = executeBC(txsCall);
 
     checkExecResult(result.first, 9, 1, dev::eth::TransactionException::None, addrs, valtype(), dev::u256(0));
-    checkBCEResult(result.second, 96588, 4403412, 9, CAmount(GASLIMIT * 9));
+    checkBCEResult(result.second, 252054, 4247946, 9, CAmount(GASLIMIT * 9), 9);
 }
 
 BOOST_AUTO_TEST_CASE(bytecodeexec_contract_create_contracts){
@@ -369,8 +369,8 @@ BOOST_AUTO_TEST_CASE(bytecodeexec_contract_create_contracts){
 
     checkExecResult(result.first, 20, 21, dev::eth::TransactionException::None, addrs, valtype(), dev::u256(0));
     BOOST_CHECK(result.second.usedGas + result.second.refundSender == GASLIMIT * 20);
-    BOOST_CHECK(result.second.usedGas == 2335520);
-    BOOST_CHECK(result.second.refundSender == 7664480);
+    BOOST_CHECK(result.second.usedGas == 2292360);
+    BOOST_CHECK(result.second.refundSender == 7707640);
     BOOST_CHECK(result.second.refundOutputs.size() == 20);
     BOOST_CHECK(result.second.valueTransfers.size() == 0);
 }
