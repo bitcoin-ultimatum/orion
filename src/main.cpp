@@ -3039,11 +3039,12 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                     ++nOut;
                  }
               }
-
+#ifndef TEST_BTCU
+            if(!Params().IsRegTestNet())
               if(!bSCValidatorFound)
                  return state.DoS(100, error("ConnectBlock() : Non-validator create contract not allowed"),
                                   REJECT_INVALID, "sc-create-invalid");
-
+#endif
               if (!CheckSenderScript(view, tx, &block)) {
                  return state.Error("bad-txns-invalid-sender-script");
               }
