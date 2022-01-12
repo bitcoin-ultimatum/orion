@@ -243,7 +243,7 @@ public:
 
       std::vector<valtype> vSolutions;
       txnouttype whichType;
-      if (Solver(txOut.scriptPubKey, whichType, vSolutions) && TX_LEASE == whichType) {
+      if (Solver(txOut.scriptPubKey, whichType, vSolutions) && (TX_LEASE == whichType || TX_LEASE_CLTV == whichType)) {
          leasingOutput.kLeaserID = CKeyID(uint160(vSolutions[0]));
          leasingOutput.kOwnerID  = CKeyID(uint160(vSolutions[1]));
       }

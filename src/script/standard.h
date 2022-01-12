@@ -106,7 +106,8 @@ enum txnouttype
     TX_WITNESS_V0_SCRIPTHASH,
     TX_WITNESS_V0_KEYHASH,
     TX_LEASE,
-    TX_LEASINGREWARD
+    TX_LEASINGREWARD,
+    TX_LEASE_CLTV
 };
 
 class CNoDestination {
@@ -203,6 +204,7 @@ CScript GetScriptForRawPubKey(const CPubKey& pubkey);
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 CScript GetScriptForStakeDelegation(const CKeyID& stakingKey, const CKeyID& spendingKey);
 CScript GetScriptForLeasing(const CKeyID& leaserKey, const CKeyID& ownerKey);
+CScript GetScriptForLeasingCLTV(const CKeyID& leaserKey, const CKeyID& ownerKey, uint32_t nLockTime);
 CScript GetScriptForLeasingReward(const COutPoint& outPoint, const CTxDestination& dest);
 
 /**

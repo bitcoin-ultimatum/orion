@@ -38,6 +38,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_SCRIPTHASH: return "scripthash";
     case TX_MULTISIG: return "multisig";
     case TX_COLDSTAKE: return "coldstake";
+    case TX_LEASE_CLTV:
     case TX_LEASE: return "lease";
     case TX_LEASINGREWARD: return "leasingreward";
     case TX_NULL_DATA: return "nulldata";
@@ -82,6 +83,12 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::v
         // Leasing: sender provides P2L scripts, receiver provides signature, leasing-flag and pubkey
         mTemplates.insert(std::make_pair(TX_LEASE, CScript() << OP_DUP << OP_HASH160 << OP_ROT << OP_IF << OP_CHECKLEASEVERIFY <<
                 OP_PUBKEYHASH << OP_ELSE << OP_PUBKEYHASH << OP_ENDIF << OP_EQUALVERIFY << OP_CHECKSIG));
+
+       // Leasing with locktime: sender provides P2L scripts, receiver provides signature, leasing-flag and pubkey
+       mTemplates.insert(std::make_pair(TX_LEASE_CLTV, CScript() << OP_IF << OP_INTEGER << OP_CHECKLOCKTIMEVERIFY << OP_DROP <<
+                OP_ELSE << OP_DUP << OP_HASH160 << OP_ROT << OP_IF << OP_CHECKLEASEVERIFY << OP_PUBKEYHASH <<
+                OP_ELSE << OP_PUBKEYHASH << OP_ENDIF << OP_EQUALVERIFY << OP_CHECKSIG));
+
 
         // Leasing reward: sender provides TRXHASH N and receiver pubkey
         mTemplates.insert(std::make_pair(TX_LEASINGREWARD, CScript() << OP_TRXHASH << OP_INTEGER << OP_LEASINGREWARD <<
@@ -402,6 +409,7 @@ int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned c
         return 2;
     case TX_COLDSTAKE:
         return 3;
+    case TX_LEASE_CLTV:
     case TX_LEASE:
         return 3;
     case TX_LEASINGREWARD:
@@ -532,7 +540,7 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet,
        unk.length = vSolutions[1].size();
        addressRet = unk;
        return true;
-    } else if (whichType == TX_LEASE) {
+    } else if (whichType == TX_LEASE || whichType == TX_LEASE_CLTV) {
         addressRet = CKeyID(uint160(vSolutions[!fLease]));
         return true;
     } else if (whichType == TX_LEASINGREWARD) {
@@ -580,7 +588,7 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
         addressRet.push_back(CKeyID(uint160(vSolutions[0])));
         addressRet.push_back(CKeyID(uint160(vSolutions[1])));
         return true;
-    } else if (typeRet == TX_LEASE)
+    } else if (typeRet == TX_LEASE || typeRet == TX_LEASE_CLTV)
     {
         if (vSolutions.size() < 2)
             return false;
@@ -686,6 +694,17 @@ CScript GetScriptForLeasing(const CKeyID& leaserKey, const CKeyID& ownerKey)
            OP_ELSE << ToByteVector(ownerKey) << OP_ENDIF <<
            OP_EQUALVERIFY << OP_CHECKSIG;
     return script;
+}
+CScript GetScriptForLeasingCLTV(const CKeyID& leaserKey, const CKeyID& ownerKey, uint32_t nLockTime)
+{
+   CScript script;
+   script << OP_IF << nLockTime << OP_CHECKLOCKTIMEVERIFY << OP_DROP <<
+          OP_ELSE <<
+          OP_DUP << OP_HASH160 << OP_ROT <<
+          OP_IF << OP_CHECKLEASEVERIFY << ToByteVector(leaserKey) <<
+          OP_ELSE << ToByteVector(ownerKey) << OP_ENDIF <<
+          OP_EQUALVERIFY << OP_CHECKSIG;
+   return script;
 }
 
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys)

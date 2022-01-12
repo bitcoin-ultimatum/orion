@@ -142,7 +142,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         scriptSigRet << (fColdStake ? (int)OP_TRUE : OP_FALSE) << ToByteVector(vch);
         return true;
       }
-
+    case TX_LEASE_CLTV:
     case TX_LEASE: {
         if (fLeasing) {
             if (!fForceLeaserSign) {
@@ -393,6 +393,7 @@ static CScript CombineSignatures(const CScript& scriptPubKey, const CTransaction
     case TX_PUBKEY:
     case TX_PUBKEYHASH:
     case TX_COLDSTAKE:
+    case TX_LEASE_CLTV:
     case TX_LEASE:
     case TX_LEASINGREWARD:
     case TX_WITNESS_V0_SCRIPTHASH:
@@ -598,6 +599,7 @@ namespace BTC {
          case TX_PUBKEY:
          case TX_PUBKEYHASH:
          case TX_COLDSTAKE:
+         case TX_LEASE_CLTV:
          case TX_LEASE:
          case TX_LEASINGREWARD:
             // Signatures are bigger than placeholders or empty scripts:
@@ -771,6 +773,7 @@ namespace BTC {
             return true;
          }
 
+         case TX_LEASE_CLTV:
          case TX_LEASE: {
             if (fLeasing) {
                if (!fForceLeaserSign) {
@@ -865,7 +868,7 @@ namespace BTC {
       if (P2SH) {
          result.push_back(std::vector<unsigned char>(subscript.begin(), subscript.end()));
       }
-      if(solved && (whichType == TX_LEASE || whichType == TX_COLDSTAKE))
+      if(solved && (whichType == TX_LEASE_CLTV || whichType == TX_LEASE || whichType == TX_COLDSTAKE))
          sigdata.scriptSig = CScript(result[0].begin(), result[0].end());
       else
          sigdata.scriptSig = PushAll(result);

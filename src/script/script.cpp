@@ -312,13 +312,23 @@ bool CScript::IsPayToColdStaking() const
 bool CScript::IsPayToLeasing() const
 {
     // Extra-fast test for pay-to-leasing CScripts:
-    return (this->size() == 51 &&
+    return ((this->size() == 51 &&
             this->at(2) == OP_ROT &&
             this->at(4) == OP_CHECKLEASEVERIFY &&
             this->at(5) == 0x14 &&
             this->at(27) == 0x14 &&
             this->at(49) == OP_EQUALVERIFY &&
-            this->at(50) == OP_CHECKSIG);
+            this->at(50) == OP_CHECKSIG)
+            ||
+            (this->size() == 60 &&
+            this->at(6) == OP_CHECKLOCKTIMEVERIFY &&
+            this->at(11) == OP_ROT &&
+            this->at(13) == OP_CHECKLEASEVERIFY &&
+            this->at(14) == 0x14 &&
+            this->at(36) == 0x14 &&
+            this->at(58) == OP_EQUALVERIFY &&
+            this->at(59) == OP_CHECKSIG));
+
 }
 
 bool CScript::IsLeasingReward() const {

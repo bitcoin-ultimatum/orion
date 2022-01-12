@@ -153,6 +153,7 @@ isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey, IsMine
             return ISMINE_SPENDABLE_DELEGATED;
         break;
     }
+    case TX_LEASE_CLTV:
     case TX_LEASE: {
         if (sigversion != IsMineSigVersion::TOP) {
             break;
