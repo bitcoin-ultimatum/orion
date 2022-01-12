@@ -176,7 +176,7 @@ class FakeStakeTest(BtcuTestFramework):
         def get_prev_modifier(prevBlockHash):
             prevBlock = self.nodes[1].getblock(prevBlockHash)
             if prevBlock['height'] > 250:
-                return prevBlock['stakeModifier']
+                return prevBlock['modifierV2']
             return "0"
 
         # Get block number, block time and prevBlock hash and modifier
