@@ -540,9 +540,12 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet,
        unk.length = vSolutions[1].size();
        addressRet = unk;
        return true;
-    } else if (whichType == TX_LEASE || whichType == TX_LEASE_CLTV) {
+    } else if (whichType == TX_LEASE ) {
         addressRet = CKeyID(uint160(vSolutions[!fLease]));
         return true;
+    }else if (whichType == TX_LEASE_CLTV) {
+       addressRet = CKeyID(uint160(vSolutions[!fLease + 1]));
+       return true;
     } else if (whichType == TX_LEASINGREWARD) {
         // 0 is TRXHASH
         // 1 is N
@@ -588,7 +591,7 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
         addressRet.push_back(CKeyID(uint160(vSolutions[0])));
         addressRet.push_back(CKeyID(uint160(vSolutions[1])));
         return true;
-    } else if (typeRet == TX_LEASE || typeRet == TX_LEASE_CLTV)
+    } else if (typeRet == TX_LEASE)
     {
         if (vSolutions.size() < 2)
             return false;
@@ -596,6 +599,14 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
         addressRet.push_back(CKeyID(uint160(vSolutions[0])));
         addressRet.push_back(CKeyID(uint160(vSolutions[1])));
         return true;
+    }else if (typeRet == TX_LEASE_CLTV)
+    {
+       if (vSolutions.size() < 3)
+          return false;
+       nRequiredRet = 2;
+       addressRet.push_back(CKeyID(uint160(vSolutions[1])));
+       addressRet.push_back(CKeyID(uint160(vSolutions[2])));
+       return true;
     } else if (typeRet == TX_LEASINGREWARD)
     {
         if (vSolutions.size() < 3)

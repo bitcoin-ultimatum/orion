@@ -150,10 +150,10 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
                 return false;
             }
             // sign with the leaser key
-            keyID = CKeyID(uint160(vSolutions[0]));
+            keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[0])): CKeyID(uint160(vSolutions[1]));
         } else {
             // sign with the owner key
-            keyID = CKeyID(uint160(vSolutions[1]));
+            keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[1])): CKeyID(uint160(vSolutions[2]));
         }
         if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet, ret))
             return error("*** %s: failed to sign with the %s key.",
@@ -781,10 +781,10 @@ namespace BTC {
                   return false;
                }
                // sign with the leaser key
-               keyID = CKeyID(uint160(vSolutions[0]));
+               keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[0])): CKeyID(uint160(vSolutions[1]));
             } else {
                // sign with the owner key
-               keyID = CKeyID(uint160(vSolutions[1]));
+               keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[1])): CKeyID(uint160(vSolutions[2]));
             }
             //if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet, ret))
             if(!BTC::Sign1(keyID, creator, scriptPubKey, ret, sigversion))
