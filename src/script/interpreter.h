@@ -160,6 +160,14 @@ namespace BTC
    uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache);
 }
 
+/** Enum to specify what *TransactionSignatureChecker's behavior should be
+ *  when dealing with missing transaction data.
+ */
+enum class MissingDataBehavior
+{
+    ASSERT_FAIL,  //!< Abort execution through assertion failure (for consensus code)
+    FAIL,         //!< Just act as if the signature was invalid
+};
 
 struct ScriptExecutionData
 {
@@ -351,6 +359,30 @@ class MutableTransactionSignatureChecker : public BTC::TransactionSignatureCheck
    public:
       MutableTransactionSignatureChecker(const CMutableTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn) : TransactionSignatureChecker(&txTo, nInIn, amountIn), txTo(*txToIn) {}
    };
+
+
+    template <class T>
+    class GenericTransactionSignatureChecker : public BaseSignatureChecker
+    {
+    private:
+        const T* txTo;
+        unsigned int nIn;
+        const CAmount amount;
+        const PrecomputedTransactionData* txdata;
+
+    protected:
+        virtual bool VerifySignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const;
+
+    public:
+        GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(nullptr) {}
+        GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
+        bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
+        bool CheckLockTime(const CScriptNum& nLockTime) const override;
+        bool CheckSequence(const CScriptNum& nSequence) const override;
+    };
+
+    //using TransactionSignatureChecker = GenericTransactionSignatureChecker<CTransaction>;
+    //using MutableTransactionSignatureChecker = GenericTransactionSignatureChecker<CMutableTransaction>;
 
    int FindAndDelete(CScript& script, const CScript& b);
    bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness,

@@ -34,6 +34,20 @@ class CSizeComputer;
 static const unsigned int MAX_SIZE = 0x02000000;
 
 
+/**
+ * Dummy data type to identify deserializing constructors.
+ *
+ * By convention, a constructor of a type T with signature
+ *
+ *   template <typename Stream> T::T(deserialize_type, Stream& s)
+ *
+ * is a deserializing constructor, which builds the type by
+ * deserializing it from s. If T contains const fields, this
+ * is likely the only way to do so.
+ */
+struct deserialize_type {};
+constexpr deserialize_type deserialize {};
+
 //! Safely convert odd char pointer types to standard ones.
 inline char* CharCast(char* c) { return c; }
 inline char* CharCast(unsigned char* c) { return (char*)c; }
@@ -1078,6 +1092,8 @@ public:
     {
         return nSize;
     }
+
+    int GetVersion() const { return nVersion; }
 };
 
 
