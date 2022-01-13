@@ -835,6 +835,7 @@ namespace BTC {
       bool P2SH = false;
       CScript subscript;
       sigdata.scriptWitness.stack.clear();
+      int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
 
       if (solved && whichType == TX_SCRIPTHASH)
       {
@@ -873,8 +874,12 @@ namespace BTC {
       else
          sigdata.scriptSig = PushAll(result);
 
+      //allow checklocktime for leasing clvt trx
+      if(whichType == TX_LEASE_CLTV)
+         flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
+
       // Test solution
-      return solved && BTC::VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
+      return solved && BTC::VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, flags, creator.Checker());
    }
 
 
