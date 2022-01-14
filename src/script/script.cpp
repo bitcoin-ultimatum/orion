@@ -320,14 +320,14 @@ bool CScript::IsPayToLeasing() const
             this->at(49) == OP_EQUALVERIFY &&
             this->at(50) == OP_CHECKSIG)
             ||
-            (this->size() == 60 &&
-            this->at(6) == OP_CHECKLOCKTIMEVERIFY &&
-            this->at(11) == OP_ROT &&
-            this->at(13) == OP_CHECKLEASEVERIFY &&
-            this->at(14) == 0x14 &&
-            this->at(36) == 0x14 &&
-            this->at(58) == OP_EQUALVERIFY &&
-            this->at(59) == OP_CHECKSIG));
+            (this->size() == 58 &&
+            this->at(5) == OP_CHECKLOCKTIMEVERIFY &&
+            this->at(9) == OP_ROT &&
+            this->at(11) == OP_CHECKLEASEVERIFY &&
+            this->at(12) == 0x14 &&
+            this->at(34) == 0x14 &&
+            this->at(56) == OP_EQUALVERIFY &&
+            this->at(57) == OP_CHECKSIG));
 
 }
 
