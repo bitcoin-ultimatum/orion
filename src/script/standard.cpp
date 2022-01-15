@@ -85,7 +85,7 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::v
                 OP_PUBKEYHASH << OP_ELSE << OP_PUBKEYHASH << OP_ENDIF << OP_EQUALVERIFY << OP_CHECKSIG));
 
        // Leasing with locktime: sender provides P2L scripts, receiver provides signature, leasing-flag and pubkey
-       mTemplates.insert(std::make_pair(TX_LEASE_CLTV, CScript() << OP_INTEGER << OP_CHECKLOCKTIMEVERIFY << OP_DROP <<
+       mTemplates.insert(std::make_pair(TX_LEASE_CLTV, CScript() << OP_INTEGER << OP_CHECKLEASELOCKTIMEVERIFY << OP_DROP <<
        OP_DUP << OP_HASH160 << OP_ROT << OP_IF << OP_CHECKLEASEVERIFY << OP_PUBKEYHASH <<
                 OP_ELSE << OP_PUBKEYHASH << OP_ENDIF << OP_EQUALVERIFY << OP_CHECKSIG));
 
@@ -709,7 +709,7 @@ CScript GetScriptForLeasing(const CKeyID& leaserKey, const CKeyID& ownerKey)
 CScript GetScriptForLeasingCLTV(const CKeyID& leaserKey, const CKeyID& ownerKey, uint32_t nLockTime)
 {
    CScript script;
-   script << nLockTime << OP_CHECKLOCKTIMEVERIFY << OP_DROP <<
+   script << nLockTime << OP_CHECKLEASELOCKTIMEVERIFY << OP_DROP <<
           OP_DUP << OP_HASH160 << OP_ROT <<
           OP_IF << OP_CHECKLEASEVERIFY << ToByteVector(leaserKey) <<
           OP_ELSE << ToByteVector(ownerKey) << OP_ENDIF <<

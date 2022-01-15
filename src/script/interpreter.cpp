@@ -14,7 +14,7 @@
 #include "pubkey.h"
 #include "script/script.h"
 #include "uint256.h"
-
+#include "main.h"
 
 typedef std::vector<unsigned char> valtype;
 
@@ -2583,6 +2583,46 @@ namespace BTC
                   }
                      break;
 
+                  case OP_CHECKLEASELOCKTIMEVERIFY:
+                  {
+                     if (!(flags & SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY))
+                     {
+                        // not enabled; treat as a NOP2
+                        break;
+                     }
+
+                     if (stack.size() < 1)
+                        return set_error(serror, SCRIPT_ERR_INVALID_STACK_OPERATION);
+
+                     // Note that elsewhere numeric opcodes are limited to
+                     // operands in the range -2**31+1 to 2**31-1, however it is
+                     // legal for opcodes to produce results exceeding that
+                     // range. This limitation is implemented by CScriptNum's
+                     // default 4-byte limit.
+                     //
+                     // If we kept to that limit we'd have a year 2038 problem,
+                     // even though the nLockTime field in transactions
+                     // themselves is uint32 which only becomes meaningless
+                     // after the year 2106.
+                     //
+                     // Thus as a special case we tell CScriptNum to accept up
+                     // to 5-byte bignums, which are good until 2**39-1, well
+                     // beyond the 2**32-1 limit of the nLockTime field itself.
+                     const CScriptNum nLockTime(stacktop(-1), fRequireMinimal, 5);
+
+                     // In the rare event that the argument may be < 0 due to
+                     // some arithmetic being done first, you can always use
+                     // 0 MAX CHECKLOCKTIMEVERIFY.
+                     if (nLockTime < 0)
+                        return set_error(serror, SCRIPT_ERR_NEGATIVE_LOCKTIME);
+
+                     // Actually compare the specified lock time with the transaction.
+                     if (!checker.CheckLeaseLockTime(nLockTime))
+                        return set_error(serror, SCRIPT_ERR_UNSATISFIED_LOCKTIME);
+
+                     break;
+                  }
+
                   default:
                      return set_error(serror, SCRIPT_ERR_BAD_OPCODE);
                }
@@ -3013,6 +3053,15 @@ namespace BTC
       // inputs, but testing just this input minimizes the data
       // required to prove correct CHECKLOCKTIMEVERIFY execution.
       if (CTxIn::SEQUENCE_FINAL == txTo->vin[nIn].nSequence)
+         return false;
+
+      return true;
+   }
+
+   bool TransactionSignatureChecker::CheckLeaseLockTime(const CScriptNum& nLockTime) const
+   {
+      //compairing locking time with last block time
+      if (nLockTime > chainActive.Tip()->GetBlockTime())
          return false;
 
       return true;

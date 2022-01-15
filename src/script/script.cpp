@@ -168,6 +168,7 @@ const char* GetOpName(opcodetype opcode)
     // leasing
     case OP_CHECKLEASEVERIFY       : return "OP_CHECKLEASEVERIFY";
     case OP_LEASINGREWARD          : return "OP_LEASINGREWARD";
+    case OP_CHECKLEASELOCKTIMEVERIFY    : return "OP_CHECKLEASELOCKTIMEVERIFY";
 
     // Opcode added by BIP 342 (Tapscript)
     case OP_CHECKSIGADD            : return "OP_CHECKSIGADD";
@@ -321,7 +322,7 @@ bool CScript::IsPayToLeasing() const
             this->at(50) == OP_CHECKSIG)
             ||
             (this->size() == 58 &&
-            this->at(5) == OP_CHECKLOCKTIMEVERIFY &&
+            this->at(5) == OP_CHECKLEASELOCKTIMEVERIFY &&
             this->at(9) == OP_ROT &&
             this->at(11) == OP_CHECKLEASEVERIFY &&
             this->at(12) == 0x14 &&
