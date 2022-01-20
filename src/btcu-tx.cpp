@@ -27,7 +27,7 @@
 
 static bool fCreateBlank;
 static std::map<std::string, UniValue> registers;
-CClientUIInterface uiInterface;
+//CClientUIInterface uiInterface;
 
 static bool AppInitRawTx(int argc, char* argv[])
 {
