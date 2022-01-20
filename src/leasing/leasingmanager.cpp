@@ -243,9 +243,9 @@ public:
 
       std::vector<valtype> vSolutions;
       txnouttype whichType;
-      if (Solver(txOut.scriptPubKey, whichType, vSolutions) && TX_LEASE == whichType) {
-         leasingOutput.kLeaserID = CKeyID(uint160(vSolutions[0]));
-         leasingOutput.kOwnerID  = CKeyID(uint160(vSolutions[1]));
+      if (Solver(txOut.scriptPubKey, whichType, vSolutions) && (TX_LEASE == whichType || TX_LEASE_CLTV == whichType)) {
+         leasingOutput.kLeaserID = (TX_LEASE == whichType) ? CKeyID(uint160(vSolutions[0])): CKeyID(uint160(vSolutions[1]));
+         leasingOutput.kOwnerID  = (TX_LEASE == whichType) ? CKeyID(uint160(vSolutions[1])): CKeyID(uint160(vSolutions[2]));
       }
 
       if (leasingOutput.kOwnerID.IsNull()) {

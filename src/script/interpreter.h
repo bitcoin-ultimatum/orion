@@ -302,6 +302,11 @@ namespace BTC
          return false;
       }
 
+      virtual bool CheckLeaseLockTime(const CScriptNum& nLockTime) const
+      {
+         return false;
+      }
+
       virtual bool CheckSequence(const CScriptNum& nSequence) const
       {
          return false;
@@ -337,6 +342,7 @@ class TransactionSignatureChecker : public BTC::BaseSignatureChecker
    bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey_in, SigVersion sigversion, const ScriptExecutionData& execdata, ScriptError* serror) const override;
       bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
       bool CheckLockTime(const CScriptNum& nLockTime) const override;
+      bool CheckLeaseLockTime(const CScriptNum& nLockTime) const override;
       bool CheckSequence(const CScriptNum& nSequence) const override;
       bool CheckColdStake(const CScript& script) const override {
          return txTo->CheckColdStake(script);

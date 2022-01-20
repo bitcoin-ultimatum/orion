@@ -142,7 +142,7 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
         scriptSigRet << (fColdStake ? (int)OP_TRUE : OP_FALSE) << ToByteVector(vch);
         return true;
       }
-
+    case TX_LEASE_CLTV:
     case TX_LEASE: {
         if (fLeasing) {
             if (!fForceLeaserSign) {
@@ -150,10 +150,10 @@ bool SignStep(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 ha
                 return false;
             }
             // sign with the leaser key
-            keyID = CKeyID(uint160(vSolutions[0]));
+            keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[0])): CKeyID(uint160(vSolutions[1]));
         } else {
             // sign with the owner key
-            keyID = CKeyID(uint160(vSolutions[1]));
+            keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[1])): CKeyID(uint160(vSolutions[2]));
         }
         if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet, ret))
             return error("*** %s: failed to sign with the %s key.",
@@ -393,6 +393,7 @@ static CScript CombineSignatures(const CScript& scriptPubKey, const CTransaction
     case TX_PUBKEY:
     case TX_PUBKEYHASH:
     case TX_COLDSTAKE:
+    case TX_LEASE_CLTV:
     case TX_LEASE:
     case TX_LEASINGREWARD:
     case TX_WITNESS_V0_SCRIPTHASH:
@@ -598,6 +599,7 @@ namespace BTC {
          case TX_PUBKEY:
          case TX_PUBKEYHASH:
          case TX_COLDSTAKE:
+         case TX_LEASE_CLTV:
          case TX_LEASE:
          case TX_LEASINGREWARD:
             // Signatures are bigger than placeholders or empty scripts:
@@ -771,6 +773,7 @@ namespace BTC {
             return true;
          }
 
+         case TX_LEASE_CLTV:
          case TX_LEASE: {
             if (fLeasing) {
                if (!fForceLeaserSign) {
@@ -778,10 +781,10 @@ namespace BTC {
                   return false;
                }
                // sign with the leaser key
-               keyID = CKeyID(uint160(vSolutions[0]));
+               keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[0])): CKeyID(uint160(vSolutions[1]));
             } else {
                // sign with the owner key
-               keyID = CKeyID(uint160(vSolutions[1]));
+               keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[1])): CKeyID(uint160(vSolutions[2]));
             }
             //if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet, ret))
             if(!BTC::Sign1(keyID, creator, scriptPubKey, ret, sigversion))
@@ -832,6 +835,7 @@ namespace BTC {
       bool P2SH = false;
       CScript subscript;
       sigdata.scriptWitness.stack.clear();
+      int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
 
       if (solved && whichType == TX_SCRIPTHASH)
       {
@@ -865,13 +869,17 @@ namespace BTC {
       if (P2SH) {
          result.push_back(std::vector<unsigned char>(subscript.begin(), subscript.end()));
       }
-      if(solved && (whichType == TX_LEASE || whichType == TX_COLDSTAKE))
+      if(solved && (whichType == TX_LEASE_CLTV || whichType == TX_LEASE || whichType == TX_COLDSTAKE))
          sigdata.scriptSig = CScript(result[0].begin(), result[0].end());
       else
          sigdata.scriptSig = PushAll(result);
 
+      //allow checklocktime for leasing clvt trx
+      if(whichType == TX_LEASE_CLTV)
+         flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
+
       // Test solution
-      return solved && BTC::VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
+      return solved && BTC::VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, flags, creator.Checker());
    }
 
 
