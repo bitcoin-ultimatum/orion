@@ -74,6 +74,7 @@ struct CLeasingOutput {
 struct byTrxHash;
 struct byLeasingReward;
 struct byOwner;
+struct byLeaser;
 
 using CLeasingOutputMap = bmi::multi_index_container<
     CLeasingOutput,
@@ -90,7 +91,8 @@ using CLeasingOutputMap = bmi::multi_index_container<
                 CLeasingOutput,
                 bmi::member<CLeasingOutput, CKeyID, &CLeasingOutput::kLeaserID>,
                 bmi::member<CLeasingOutput, int, &CLeasingOutput::nNextRewardHeight>>>,
-                bmi::ordered_non_unique<bmi::tag<byOwner>, bmi::member<CLeasingOutput, CKeyID, &CLeasingOutput::kOwnerID>>
+        bmi::ordered_non_unique<bmi::tag<byOwner>, bmi::member<CLeasingOutput, CKeyID, &CLeasingOutput::kOwnerID>>,
+        bmi::ordered_non_unique<bmi::tag<byLeaser>, bmi::member<CLeasingOutput, CKeyID, &CLeasingOutput::kLeaserID>>
     >>;
 
 
@@ -443,27 +445,24 @@ public:
    }
 
    void GetAllAmountsLeasedTo(CPubKey &pubKey, CAmount &amount) const {
-      CKeyID ownerID = CPubKey(pubKey).GetID();
+      CKeyID leaserID = CPubKey(pubKey).GetID();
       LOCK(cs_leasing);
-      auto &idxLeasedTo = mapOutputs.get<byOwner>();
+      auto &idxLeasedTo = mapOutputs.get<byLeaser>();
 
-      auto itr = idxLeasedTo.lower_bound(ownerID);
+      auto itr = idxLeasedTo.lower_bound(leaserID);
       amount = 0;
-       for (; itr != idxLeasedTo.end() && itr->kOwnerID == ownerID; ++itr)
+       for (; itr != idxLeasedTo.end() && itr->kLeaserID == leaserID; ++itr)
            amount += itr->nValue;
    }
 
     void GetAllAmountsLeasedFrom(CPubKey &pubKey, CAmount &amount) const {
-        CKeyID leaserID = CPubKey(pubKey).GetID();
+        CKeyID ownerID = CPubKey(pubKey).GetID();
         LOCK(cs_leasing);
         auto &idxLeasedTo = mapOutputs.get<byOwner>();
         amount = 0;
-
-        for(auto itr = idxLeasedTo.begin(); itr != idxLeasedTo.end(); itr++)
-        {
-            if(itr->kLeaserID == leaserID)
-                amount += itr->nValue;
-        }
+        auto itr = idxLeasedTo.lower_bound(ownerID);
+       for (; itr != idxLeasedTo.end() && itr->kOwnerID == ownerID; ++itr)
+          amount += itr->nValue;
     }
 
    bool GetLeasingRewards(
