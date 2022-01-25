@@ -259,7 +259,7 @@ UniValue CreateAndSendTransaction(const boost::optional<CValidatorRegister> &val
             CPubKey pubkey = valRegOpt.value().pubKey;
             pwalletMain->pLeasingManager->GetAllAmountsLeasedTo(pubkey, amount);
 
-            if(amount < LEASED_TO_VALIDATOR_MIN_AMOUNT)
+            if(amount < LEASED_TO_VALIDATOR_MIN_AMOUNT * COIN)
                return UniValue("Not enough leased to validator candidate coins, min=" + std::to_string(LEASED_TO_VALIDATOR_MIN_AMOUNT) +
                ", current=" + std::to_string(amount) + ", validator pubkey=" + HexStr(pubkey));
          }
