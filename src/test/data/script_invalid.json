@@ -832,6 +832,76 @@
     "SIGPUSHONLY",
     "P2SH(P2PK) with non-push scriptSig but not P2SH"
 ],
-
+[
+    [
+        "3044022066faa86e74e8b30e82691b985b373de4f9e26dc144ec399c4f066aa59308e7c202204712b86f28c32503faa051dbeabff2c238ece861abc36c5e0b40b1139ca222f001",
+        "410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac",
+        0.00000000
+    ],
+    "",
+    "0 0x20 0xb95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64",
+    "P2SH,WITNESS",
+    "EVAL_FALSE",
+    "Basic P2WSH with wrong value"
+],
+[
+    [
+        "304402202589f0512cb2408fb08ed9bd24f85eb3059744d9e4f2262d0b7f1338cff6e8b902206c0978f449693e0578c71bc543b11079fd0baae700ee5e9a6bee94db490af9fc01",
+        "41048282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f5150811f8a8098557dfe45e8256e830b60ace62d613ac2f7b17bed31b6eaff6e26cafac",
+        0.00000000
+    ],
+    "",
+    "0 0x20 0xac8ebd9e52c17619a381fa4f71aebb696087c6ef17c960fd0587addad99c0610",
+    "P2SH",
+    "Basic P2WSH with the wrong key"
+],
+[
+    "",
+    "0 0x14 0x0000000000000000000000000000000000000000",
+    "P2SH",
+    "Basic P2WPKH with the wrong key"
+],
+[
+    "",
+    "0 0x14 0x0000000000000000000000000000000000000000",
+    "P2SH",
+    "Basic P2WPKH with the wrong key"
+],
+[
+    "",
+    "0 0x14 0x0000000000000000000000000000000000000000",
+    "P2SH",
+    "Basic P2SH(P2WPKH) with the wrong key"
+],
+[
+    "0x22 0x0020ac8ebd9e52c17619a381fa4f71aebb696087c6ef17c960fd0587addad99c0610",
+    "HASH160 0x14 0x61039a003883787c0d6ebc66d97fdabe8e31449d EQUAL",
+    "P2SH",
+    "Basic P2SH(P2WSH) with the wrong key"
+],
+[
+    "0x16 0x00140000000000000000000000000000000000000000",
+    "HASH160 0x14 0x67c10d4d1092750f0d3aa4aa7152f90da1e74248 EQUAL",
+    "P2SH",
+    "Basic P2SH(P2WPKH) with the wrong key"
+],
+[
+    "0x22 0x0020b95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64",
+    "HASH160 0x14 0xf386c2ba255cc56d20cfa6ea8b062f8b59945518 EQUAL",
+    "P2SH",
+    "Basic P2SH(P2WSH) with wrong value"
+],
+[
+    "0x16 0x00140000000000000000000000000000000000000000",
+    "HASH160 0x14 0x67c10d4d1092750f0d3aa4aa7152f90da1e74248 EQUAL",
+    "P2SH",
+    "Basic P2SH(P2WPKH) with wrong value"
+],
+[
+    "",
+    "1 0x14 0x0000000000000000000000000000000000000000",
+    "P2SH",
+    "P2WPKH with future witness version"
+],
 ["The End"]
 ]
