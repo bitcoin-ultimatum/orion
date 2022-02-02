@@ -288,7 +288,7 @@ UniValue CreateAndSendTransaction(const boost::optional<CValidatorRegister> &val
       CTxDestination myAddress = vchPubKey.GetID();
 
       CAmount nAmount = AmountFromValue(
-      UniValue((double) 38 / COIN)); // send 38 satoshi (min tx fee per kb is 100 satoshi)
+      UniValue((double) /*38*/100000000 / COIN)); // send 38 satoshi (min tx fee per kb is 100 satoshi)
       CWalletTx wtx;
 
       EnsureWalletIsUnlocked();
