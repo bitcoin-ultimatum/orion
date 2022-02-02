@@ -17,7 +17,6 @@
 #include <attributes.h>
 #include <compat.h>
 #include <compat/assumptions.h>
-#include <fs.h>
 #include <logging.h>
 #include <sync.h>
 #include <tinyformat.h>
@@ -68,6 +67,11 @@ bool LockDirectory(const fs::path& directory, const std::string lockfile_name, b
 void UnlockDirectory(const fs::path& directory, const std::string& lockfile_name);
 bool DirIsWritable(const fs::path& directory);
 bool CheckDiskSpace(const fs::path& dir, uint64_t additional_bytes = 0);
+
+// Sapling network dir
+const fs::path &ZC_GetParamsDir();
+// Init sapling library
+void initZKSNARKS();
 
 /** Release all directory locks. This is used for unit testing only, at runtime
  * the global destructor will take care of the locks.

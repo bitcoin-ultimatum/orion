@@ -45,6 +45,11 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE
 	"${CMAKE_SOURCE_DIR}/cmake/scripts/OverrideInitFlags.cmake"
 )
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+message(${CMAKE_MODULE_PATH})
+enable_language(Rust)
+include(CMakeCargo)
+
 message(STATUS "CMAKE_TOOLCHAIN_FILE ${CMAKE_TOOLCHAIN_FILE}")
 # Trying to set toolchain if not presented
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -673,7 +678,8 @@ list(APPEND CMAKE_PREFIX_PATH ./src/cpp-ethereum/ethash)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     cmake_policy(SET CMP0074 NEW)
-
+    find_library(CoreFoundation_Library CoreFoundation)
+    mark_as_advanced(CoreFoundation_Library)
 	list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/rocksdb)
 	list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/opt/rocksdb)
 
@@ -732,6 +738,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 	set( Qrcode_INCLUDE_DIR "${Qrcode_ROOT_DIR}/include" )
 	set( Qrcode_LIBRARY "${Qrcode_ROOT_DIR}/lib" )
+
+    file(GLOB ZRUST_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/crates/rustzcash-lib/src/*.h)
+    file(GLOB SAPLING_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling/*.h)
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     if(BUILD_STATIC)
@@ -1047,6 +1056,7 @@ add_subdirectory(src/libff)
 add_subdirectory(src/libscrypt)
 add_subdirectory(src/cryptopp)
 add_subdirectory(src/jsoncpp/jsoncpp)
+add_subdirectory(src/crates)
 
 # dependencies
 set(ETH_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "The path to the cmake directory")
@@ -1701,6 +1711,7 @@ target_include_directories(UTIL_A PUBLIC
             ${OPENSSL_INCLUDE_DIR}
             ${Boost_LIBRARIES} 
             ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/crates/rustzcash-lib/src
         )
 target_link_libraries(UTIL_A
             univalue
@@ -1709,6 +1720,8 @@ target_link_libraries(UTIL_A
             ${OPENSSL_LIBRARIES}
             ${LibEvent_LIBRARIES}
             Threads::Threads
+            ${CoreFoundation_Library}
+            rustzcash-lib
         )
 
 set(CLI_A_SOURCES ./src/rpc/client.cpp)
@@ -1726,6 +1739,40 @@ target_link_libraries(CLI_A
             ${LibEvent_LIBRARIES}
             Threads::Threads
         )
+
+set(SAPLING_SOURCES
+        ./src/bech32.cpp
+        ./src/sapling/sapling_util.cpp
+        ./src/sapling/key_io_sapling.cpp
+        ./src/destination_io.cpp
+        ./src/sapling/sapling_core_write.cpp
+        ./src/sapling/prf.cpp
+        ./src/sapling/noteencryption.cpp
+        ./src/sapling/address.cpp
+        ./src/sapling/note.cpp
+        ./src/sapling/zip32.cpp
+        ./src/sapling/crypter_sapling.cpp
+        ./src/sapling/incrementalmerkletree.cpp
+        ./src/sapling/transaction_builder.cpp
+        ./src/sapling/saplingscriptpubkeyman.cpp
+        ./src/sapling/sapling_operation.cpp
+        )
+
+add_library(SAPLING_A STATIC ${BitcoinHeaders} ${SAPLING_SOURCES})
+target_include_directories(SAPLING_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/crates/rustzcash-lib/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
+        ${BerkeleyDB_INCLUDE_DIRS}
+        )
+
+link_directories(
+        ${CMAKE_SOURCE_DIR}/src/univalue/.libs
+        ${CMAKE_SOURCE_DIR}/src/secp256k1/.libs
+        ${CMAKE_SOURCE_DIR}/target/release
+)
+
+link_directories(${CMAKE_BINARY_DIR})
 
 if(BUILD_UTILS)
     set(btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli.cpp)

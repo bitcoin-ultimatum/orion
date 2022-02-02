@@ -26,11 +26,14 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <qtum/fs.h>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/thread/exceptions.hpp>
 #include <boost/thread/condition_variable.hpp> // for boost::thread_interrupted
-
+#ifdef MAC_OSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 //BTCU only features
 
 extern std::atomic<bool> fMasterNode;
@@ -56,6 +59,11 @@ extern volatile bool fReopenDebugLog;
 
 void SetupEnvironment();
 bool SetupNetworking();
+
+// Sapling network dir
+const fs::path &ZC_GetParamsDir();
+// Init sapling library
+void initZKSNARKS();
 
 /** Return true if log accepts specified category */
 bool LogAcceptCategory(const char* category);

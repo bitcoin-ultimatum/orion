@@ -45,6 +45,7 @@
 #include "validationinterface.h"
 #include "zbtcuchain.h"
 
+
 #ifdef ENABLE_WALLET
 #include "wallet/db.h"
 #include "wallet/wallet.h"
@@ -777,6 +778,30 @@ bool InitSanityCheck(void)
     return true;
 }
 
+static void LoadSaplingParams()
+{
+    struct timeval tv_start{}, tv_end{};
+    float elapsed;
+    gettimeofday(&tv_start, nullptr);
+
+    try {
+        initZKSNARKS();
+    } catch (std::runtime_error &e) {
+        uiInterface.ThreadSafeMessageBox(strprintf(
+                _("Cannot find the Sapling parameters in the following directory:\n"
+                  "%s\n"
+                  "Please run 'sapling-fetch-params' or './util/fetch-params.sh' and then restart."),
+                ZC_GetParamsDir()),
+                                         "", CClientUIInterface::MSG_ERROR);
+        StartShutdown();
+        return;
+    }
+
+    gettimeofday(&tv_end, nullptr);
+    elapsed = float(tv_end.tv_sec-tv_start.tv_sec) + (tv_end.tv_usec-tv_start.tv_usec)/float(1000000);
+    LogPrintf("Loaded Sapling parameters in %fs seconds.\n", elapsed);
+}
+
 bool AppInitServers()
 {
     RPCServer::OnStarted(&OnRPCStarted);
@@ -1146,6 +1171,9 @@ bool AppInit2()
         if (!AppInitServers())
             return InitError(_("Unable to start HTTP server. See debug log for details."));
     }
+
+    // Initialize Sapling circuit parameters
+    LoadSaplingParams();
 
 // ********************************************************* Step 5: Backup wallet and verify wallet database integrity
 #ifdef ENABLE_WALLET

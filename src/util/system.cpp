@@ -721,6 +721,78 @@ fs::path GetDefaultDataDir()
 #endif
 }
 
+void initZKSNARKS()
+{
+    const fs::path& path = ZC_GetParamsDir();
+    fs::path sapling_spend = path / "sapling-spend.params";
+    fs::path sapling_output = path / "sapling-output.params";
+
+    bool fParamsFound = false;
+    if (fs::exists(sapling_spend) && fs::exists(sapling_output)) {
+        fParamsFound = true;
+    } else {
+#ifdef MAC_OSX
+        // macOS fallback path for params located within the app bundle
+        // This is a somewhat convoluted series of CoreFoundation calls
+        // that will result in the full path to the app bundle's "Resources"
+        // directory, which will contain the sapling params.
+        LogPrintf("Attempting to find params in app bundle...\n");
+        CFBundleRef mainBundle = CFBundleGetMainBundle();
+        CFURLRef bundleURL = CFBundleCopyBundleURL(mainBundle);
+
+        CFStringRef strBundlePath = CFURLCopyFileSystemPath(bundleURL, kCFURLPOSIXPathStyle);
+        const char* pathBundle = CFStringGetCStringPtr(strBundlePath, CFStringGetSystemEncoding());
+
+        fs::path bundle_path = fs::path(pathBundle);
+        LogPrintf("App bundle Resources path: %s\n", bundle_path);
+        sapling_spend = bundle_path / "Contents/Resources/sapling-spend.params";
+        sapling_output = bundle_path / "Contents/Resources/sapling-output.params";
+
+        // Release the CF objects
+        CFRelease(strBundlePath);
+        CFRelease(bundleURL);
+        CFRelease(mainBundle);
+#else
+        // Linux fallback path for debuild/ppa based installs
+        sapling_spend = "/usr/share/pivx/sapling-spend.params";
+        sapling_output = "/usr/share/pivx/sapling-output.params";
+        if (fs::exists(sapling_spend) && fs::exists(sapling_output)) {
+            fParamsFound = true;
+        } else {
+            // Linux fallback for local installs
+            sapling_spend = "/usr/local/share/pivx/sapling-spend.params";
+            sapling_output = "/usr/local/share/pivx/sapling-output.params";
+        }
+#endif
+        if (fs::exists(sapling_spend) && fs::exists(sapling_output))
+            fParamsFound = true;
+    }
+    if (!fParamsFound)
+        throw std::runtime_error("Sapling params don't exist");
+
+    static_assert(
+            sizeof(fs::path::value_type) == sizeof(codeunit),
+            "librustzcash not configured correctly");
+    auto sapling_spend_str = sapling_spend.native();
+    auto sapling_output_str = sapling_output.native();
+
+    //LogPrintf("Loading Sapling (Spend) parameters from %s\n", sapling_spend.string().c_str());
+
+    librustzcash_init_zksnark_params(
+            reinterpret_cast<const codeunit*>(sapling_spend_str.c_str()),
+            sapling_spend_str.length(),
+            "8270785a1a0d0bc77196f000ee6d221c9c9894f55307bd9357c3f0105d31ca63991ab91324160d8f53e2bbd3c2633a6eb8bdf5205d822e7f3f73edac51b2b70c",
+            reinterpret_cast<const codeunit*>(sapling_output_str.c_str()),
+            sapling_output_str.length(),
+            "657e3d38dbb5cb5e7dd2970e8b03d69b4787dd907285b5a7f0790dcc8072f60bf593b32cc2d1c030e00ff5ae64bf84c5c3beb84ddc841d48264b4a171744d028",
+            nullptr,    // sprout_path
+            0,          // sprout_path_len
+            ""          // sprout_hash
+    );
+
+    //std::cout << "### Sapling params initialized ###" << std::endl;
+}
+
 static fs::path g_blocks_path_cache_net_specific;
 static fs::path pathCached;
 static fs::path pathCachedNetSpecific;
