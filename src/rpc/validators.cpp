@@ -475,6 +475,6 @@ UniValue mnvalidatorlist(const UniValue& params, bool fHelp)
     
     std::string valStr;
     for(auto &val : validatorsList)
-       valStr += " 1. PubKey: " +  HexStr(val.pubKey) + "\nVin: " + val.vin.ToString() + "\n";
+       valStr += " 1. Address: " +  CBTCUAddress(val.pubKey.GetID()).ToString() + "\nVin: " + val.vin.ToString() + "\n";
     return UniValue(valStr);
 }
