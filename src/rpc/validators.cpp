@@ -460,7 +460,12 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
     auto validatorsVotesList = g_ValidatorsState.get_votes();
     std::string valVoteStr;
     for(auto &valVote : validatorsVotesList)
-       valVoteStr += " 1. PubKey: " +  HexStr(valVote.pubKey) + "\nVin: " + valVote.vin.ToString() + "\n";
+    {
+       valVoteStr += "Candidate PubKey: " + HexStr(valVote.pubKey) + "\nVin: " + valVote.vin.ToString() + "\n";
+       valVoteStr +="\tVotes:\n";
+       for(auto &vote:valVote.votes)
+          valVoteStr += "\t\t Vin: " + vote.vin.ToString() + "; Vote -" + (vote.vote == VoteYes ? "yes": "no") + "\n" ;
+    }
     return UniValue(valVoteStr);
 }
 
