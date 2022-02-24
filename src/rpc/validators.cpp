@@ -121,15 +121,16 @@ boost::optional<std::pair<CTxIn, CKey>> GetRegisteringValidatorVinKey()
             auto keyOpt = GetCollateralKey(pmn);
             if(keyOpt.is_initialized())
             {
-               auto validatorsRegistrationList = g_ValidatorsState.get_registrations();
-               for(auto &validator: validatorsRegistrationList)
-               {
-                  if(validator.pubKey == keyOpt.value().GetPubKey())
-                  {
+               ///Commented code allow any masternodes vote for registered validator
+//               auto validatorsRegistrationList = g_ValidatorsState.get_registrations();
+//               for(auto &validator: validatorsRegistrationList)
+//               {
+//                  if(validator.pubKey == keyOpt.value().GetPubKey())
+//                  {
                      vinKeyOpt.emplace(std::pair<CTxIn, CKey>(pmn->vin, keyOpt.value()));
                      return vinKeyOpt;
-                  }
-               }
+ //                 }
+ //              }
             }
          }
       }
@@ -379,7 +380,7 @@ UniValue mnvotevalidator(const UniValue& params, bool fHelp)
           "\nList the registered validators\n" +
           HelpExampleCli("mnregvalidatorlist", "") +
           "\nVote for validators\n" +
-          HelpExampleCli("mnvotevalidator", "\"[{\\\"pubkey\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vote\\\":\\\"yes\\\"}]\"") +
+          HelpExampleCli("mnvotevalidator", "\"[{\"pubkey\":\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\",\"vote\":\"yes\"}]\"") +
           "\nAs a json rpc call\n" +
           HelpExampleRpc("mnvotevalidator", "\"[{\\\"pubkey\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vote\\\":\\\"yes\\\"}]\""));
 
