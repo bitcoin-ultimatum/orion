@@ -2991,27 +2991,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                        CKeyID senderAddr = CKeyID(uint160(GetSenderAddress(tx, &view, NULL, nOut)));
 
                        //okay, seek trx pubkey in validators
-                       //genesis validators
-                       auto genesisValidators = Params().GenesisBlock().vtx[0].validatorRegister;
-                       for(auto &gv : genesisValidators){
-                          if(senderAddr == gv.pubKey.GetID()){
-                             bSCValidatorFound = true;
-                             break;
-                          }
-                       }
+                       bSCValidatorFound = isAddressValidator(senderAddr);
 
-                       //voted validators
-                       if(!bSCValidatorFound)
-                       {
-                          auto validatorsRegistrationList = g_ValidatorsState.get_validators();
-                          for (auto& rv: validatorsRegistrationList)
-                          {
-                             if(senderAddr == rv.pubKey.GetID()){
-                                bSCValidatorFound = true;
-                                break;
-                             }
-                          }
-                       }
                        //if key found - break;
                        if(bSCValidatorFound)
                           break;
