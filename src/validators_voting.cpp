@@ -184,7 +184,7 @@ bool CheckValidator(const CBlock& block, const CCoinsViewCache &view)
     return (vinIsUnspent && CheckValidatorSignature(block));
 }
 
-bool isAddressValidator(CKeyID &address)
+bool isAddressValidator(const CKeyID &address)
 {
    bool bSCValidatorFound = false;
    //genesis validators

@@ -7,6 +7,8 @@
 #include <masternode.h>
 #include "main.h"
 #include "validator_tx_verify.h"
+#include "validators_voting.h"
+
 
 
 bool IsUtxoDestination(const CPubKey &pubKey, const CTxOut &vout)
@@ -127,7 +129,7 @@ bool CheckValidatorVote(const CTransaction &tx, const CCoinsViewCache &view, int
         {
             auto valVote = tx.validatorVote.front();
             
-            status = (CheckCredentials(valVote.vin, valVote.pubKey, view) &&
+            status = (isAddressValidator(valVote.pubKey.GetID()) &&
                       valVote.Verify(valVote.pubKey) &&
                       VotesAreValid(valVote.votes)); //  CValidatorVote's signature verification
         }

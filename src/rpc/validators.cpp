@@ -105,6 +105,7 @@ boost::optional<std::pair<CTxIn, CKey>> GetRegisteredValidatorVinKey()
 }
 
 // Tries to get secret key which corresponds to one of registering validators keys
+/*
 boost::optional<std::pair<CTxIn, CKey>> GetRegisteringValidatorVinKey()
 {
    boost::optional<std::pair<CTxIn, CKey>> vinKeyOpt;
@@ -137,6 +138,7 @@ boost::optional<std::pair<CTxIn, CKey>> GetRegisteringValidatorVinKey()
    }
    return vinKeyOpt;
 }
+*/
 
 // Tries to get secret key which corresponds to one of registered validators keys
 std::string GetMNAliasFromVin(CTxIn mnVin)
@@ -202,8 +204,12 @@ boost::optional<CValidatorRegister> CreateValidatorReg(const std::string &strAli
 boost::optional<CValidatorVote> CreateValidatorVote(const std::vector<MNVote> &votes)
 {
     boost::optional<CValidatorVote> valVoteOpt;
-    
-    auto keyOpt = GetRegisteringValidatorVinKey();
+
+    //try to get validator data from genesis and registered lists
+    auto keyOpt = GetGenesisVinKey();
+    if(!keyOpt.is_initialized())
+       keyOpt = GetRegisteredValidatorVinKey();
+
     if(keyOpt.is_initialized())
     {
         auto vinKey = keyOpt.value();
@@ -247,7 +253,6 @@ UniValue CreateAndSendTransaction(const boost::optional<CValidatorRegister> &val
       std::vector<CValidatorRegister> valReg;
       std::vector<CValidatorVote> valVote;
 
-      CTxIn vin;
       if (valRegOpt.is_initialized())
       {
          //check leased to candidate coins
@@ -266,21 +271,17 @@ UniValue CreateAndSendTransaction(const boost::optional<CValidatorRegister> &val
          }
 #endif
          valReg.push_back(valRegOpt.value());
-         vin = valRegOpt.value().vin;
+         //Check minimum age of mn vin
+         const CCoins* unspentCoins = view.AccessCoins(valRegOpt.value().vin.prevout.hash);
+         int age = GetCoinsAge(unspentCoins);
+         if (age < MASTERNODE_MIN_CONFIRMATIONS)
+            return UniValue("Masternode vin minimum confirmation is:" + std::to_string(MASTERNODE_MIN_CONFIRMATIONS) +
+                            ", but now vin age = " + std::to_string(age));
       }
       else if (valVoteOpt.is_initialized())
       {
          valVote.push_back(valVoteOpt.value());
-         vin = valVoteOpt.value().vin;
       }
-
-      //Check minimum age of mn vin
-      const CCoins* unspentCoins = view.AccessCoins(vin.prevout.hash);
-      int age = GetCoinsAge(unspentCoins);
-      if (age < MASTERNODE_MIN_CONFIRMATIONS)
-         return UniValue("Masternode vin minimum confirmation is:" + std::to_string(MASTERNODE_MIN_CONFIRMATIONS) +
-                         ", but now vin age = " + std::to_string(age));
-
 
       // Get own address from wallet to send btcu to
       CReserveKey reservekey(pwalletMain);
