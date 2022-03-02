@@ -1009,7 +1009,7 @@ UniValue delegatorremove(const UniValue& params, bool fHelp)
     std::string label = "";
     {
         LOCK(pwalletMain->cs_wallet);
-        std::map<CTxDestination, AddressBook::CAddressBookData>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
+        std::map<CWDestination, AddressBook::CAddressBookData>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
         if (mi != pwalletMain->mapAddressBook.end()) {
             label = mi->second.name;
         }
@@ -1309,7 +1309,7 @@ UniValue getaccount(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU address");
 
     std::string strAccount;
-    std::map<CTxDestination, AddressBook::CAddressBookData>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
+    std::map<CWDestination, AddressBook::CAddressBookData>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
     if (mi != pwalletMain->mapAddressBook.end() && !(*mi).second.name.empty())
         strAccount = (*mi).second.name;
     return strAccount;
@@ -2092,7 +2092,7 @@ UniValue getreceivedbyaccount(const UniValue& params, bool fHelp)
 
     // Get the set of pub keys assigned to account
     std::string strAccount = AccountFromValue(params[0]);
-    std::set<CTxDestination> setAddress = pwalletMain->GetAccountAddresses(strAccount);
+    std::set<CWDestination> setAddress = pwalletMain->GetAccountAddresses(strAccount);
 
     // Tally
     CAmount nAmount = 0;
@@ -2593,7 +2593,7 @@ UniValue ListReceived(const UniValue& params, bool fByAccounts)
             filter = filter | ISMINE_WATCH_ONLY;
 
     // Tally
-    std::map<CBTCUAddress, tallyitem> mapTally;
+    std::map<CWDestination, tallyitem> mapTally;
     for (std::map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it) {
         const CWalletTx& wtx = (*it).second;
 
@@ -2627,10 +2627,10 @@ UniValue ListReceived(const UniValue& params, bool fByAccounts)
     // Reply
     UniValue ret(UniValue::VARR);
     std::map<std::string, tallyitem> mapAccountTally;
-    for (const PAIRTYPE(CBTCUAddress, AddressBook::CAddressBookData) & item : pwalletMain->mapAddressBook) {
-        const CBTCUAddress& address = item.first;
+    for (const PAIRTYPE(CWDestination, AddressBook::CAddressBookData) & item : pwalletMain->mapAddressBook) {
+        const CWDestination& address = item.first;
         const std::string& strAccount = item.second.name;
-        std::map<CBTCUAddress, tallyitem>::iterator it = mapTally.find(address);
+        std::map<CWDestination, tallyitem>::iterator it = mapTally.find(address);
         if (it == mapTally.end() && !fIncludeEmpty)
             continue;
 
@@ -2655,7 +2655,8 @@ UniValue ListReceived(const UniValue& params, bool fByAccounts)
             UniValue obj(UniValue::VOBJ);
             if (fIsWatchonly)
                 obj.push_back(Pair("involvesWatchonly", true));
-            obj.push_back(Pair("address", address.ToString()));
+            //TO_FIX: uncomment
+            //obj.push_back(Pair("address", address.ToString()));
             obj.push_back(Pair("account", strAccount));
             obj.push_back(Pair("amount", ValueFromAmount(nAmount)));
             obj.push_back(Pair("confirmations", (nConf == std::numeric_limits<int>::max() ? 0 : nConf)));
@@ -3153,7 +3154,7 @@ UniValue listaccounts(const UniValue& params, bool fHelp)
             includeWatchonly = includeWatchonly | ISMINE_WATCH_ONLY;
 
     std::map<std::string, CAmount> mapAccountBalances;
-    for (const PAIRTYPE(CTxDestination, AddressBook::CAddressBookData) & entry : pwalletMain->mapAddressBook) {
+    for (const PAIRTYPE(CWDestination, AddressBook::CAddressBookData) & entry : pwalletMain->mapAddressBook) {
         if (IsMine(*pwalletMain, entry.first) & includeWatchonly) // This address belongs to me
             mapAccountBalances[entry.second.name] = 0;
     }

@@ -1545,7 +1545,7 @@ void CWalletTx::GetAccountAmounts(const std::string& strAccount, CAmount& nRecei
         LOCK(pwallet->cs_wallet);
         for (const COutputEntry& r : listReceived) {
             if (pwallet->mapAddressBook.count(r.destination)) {
-                std::map<CTxDestination, AddressBook::CAddressBookData>::const_iterator mi = pwallet->mapAddressBook.find(r.destination);
+                std::map<CWDestination, AddressBook::CAddressBookData>::const_iterator mi = pwallet->mapAddressBook.find(r.destination);
                 if (mi != pwallet->mapAddressBook.end() && (*mi).second.name == strAccount)
                     nReceived += r.amount;
             } else if (strAccount.empty()) {
@@ -2234,7 +2234,7 @@ bool CWallet::AvailableCoins(
                       (mine == ISMINE_WATCH_ONLY && nWatchonlyConfig == 1) ||
                       (IsLockedCoin((*it).first, i) && nCoinType != ONLY_1000) ||
                       (pcoin->vout[i].nValue <= 0 && !fIncludeZeroValue) ||
-                      (fCoinsSelected && !coinControl->fAllowOtherInputs && !coinControl->IsSelected((*it).first, i))
+                      (fCoinsSelected && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(BaseOutPoint((*it).first, i)))
                    ) continue;
 
                 // --Skip P2CS outputs
@@ -3284,7 +3284,7 @@ CBTCUAddress CWallet::ParseIntoAddress(const CTxDestination& dest, const std::st
     return CBTCUAddress(dest, addrType);
 }
 
-bool CWallet::SetAddressBook(const CTxDestination& address, const std::string& strName, const std::string& strPurpose)
+bool CWallet::SetAddressBook(const CWDestination& address, const std::string& strName, const std::string& strPurpose)
 {
     bool fUpdated = HasAddressBook(address);
     {
@@ -3327,7 +3327,7 @@ bool CWallet::DelAddressBook(const CTxDestination& address, const CChainParams::
     return CWalletDB(strWalletFile).EraseName(strAddress);
 }
 
-std::string CWallet::purposeForAddress(const CTxDestination& address) const
+std::string CWallet::purposeForAddress(const CWDestination& address) const
 {
     {
         LOCK(cs_wallet);
@@ -3339,10 +3339,10 @@ std::string CWallet::purposeForAddress(const CTxDestination& address) const
     return "";
 }
 
-bool CWallet::HasAddressBook(const CTxDestination& address) const
+bool CWallet::HasAddressBook(const CWDestination& address) const
 {
     LOCK(cs_wallet); // mapAddressBook
-    std::map<CTxDestination, AddressBook::CAddressBookData>::const_iterator mi = mapAddressBook.find(address);
+    std::map<CWDestination, AddressBook::CAddressBookData>::const_iterator mi = mapAddressBook.find(address);
     return mi != mapAddressBook.end();
 }
 
@@ -3353,7 +3353,7 @@ bool CWallet::HasDelegator(const CTxOut& out) const
         return false;
     {
         LOCK(cs_wallet); // mapAddressBook
-        std::map<CTxDestination, AddressBook::CAddressBookData>::const_iterator mi = mapAddressBook.find(delegator);
+        std::map<CWDestination, AddressBook::CAddressBookData>::const_iterator mi = mapAddressBook.find(delegator);
         if (mi == mapAddressBook.end())
             return false;
         return (*mi).second.purpose == AddressBook::AddressBookPurpose::DELEGATOR;
@@ -3622,12 +3622,12 @@ std::set<std::set<CTxDestination> > CWallet::GetAddressGroupings()
     return ret;
 }
 
-std::set<CTxDestination> CWallet::GetAccountAddresses(std::string strAccount) const
+std::set<CWDestination> CWallet::GetAccountAddresses(std::string strAccount) const
 {
     LOCK(cs_wallet);
-    std::set<CTxDestination> result;
-    for (const PAIRTYPE(CTxDestination, AddressBook::CAddressBookData) & item : mapAddressBook) {
-        const CTxDestination& address = item.first;
+    std::set<CWDestination> result;
+    for (const PAIRTYPE(CWDestination, AddressBook::CAddressBookData) & item : mapAddressBook) {
+        const CWDestination& address = item.first;
         const std::string& strName = item.second.name;
         if (strName == strAccount)
             result.insert(address);

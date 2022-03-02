@@ -271,6 +271,8 @@ public:
     bool isMultiSendEnabled();
     void setMultiSendDisabled();
 
+    std::map<CWDestination, AddressBook::CAddressBookData> mapAddressBook;
+
     std::map<uint256, CWalletTx> mapWallet;
     std::list<CAccountingEntry> laccentries;
 
@@ -454,7 +456,7 @@ public:
     std::set<std::set<CTxDestination> > GetAddressGroupings();
     std::map<CTxDestination, CAmount> GetAddressBalances();
 
-    std::set<CTxDestination> GetAccountAddresses(std::string strAccount) const;
+    std::set<CWDestination> GetAccountAddresses(std::string strAccount) const;
 
     bool GetBudgetSystemCollateralTX(CWalletTx& tx, uint256 hash, bool useIX);
     bool GetBudgetFinalizationCollateralTX(CWalletTx& tx, uint256 hash, bool useIX); // Only used for budget finalization
@@ -484,12 +486,12 @@ public:
 
     static CBTCUAddress ParseIntoAddress(const CTxDestination& dest, const std::string& purpose);
 
-    bool SetAddressBook(const CTxDestination& address, const std::string& strName, const std::string& purpose);
-    bool DelAddressBook(const CTxDestination& address, const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
-    bool HasAddressBook(const CTxDestination& address) const;
+    bool SetAddressBook(const CWDestination& address, const std::string& strName, const std::string& purpose);
+    bool DelAddressBook(const CWDestination& address, const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
+    bool HasAddressBook(const CWDestination& address) const;
     bool HasDelegator(const CTxOut& out) const;
 
-    std::string purposeForAddress(const CTxDestination& address) const;
+    std::string purposeForAddress(const CWDestination& address) const;
 
     bool UpdatedTransaction(const uint256& hashTx);
 
@@ -516,7 +518,7 @@ public:
      * Address book entry changed.
      * @note called with lock cs_wallet held.
      */
-    boost::signals2::signal<void(CWallet* wallet, const CTxDestination& address, const std::string& label, bool isMine, const std::string& purpose, ChangeType status)> NotifyAddressBookChanged;
+    boost::signals2::signal<void(CWallet* wallet, const CWDestination& address, const std::string& label, bool isMine, const std::string& purpose, ChangeType status)> NotifyAddressBookChanged;
 
     /**
      * Wallet transaction added, removed or updated.

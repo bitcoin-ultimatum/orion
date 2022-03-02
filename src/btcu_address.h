@@ -10,7 +10,7 @@
 
 #include "base58.h"
 #include "bech32.h"
-
+#include "destination_io.h"
 /** base58/bech32-encoded BTCU addresses.
  * Public-key-hash-addresses have version 0 (or 111 testnet).
  * The data vector contains RIPEMD160(SHA256(pubkey)), where pubkey is the serialized public key.
@@ -36,14 +36,15 @@ public:
     bool Set(const WitnessV0ScriptHash& id);
     bool Set(const WitnessV0KeyHash& id);
     bool Set(const WitnessUnknown& id);
-    bool Set(const CTxDestination& dest, const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
+    bool Set(const CTxDestination& dest, const CChainParams::Base58Type addrType);
+    bool Set(const CWDestination& dest, const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
     void Clear();
     bool IsValid(const CChainParams& params) const;
     bool IsValid() const;
 
     CBTCUAddress() = default;
     ~CBTCUAddress() = default;
-    CBTCUAddress(const CTxDestination& dest, const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
+    CBTCUAddress(const CWDestination& dest, const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
     CBTCUAddress(const char* pAddress);
     CBTCUAddress(const std::string& strAddress);
 

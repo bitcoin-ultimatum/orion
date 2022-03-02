@@ -35,7 +35,7 @@ namespace
 
 } // anon namespace
 
-CBTCUAddress::CBTCUAddress(const CTxDestination& dest, const CChainParams::Base58Type addrType)
+CBTCUAddress::CBTCUAddress(const CWDestination& dest, const CChainParams::Base58Type addrType)
 {
     Set(dest, addrType);
 }
@@ -101,6 +101,11 @@ bool CBTCUAddress::Set(const WitnessUnknown& id)
 bool CBTCUAddress::Set(const CTxDestination& dest, const CChainParams::Base58Type addrType)
 {
     return boost::apply_visitor(CBTCUAddressVisitor(this, addrType), dest);
+}
+
+bool CBTCUAddress::Set(const CWDestination& dest, const CChainParams::Base58Type addrType)
+{
+    return false;//boost::apply_visitor(CBTCUAddressVisitor(this, addrType), dest);
 }
 
 bool CBTCUAddress::IsValidBech32Size() const
