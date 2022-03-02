@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php.
 
-#ifndef PIVX_TIERTWO_INIT_H
-#define PIVX_TIERTWO_INIT_H
+#ifndef BTCU_TIERTWO_INIT_H
+#define BTCU_TIERTWO_INIT_H
 
 #include <string>
 
@@ -47,4 +47,4 @@ void StopTierTwoThreads();
 void DeleteTierTwo();
 
 
-#endif //PIVX_TIERTWO_INIT_H
+#endif //BTCU_TIERTWO_INIT_H
