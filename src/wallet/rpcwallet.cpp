@@ -147,7 +147,7 @@ bool SetDefaultPayForContractAddress(CWallet* const pwallet, CCoinControl & coin
         if (!fValidAddress)
             continue;
 
-        coinControl.Select(COutPoint(out.tx->GetHash(),out.i));
+        coinControl.Select(BaseOutPoint(out.tx->GetHash(),out.i));
         break;
     }
 
@@ -314,7 +314,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
             if (!fValidAddress || senderAddress != destAdress)
                 continue;
 
-            coinControl->Select(COutPoint(out.tx->GetHash(),out.i));
+            coinControl->Select(BaseOutPoint(out.tx->GetHash(),out.i));
             break;
         }
 
@@ -586,7 +586,7 @@ UniValue sendtocontract(const UniValue& params, bool fHelp){
             if (!fValidAddress || senderAddress != destAdress)
                 continue;
 
-            coinControl.Select(COutPoint(out.tx->GetHash(),out.i));
+            coinControl.Select(BaseOutPoint(out.tx->GetHash(),out.i));
 
             break;
 

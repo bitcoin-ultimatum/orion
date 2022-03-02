@@ -3950,7 +3950,7 @@ void CWallet::AutoCombineDust()
                 continue;
 
             COutPoint outpt(out.tx->GetHash(), out.i);
-            coinControl->Select(outpt);
+            coinControl->Select(BaseOutPoint(outpt.hash, outpt.n));
             vRewardCoins.push_back(out);
             nTotalRewardsValue += out.Value();
 
@@ -4066,7 +4066,7 @@ bool CWallet::MultiSend()
         // create new coin control, populate it with the selected utxo, create sending vector
         CCoinControl cControl;
         COutPoint outpt(out.tx->GetHash(), out.i);
-        cControl.Select(outpt);
+        cControl.Select(BaseOutPoint(outpt.hash, outpt.n));
         cControl.destChange = destMyAddress;
 
         CWalletTx wtx;

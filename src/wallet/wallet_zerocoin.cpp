@@ -75,7 +75,7 @@ std::string CWallet::MintZerocoinFromOutPoint(CAmount nValue, CWalletTx& wtxNew,
 {
     CCoinControl* coinControl = new CCoinControl();
     for (const COutPoint& outpt : vOutpts) {
-        coinControl->Select(outpt);
+        coinControl->Select(BaseOutPoint(outpt.hash,outpt.n));
     }
     if (!coinControl->HasSelected()){
         std::string strError = _("Error: No valid utxo!");
