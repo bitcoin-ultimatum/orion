@@ -61,6 +61,61 @@ public:
     uint256 GetHash();
     
 };
+/** An outpoint - a combination of a transaction hash and an index n into its vout */
+class BaseOutPoint
+{
+public:
+    uint256 hash;
+    uint32_t n;
+    bool isTransparent{true};
+
+    BaseOutPoint() { SetNull(); }
+    BaseOutPoint(const uint256& hashIn, const uint32_t nIn, bool isTransparentIn = true) :
+            hash(hashIn), n(nIn), isTransparent(isTransparentIn) { }
+
+    //SERIALIZE_METHODS(BaseOutPoint, obj) { READWRITE(obj.hash, obj.n); }
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(hash);
+        READWRITE(n);
+    }
+
+    void SetNull() { hash.SetNull(); n = (uint32_t) -1; }
+    bool IsNull() const { return (hash.IsNull() && n == (uint32_t) -1); }
+
+    friend bool operator<(const BaseOutPoint& a, const BaseOutPoint& b)
+    {
+        return (a.hash < b.hash || (a.hash == b.hash && a.n < b.n));
+    }
+
+    friend bool operator==(const BaseOutPoint& a, const BaseOutPoint& b)
+    {
+        return (a.hash == b.hash && a.n == b.n);
+    }
+
+    friend bool operator!=(const BaseOutPoint& a, const BaseOutPoint& b)
+    {
+        return !(a == b);
+    }
+
+    std::string ToString() const;
+    std::string ToStringShort() const;
+
+    size_t DynamicMemoryUsage() const { return 0; }
+
+};
+
+/** An outpoint - a combination of a transaction hash and an index n into its sapling
+ * output description (vShieldedOutput) */
+class SaplingOutPoint : public BaseOutPoint
+{
+public:
+    SaplingOutPoint() : BaseOutPoint() {};
+    SaplingOutPoint(const uint256& hashIn, const uint32_t nIn) : BaseOutPoint(hashIn, nIn, false) {};
+    std::string ToString() const;
+};
 
 /** An input of a transaction.  It contains the location of the previous
  * transaction's output that it claims and a signature that matches the
