@@ -13,6 +13,8 @@
 
 extern const std::string CURRENCY_UNIT;
 
+#ifndef FEERATE
+#define FEERATE
 /**
  * Fee rate in satoshis per kilobyte: CAmount / kB
  */
@@ -55,5 +57,6 @@ public:
         READWRITE(nSatoshisPerK);
     }
 };
+#endif
 
 #endif //  BITCOIN_POLICY_FEERATE_H

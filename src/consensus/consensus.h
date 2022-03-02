@@ -24,7 +24,13 @@ static const unsigned int MAX_TX_SIGOPS_LEGACY = MAX_BLOCK_SIGOPS_LEGACY / 5;
 
 static const int WITNESS_SCALE_FACTOR = 4;
 
+/** The default maximum reorganization depth **/
+static const int DEFAULT_MAX_REORG_DEPTH = 100;
+
 extern int64_t dgpMaxBlockSigOps;
+
+/** The maximum size of a transaction after Sapling activation (network rule) */
+static const unsigned int MAX_TX_SIZE_AFTER_SAPLING = 400000;
 
 extern unsigned int dgpMaxTxSigOps;
 /** The maximum allowed weight for a block, see BIP 141 (network rule) */

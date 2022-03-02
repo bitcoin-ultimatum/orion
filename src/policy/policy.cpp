@@ -249,3 +249,11 @@ int64_t GetVirtualTransactionInputSize(const CTxIn& txin, int64_t nSigOpCost, un
 {
     return GetVirtualTransactionSize(GetTransactionInputWeight(txin), nSigOpCost, bytes_per_sigop);
 }
+
+CAmount GetShieldedDustThreshold(const CFeeRate& dustRelayFeeIn)
+{
+    unsigned int K = DEFAULT_SHIELDEDTXFEE_K;   // Fixed (100) for now
+    return K * dustRelayFeeIn.GetFee(SPENDDESCRIPTION_SIZE +
+                                     CTXOUT_REGULAR_SIZE +
+                                     BINDINGSIG_SIZE);
+}

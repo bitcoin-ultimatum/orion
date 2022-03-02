@@ -25,7 +25,7 @@ static const unsigned int MAX_STANDARD_TX_WEIGHT = 400000;
 /** The minimum non-witness size for transactions we're willing to relay/mine (1 segwit input + 1 P2WPKH output = 82 bytes) */
 static const unsigned int MIN_STANDARD_TX_NONWITNESS_SIZE = 82;
 /** Maximum number of signature check operations in an IsStandard() P2SH script */
-static const unsigned int MAX_P2SH_SIGOPS = 15;
+//static const unsigned int MAX_P2SH_SIGOPS = 15;
 /** The maximum number of sigops we're willing to relay/mine in a single tx */
 extern unsigned int dgpMaxTxSigOps;
 /** Default for -maxmempool, maximum megabytes of mempool memory usage */
@@ -53,6 +53,7 @@ static const unsigned int DUST_RELAY_TX_FEE = 400000;
  * with. However scripts violating these flags may still be present in valid
  * blocks and we must accept those blocks.
  */
+ /*
 static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VERIFY_FLAGS |
                                                              SCRIPT_VERIFY_DERSIG |
                                                              SCRIPT_VERIFY_STRICTENC |
@@ -68,19 +69,19 @@ static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VE
                                                              SCRIPT_VERIFY_WITNESS |
                                                              SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM |
                                                              SCRIPT_VERIFY_WITNESS_PUBKEYTYPE |
-                                                             SCRIPT_VERIFY_CONST_SCRIPTCODE;
+                                                             SCRIPT_VERIFY_CONST_SCRIPTCODE;*/
 
 /** For convenience, standard but not mandatory verify flags. */
-static constexpr unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS = STANDARD_SCRIPT_VERIFY_FLAGS & ~MANDATORY_SCRIPT_VERIFY_FLAGS;
+//static constexpr unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS = STANDARD_SCRIPT_VERIFY_FLAGS & ~MANDATORY_SCRIPT_VERIFY_FLAGS;
 
 /** Used as the flags parameter to sequence and nLocktime checks in non-consensus code. */
-static constexpr unsigned int STANDARD_LOCKTIME_VERIFY_FLAGS = LOCKTIME_VERIFY_SEQUENCE |
-                                                               LOCKTIME_MEDIAN_TIME_PAST;
+//static constexpr unsigned int STANDARD_LOCKTIME_VERIFY_FLAGS = LOCKTIME_VERIFY_SEQUENCE |
+//                                                               LOCKTIME_MEDIAN_TIME_PAST;
 
 /** The number of sender stack items in a standard sender signature script */
-static const unsigned int STANDARD_SENDER_STACK_ITEMS = 2;
+//static const unsigned int STANDARD_SENDER_STACK_ITEMS = 2;
 /** The maximum size of each sender stack item in a standard sender signature script */
-static const unsigned int MAX_STANDARD_SENDER_STACK_ITEM_SIZE = 80;
+//static const unsigned int MAX_STANDARD_SENDER_STACK_ITEM_SIZE = 80;
 
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFee);
 
@@ -119,5 +120,11 @@ static inline int64_t GetVirtualTransactionInputSize(const CTxIn& tx)
 {
     return GetVirtualTransactionInputSize(tx, 0, 0);
 }
+
+extern CFeeRate dustRelayFee;
+
+CAmount GetDustThreshold(const CFeeRate& dustRelayFeeIn);
+
+CAmount GetShieldedDustThreshold(const CFeeRate& dustRelayFeeIn);
 
 #endif // BITCOIN_POLICY_POLICY_H
