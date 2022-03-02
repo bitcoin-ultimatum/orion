@@ -95,4 +95,6 @@ public:
     int CompareTo(const CBase58Data& b58) const;
 };
 
+bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet, int max_ret);
+
 #endif // BITCOIN_BASE58_H

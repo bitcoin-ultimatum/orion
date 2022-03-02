@@ -12,6 +12,9 @@
 #ifndef BITCOIN_BECH32_H
 #define BITCOIN_BECH32_H
 
+//#include <stdatomic.h>
+#include <time.h>
+#include <atomic>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -25,7 +28,7 @@ namespace bech32
 std::string Encode(const std::string& hrp, const std::vector<uint8_t>& values);
 
 /** Decode a Bech32 string. Returns (hrp, data). Empty hrp means failure. */
-std::pair<std::string, std::vector<uint8_t,zero_after_free_allocator<uint8_t>>> Decode(const std::string& str);
+std::pair<std::string, std::vector<uint8_t>> Decode(const std::string& str);
 
 } // namespace bech32
 
@@ -43,7 +46,7 @@ class CBech32Data
     int nVersion = 255;
 
     //! the actually encoded data
-    typedef std::vector<uint8_t, zero_after_free_allocator<uint8_t> > vector_uchar;
+    typedef std::vector<uint8_t> vector_uchar;
     vector_uchar vchData;
 
 public:

@@ -8,6 +8,7 @@
 
 #include "hash.h"
 #include "uint256.h"
+#include "util/string.h"
 
 #include <assert.h>
 #include <boost/variant/apply_visitor.hpp>
@@ -212,5 +213,13 @@ int CBase58Data::CompareTo(const CBase58Data& b58) const
     if (vchData > b58.vchData)
         return 1;
     return 0;
+}
+
+bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet, int max_ret)
+{
+    if (!ValidAsCString(str)) {
+        return false;
+    }
+    return DecodeBase58Check(str.c_str(), vchRet, max_ret);
 }
 

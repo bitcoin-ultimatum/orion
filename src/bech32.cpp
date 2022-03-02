@@ -12,8 +12,7 @@
 
 namespace
 {
-
-typedef std::vector<uint8_t, zero_after_free_allocator<uint8_t>> data;
+    typedef std::vector<uint8_t> data;
 
 /** The Bech32 character set for encoding. */
 const char* CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
@@ -159,38 +158,39 @@ std::string Encode(const std::string& hrp, const data& values) {
 }
 
 /** Decode a Bech32 string. */
+/** Decode a Bech32 string. */
 std::pair<std::string, data> Decode(const std::string& str) {
-    bool lower = false, upper = false;
-    for (size_t i = 0; i < str.size(); ++i) {
-        unsigned char c = str[i];
-        if (c >= 'a' && c <= 'z') lower = true;
-        else if (c >= 'A' && c <= 'Z') upper = true;
-        else if (c < 33 || c > 126) return {};
-    }
-    if (lower && upper) return {};
-    size_t pos = str.rfind('1');
-    if (str.size() > 90 || pos == str.npos || pos == 0 || pos + 7 > str.size()) {
-        return {};
-    }
-    data values(str.size() - 1 - pos);
-    for (size_t i = 0; i < str.size() - 1 - pos; ++i) {
-        unsigned char c = str[i + pos + 1];
-        int8_t rev = CHARSET_REV[c];
-
-        if (rev == -1) {
+        bool lower = false, upper = false;
+        for (size_t i = 0; i < str.size(); ++i) {
+            unsigned char c = str[i];
+            if (c < 33 || c > 126) return {};
+            if (c >= 'a' && c <= 'z') lower = true;
+            if (c >= 'A' && c <= 'Z') upper = true;
+        }
+        if (lower && upper) return {};
+        size_t pos = str.rfind('1');
+        if (str.size() > 1023 || pos == str.npos || pos == 0 || pos + 7 > str.size()) {
             return {};
         }
-        values[i] = rev;
-    }
-    std::string hrp;
-    for (size_t i = 0; i < pos; ++i) {
-        hrp += LowerCase(str[i]);
-    }
-    if (!VerifyChecksum(hrp, values)) {
-        return {};
-    }
-    return {hrp, data(values.begin(), values.end() - 6)};
+        data values(str.size() - 1 - pos);
+        for (size_t i = 0; i < str.size() - 1 - pos; ++i) {
+            unsigned char c = str[i + pos + 1];
+            int8_t rev = (c < 33 || c > 126) ? -1 : CHARSET_REV[c];
+            if (rev == -1) {
+                return {};
+            }
+            values[i] = rev;
+        }
+        std::string hrp;
+        for (size_t i = 0; i < pos; ++i) {
+            hrp += LowerCase(str[i]);
+        }
+        if (!VerifyChecksum(hrp, values)) {
+            return {};
+        }
+        return {hrp, data(values.begin(), values.end() - 6)};
 }
+
 
 } // namespace bech32
 
@@ -216,7 +216,7 @@ bool CBech32Data::SetString(const std::string& str)
     Clear();
 
     auto bech = bech32::Decode(str);
-    if (bech.second.empty() || bech.first != Params().Bech32HRP()) {
+    if (bech.second.empty() || bech.first != Params().Bech32HRP(CChainParams::SAPLING_FULL_VIEWING_KEY)) {
         return false;
     }
 
@@ -239,7 +239,7 @@ bool CBech32Data::SetString(const std::string& str)
 
 std::string CBech32Data::ToString() const
 {
-    return bech32::Encode(Params().Bech32HRP(), vchData);
+    return bech32::Encode(Params().Bech32HRP(CChainParams::SAPLING_FULL_VIEWING_KEY), vchData);
 }
 
 int CBech32Data::CompareTo(const CBech32Data& b32) const
