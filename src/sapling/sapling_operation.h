@@ -47,23 +47,23 @@ struct SendManyRecipient
 
     // Transparent recipient: P2PKH
     SendManyRecipient(const CTxDestination& dest, const CAmount& amount, bool fSubtractFeeFromAmount):
-            recipient(new CRecipient(GetScriptForDestination(dest), amount, fSubtractFeeFromAmount))
+            recipient(new SCRecipient(GetScriptForDestination(dest), amount, fSubtractFeeFromAmount))
     {}
 
     // Transparent recipient: P2CS
     SendManyRecipient(const CKeyID& ownerKey, const CKeyID& stakerKey, const CAmount& amount, bool fV6Enforced):
-            recipient(new CRecipient(fV6Enforced ? GetScriptForStakeDelegation(stakerKey, ownerKey)
+            recipient(new SCRecipient(fV6Enforced ? GetScriptForStakeDelegation(stakerKey, ownerKey)
                         : GetScriptForStakeDelegationLOF(stakerKey, ownerKey), amount, false))
     {}
 
     // Transparent recipient: multisig
     SendManyRecipient(int nRequired, const std::vector<CPubKey>& keys, const CAmount& amount):
-            recipient(new CRecipient(GetScriptForMultisig(nRequired, keys), amount, false))
+            recipient(new SCRecipient(GetScriptForMultisig(nRequired, keys), amount, false))
     {}
 
     // Transparent recipient: OP_RETURN
     SendManyRecipient(const uint256& message):
-            recipient(new CRecipient(GetScriptForOpReturn(message), 0, false))
+            recipient(new SCRecipient(GetScriptForOpReturn(message), 0, false))
     {}
 };
 

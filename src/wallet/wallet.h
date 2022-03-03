@@ -133,6 +133,28 @@ struct CompactTallyItem {
     }
 };
 
+class CRecipientBase {
+public:
+    CAmount nAmount;
+    bool fSubtractFeeFromAmount;
+    CRecipientBase(const CAmount& _nAmount, bool _fSubtractFeeFromAmount) :
+            nAmount(_nAmount), fSubtractFeeFromAmount(_fSubtractFeeFromAmount) {}
+    virtual bool isTransparent() const { return true; };
+    virtual Optional<CScript> getScript() const { return nullopt; }
+    virtual Optional<libzcash::SaplingPaymentAddress> getSapPaymentAddr() const { return nullopt; }
+    virtual std::string getMemo() const { return ""; }
+};
+
+class SCRecipient final : public CRecipientBase
+{
+public:
+    CScript scriptPubKey;
+    SCRecipient(const CScript& _scriptPubKey, const CAmount& _nAmount, bool _fSubtractFeeFromAmount) :
+            CRecipientBase(_nAmount, _fSubtractFeeFromAmount), scriptPubKey(_scriptPubKey) {}
+    bool isTransparent() const override { return true; }
+    Optional<CScript> getScript() const override { return {scriptPubKey}; }
+};
+
 /** A key pool entry */
 class CKeyPool
 {
