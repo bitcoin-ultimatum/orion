@@ -381,7 +381,7 @@ UniValue mnvotevalidator(const UniValue& params, bool fHelp)
           "\nList the registered validators\n" +
           HelpExampleCli("mnregvalidatorlist", "") +
           "\nVote for validators\n" +
-          HelpExampleCli("mnvotevalidator", "\"[{\"pubkey\":\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\",\"vote\":\"yes\"}]\"") +
+          HelpExampleCli("mnvotevalidator", "[{\"pubkey\":\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\",\"vote\":\"yes\"}]") +
           "\nAs a json rpc call\n" +
           HelpExampleRpc("mnvotevalidator", "\"[{\\\"pubkey\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vote\\\":\\\"yes\\\"}]\""));
 
@@ -463,7 +463,7 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
     std::string valVoteStr;
     for(auto &valVote : validatorsVotesList)
     {
-       valVoteStr += "Candidate PubKey: " + HexStr(valVote.pubKey) + "\nVin: " + valVote.vin.ToString() + "\n";
+       valVoteStr += "Voting address: " + CBTCUAddress(valVote.pubKey.GetID()).ToString() + "\n";
        valVoteStr +="\tVotes:\n";
        for(auto &vote:valVote.votes)
           valVoteStr += "\t\t Vin: " + vote.vin.ToString() + "; Vote -" + (vote.vote == VoteYes ? "yes": "no") + "\n" ;
