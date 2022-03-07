@@ -20,7 +20,7 @@ std::vector<std::pair<int, CTxIn>> CountVotes()
             auto countIter = std::find_if(count.begin(), count.end(), isVin);
             
             if(countIter == count.end()){
-                count.emplace_back(v.vote, vote.vin);
+                count.emplace_back(v.vote, v.vin);
             } else {
                 countIter->first += v.vote;
             }
