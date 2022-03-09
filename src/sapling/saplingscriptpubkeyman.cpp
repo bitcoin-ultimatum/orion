@@ -37,7 +37,7 @@ void SaplingScriptPubKeyMan::UpdateSaplingNullifierNoteMapForBlock(const CBlock 
     LOCK(wallet->cs_wallet);
 
     for (const auto& tx : pblock->vtx) {
-        auto it = wallet->mapWallet.find(tx->GetHash());
+        auto it = wallet->mapWallet.find(tx.GetHash());
         if (it != wallet->mapWallet.end()) {
             UpdateSaplingNullifierNoteMapWithTx(it->second);
         }
@@ -217,14 +217,14 @@ void SaplingScriptPubKeyMan::IncrementNoteWitnesses(const CBlockIndex* pindex,
     std::vector<uint256> noteCommitments;
     std::vector<std::pair<CWalletTx*, SaplingNoteData*>> inBlockArrivingNotes;
     for (const auto& tx : pblock->vtx) {
-        if (!tx->IsShieldedTx()) continue;
+        if (!tx.IsShieldedTx()) continue;
 
-        const auto& hash = tx->GetHash();
+        const auto& hash = tx.GetHash();
         auto it = wallet->mapWallet.find(hash);
         bool txIsOurs = it != wallet->mapWallet.end();
 
-        for (uint32_t i = 0; i < tx->sapData->vShieldedOutput.size(); i++) {
-            const auto& cmu = tx->sapData->vShieldedOutput[i].cmu;
+        for (uint32_t i = 0; i < tx.sapData->vShieldedOutput.size(); i++) {
+            const auto& cmu = tx.sapData->vShieldedOutput[i].cmu;
             noteCommitments.emplace_back(cmu);
 
             // Append note commitment to the in-block wallet's notes.
@@ -496,7 +496,7 @@ void SaplingScriptPubKeyMan::GetFilteredNotes(
 
         // Filter the transactions before checking for notes
         const int depth = wtx.GetDepthInMainChain();
-        if (!IsFinalTx(wtx.tx, wallet->GetLastBlockHeight() + 1, GetAdjustedTime()) ||
+        if (!IsFinalTx((*wtx.tx.get()), wallet->GetLastBlockHeight() + 1, GetAdjustedTime()) ||
             depth < minDepth || depth > maxDepth) {
             continue;
         }

@@ -141,7 +141,7 @@ TransactionBuilder::TransactionBuilder(
 void TransactionBuilder::Clear()
 {
     mtx = CMutableTransaction();
-    mtx.nVersion = CTransaction::TxVersion::SAPLING;
+    mtx.nVersion = CTransaction::SAPLING_VERSION;
     spends.clear();
     outputs.clear();
     tIns.clear();
@@ -157,7 +157,7 @@ void TransactionBuilder::AddSaplingSpend(
     const SaplingWitness& witness)
 {
     // Sanity check: cannot add Sapling spend to pre-Sapling transaction
-    if (mtx.nVersion < CTransaction::TxVersion::SAPLING) {
+    if (mtx.nVersion < CTransaction::SAPLING_VERSION) {
         throw std::runtime_error("TransactionBuilder cannot add Sapling spend to pre-Sapling transaction");
     }
 
@@ -177,7 +177,7 @@ void TransactionBuilder::AddSaplingOutput(
     const std::array<unsigned char, ZC_MEMO_SIZE>& memo)
 {
     // Sanity check: cannot add Sapling output to pre-Sapling transaction
-    if (mtx.nVersion < CTransaction::TxVersion::SAPLING) {
+    if (mtx.nVersion < CTransaction::SAPLING_VERSION) {
         throw std::runtime_error("TransactionBuilder cannot add Sapling output to pre-Sapling transaction");
     }
 
@@ -302,7 +302,7 @@ TransactionBuilderResult TransactionBuilder::ProveAndSign()
         uint256 dataToBeSigned;
         CScript scriptCode;
         try {
-            dataToBeSigned = SignatureHash(scriptCode, mtx, NOT_AN_INPUT, SIGHASH_ALL, 0, SIGVERSION_SAPLING);
+            dataToBeSigned = SignatureHash(scriptCode, mtx, NOT_AN_INPUT, SIGHASH_ALL);
         } catch (const std::logic_error& ex) {
             librustzcash_sapling_proving_ctx_free(ctx);
             return TransactionBuilderResult("Could not construct signature hash: " + std::string(ex.what()));
@@ -332,14 +332,14 @@ TransactionBuilderResult TransactionBuilder::ProveAndSign()
         auto tIn = tIns[nIn];
         SignatureData sigdata;
         bool signSuccess = ProduceSignature(
-            TransactionSignatureCreator(
+            BTC::TransactionSignatureCreator(
                 keystore, &txNewConst, nIn, tIn.value, SIGHASH_ALL),
-            tIn.scriptPubKey, sigdata, SIGVERSION_SAPLING, false);
+            tIn.scriptPubKey, sigdata, SigVersion::SIGVERSION_SAPLING, false);
 
         if (!signSuccess) {
             return TransactionBuilderResult("Failed to sign transaction");
         } else {
-            UpdateTransaction(mtx, nIn, sigdata);
+            BTC::UpdateTransaction(mtx, nIn, sigdata);
         }
     }
 
@@ -366,10 +366,10 @@ TransactionBuilderResult TransactionBuilder::AddDummySignatures()
     for (int nIn = 0; nIn < (int) mtx.vin.size(); nIn++) {
         auto tIn = tIns[nIn];
         SignatureData sigdata;
-        if (!ProduceSignature(DummySignatureCreator(keystore), tIn.scriptPubKey, sigdata, SIGVERSION_SAPLING, false)) {
+        if (!ProduceSignature(BTC::DummySignatureCreator(keystore), tIn.scriptPubKey, sigdata, SigVersion::SIGVERSION_SAPLING, false)) {
             return TransactionBuilderResult("Failed to sign transaction");
         } else {
-            UpdateTransaction(mtx, nIn, sigdata);
+            BTC::UpdateTransaction(mtx, nIn, sigdata);
         }
     }
 

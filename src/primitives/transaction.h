@@ -14,6 +14,7 @@
 #include "uint256.h"
 #include "tx_in_out.h"
 #include "masternode-validators.h"
+#include "sapling/sapling_transaction.h"
 
 #include <list>
 #include <memory>
@@ -49,6 +50,7 @@ public:
     static const int32_t BITCOIN_VERSION=1;
     static const int32_t BTCU_START_VERSION=2;
     static const int32_t CURRENT_VERSION=BTCU_START_VERSION;
+    static const int32_t SAPLING_VERSION=3;
 
     // The local variables are made const to prevent unintended modification
     // without updating the cached hash value. However, CTransaction is not
@@ -59,6 +61,9 @@ public:
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     const uint32_t nLockTime;
+    Optional<SaplingTxData> sapData{SaplingTxData()}; // Future: Don't initialize it by default
+    Optional<std::vector<uint8_t>> extraPayload{nullopt};     // only available for special transaction types
+
     //const unsigned int nTime;
 
    // Operation codes
@@ -176,6 +181,20 @@ public:
         return hash;
     }
 
+    bool hasSaplingData() const
+    {
+        return sapData != nullopt &&
+               (!sapData->vShieldedOutput.empty() ||
+                !sapData->vShieldedSpend.empty() ||
+                sapData->valueBalance != 0 ||
+                sapData->hasBindingSig());
+    };
+
+    bool isSaplingVersion() const
+    {
+        return nVersion >= SAPLING_VERSION;
+    }
+
     // Return sum of txouts.
     CAmount GetValueOut() const;
     // GetValueIn() is a method on CCoinsViewCache, because
@@ -253,6 +272,20 @@ public:
       }
       return false;
    }
+    bool IsShieldedTx() const
+    {
+        return isSaplingVersion() && hasSaplingData();
+    }
+
+    bool IsSpecialTx() const
+    {
+        return isSaplingVersion() && hasExtraPayload();
+    }
+
+    bool hasExtraPayload() const
+    {
+        return extraPayload != nullopt && !extraPayload->empty();
+    }
 
 };
 
@@ -263,7 +296,8 @@ struct CMutableTransaction
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     uint32_t nLockTime;
-    
+    Optional<SaplingTxData> sapData{SaplingTxData()}; // Future: Don't initialize it by default
+
     std::vector<CValidatorRegister> validatorRegister;
     std::vector<CValidatorVote> validatorVote;
     

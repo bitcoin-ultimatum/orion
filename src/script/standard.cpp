@@ -54,6 +54,16 @@ const char* GetTxnOutputType(txnouttype t)
     return NULL;
 }
 
+CScript GetScriptForStakeDelegationLOF(const CKeyID& stakingKey, const CKeyID& spendingKey)
+{
+    CScript script;
+    script << OP_DUP << OP_HASH160 << OP_ROT <<
+           OP_IF << OP_CHECKCOLDSTAKEVERIFY_LOF << ToByteVector(stakingKey) <<
+           OP_ELSE << ToByteVector(spendingKey) << OP_ENDIF <<
+           OP_EQUALVERIFY << OP_CHECKSIG;
+    return script;
+}
+
 /**
  * Return public keys or hashes from scriptPubKey, for 'standard' transaction types.
  */
@@ -805,5 +815,12 @@ CScript GetScriptForLeasingReward(const COutPoint& outPoint, const CTxDestinatio
 
     script << ToByteVector(outPoint.hash) << outPoint.n << OP_LEASINGREWARD;
     boost::apply_visitor(CScriptVisitor(&script), dest);
+    return script;
+}
+
+CScript GetScriptForOpReturn(const uint256& message)
+{
+    CScript script;
+    script << OP_RETURN << ToByteVector(message);
     return script;
 }

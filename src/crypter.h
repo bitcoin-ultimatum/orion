@@ -123,8 +123,6 @@ bool DecryptAES256(const SecureString& sKey, const std::string& sCiphertext, con
 class CCryptoKeyStore : public CBasicKeyStore
 {
 private:
-    CKeyingMaterial vMasterKey;
-
     //! if fUseCrypto is true, mapKeys must be empty
     //! if fUseCrypto is false, vMasterKey must be empty
     bool fUseCrypto;
@@ -133,7 +131,13 @@ private:
     bool fDecryptionThoroughlyChecked;
 
 protected:
+    // TODO: In the future, move this variable to the wallet class directly following upstream's structure.
+    CKeyingMaterial vMasterKey;
+
     bool SetCrypted();
+
+    // Sapling
+    CryptedSaplingSpendingKeyMap mapCryptedSaplingSpendingKeys;
 
     //! will encrypt previously unencrypted keys
     bool EncryptKeys(CKeyingMaterial& vMasterKeyIn);
@@ -197,6 +201,13 @@ public:
     bool GetDeterministicSeed(const uint256& hashSeed, uint256& seed);
     bool AddDeterministicSeed(const uint256& seed);
 
+    //! Sapling
+    virtual bool AddCryptedSaplingSpendingKey(const libzcash::SaplingExtendedFullViewingKey& extfvk,
+                                              const std::vector<unsigned char>& vchCryptedSecret);
+    bool HaveSaplingSpendingKey(const libzcash::SaplingExtendedFullViewingKey& extfvk) const override;
+    bool GetSaplingSpendingKey(const libzcash::SaplingExtendedFullViewingKey& extfvk, libzcash::SaplingExtendedSpendingKey& skOut) const override;
+    // Unlock Sapling keys
+    bool UnlockSaplingKeys(const CKeyingMaterial& vMasterKeyIn, bool fDecryptionThoroughlyChecked);
 
     /**
      * Wallet status (encrypted, locked) changed.

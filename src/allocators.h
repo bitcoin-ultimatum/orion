@@ -224,6 +224,8 @@ struct secure_allocator : public std::allocator<T> {
 };
 
 
+#ifndef ZERO_AFTER_FREE_ALLOCATOR
+#define ZERO_AFTER_FREE_ALLOCATOR
 //
 // Allocator that clears its contents before deletion.
 //
@@ -257,7 +259,7 @@ struct zero_after_free_allocator : public std::allocator<T> {
         std::allocator<T>::deallocate(p, n);
     }
 };
-
+#endif
 // This is exactly like std::string, but with a custom allocator.
 typedef std::basic_string<char, std::char_traits<char>, secure_allocator<char> > SecureString;
 

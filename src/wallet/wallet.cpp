@@ -17,8 +17,6 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "zbtcuchain.h"
-#include "script/sign.h"
-#include "keystore.h"
 
 #ifdef ENABLE_LEASING_MANAGER
 #include "leasing/leasingmanager.h"
@@ -27,6 +25,8 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 #include <key_io.h>
+
+#include "keystore.h"
 
 /**
  * Settings
@@ -65,6 +65,16 @@ struct CompareValueOnly {
 std::string COutput::ToString() const
 {
     return strprintf("COutput(%s, %d, %d) [%s]", tx->GetHash().ToString(), i, nDepth, FormatMoney(tx->vout[i].nValue));
+}
+
+ScriptPubKeyMan* CWallet::GetScriptPubKeyMan() const
+{
+    return m_spk_man.get();
+}
+
+bool CWallet::IsSaplingUpgradeEnabled() const
+{
+    return m_sspk_man->IsEnabled();
 }
 
 const CWalletTx* CWallet::GetWalletTx(const uint256& hash) const
@@ -165,6 +175,13 @@ int64_t CWallet::GetKeyCreationTime(const CBTCUAddress& address)
         }
     }
     return 0;
+}
+
+int64_t CWallet::GetKeyCreationTime(const libzcash::SaplingPaymentAddress& address)
+{
+    libzcash::SaplingIncomingViewingKey ivk;
+    return GetSaplingIncomingViewingKey(address, ivk) ?
+           GetSaplingScriptPubKeyMan()->GetKeyCreationTime(ivk) : 0;
 }
 
 bool CWallet::AddKeyPubKey(const CKey& secret, const CPubKey& pubkey)
@@ -371,6 +388,13 @@ bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase,
 
     return false;
 }
+void CWallet::ChainTipAdded(const CBlockIndex *pindex,
+                            const CBlock *pblock,
+                            SaplingMerkleTree saplingTree)
+{
+    IncrementNoteWitnesses(pindex, pblock, saplingTree);
+    m_sspk_man->UpdateSaplingNullifierNoteMapForBlock(pblock);
+}
 
 void CWallet::SetBestChain(const CBlockLocator& loc)
 {
@@ -478,6 +502,57 @@ void CWallet::SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator> ran
         // nOrderPos not copied on purpose
         // cached members not copied on purpose
     }
+}
+
+
+template <class T>
+void CWallet::SyncMetaData(std::pair<typename TxSpendMap<T>::iterator, typename TxSpendMap<T>::iterator> range)
+{
+    // We want all the wallet transactions in range to have the same metadata as
+    // the oldest (smallest nOrderPos).
+    // So: find smallest nOrderPos:
+
+    int nMinOrderPos = std::numeric_limits<int>::max();
+    const CWalletTx* copyFrom = nullptr;
+    for (typename TxSpendMap<T>::iterator it = range.first; it != range.second; ++it) {
+        const CWalletTx* wtx = &mapWallet.at(it->second);
+        int n = wtx->nOrderPos;
+        if (n < nMinOrderPos) {
+            nMinOrderPos = n;
+            copyFrom = wtx;
+        }
+    }
+
+    if (!copyFrom) {
+        return;
+    }
+
+    // Now copy data from copyFrom to rest:
+    for (auto it = range.first; it != range.second; ++it) {
+        const uint256& hash = it->second;
+        CWalletTx* copyTo = &mapWallet.at(hash);
+        if (copyFrom == copyTo) continue;
+        assert(copyFrom && "Oldest wallet transaction in range assumed to have been found.");
+        //if (!copyFrom->IsEquivalentTo(*copyTo)) continue;
+        copyTo->mapValue = copyFrom->mapValue;
+        copyTo->vOrderForm = copyFrom->vOrderForm;
+        // fTimeReceivedIsTxTime not copied on purpose
+        // nTimeReceived not copied on purpose
+        copyTo->nTimeSmart = copyFrom->nTimeSmart;
+        copyTo->fFromMe = copyFrom->fFromMe;
+        // nOrderPos not copied on purpose
+        // cached members not copied on purpose
+    }
+}
+
+void CWallet::SyncMetaDataN(std::pair<TxSpendMap<uint256>::iterator, TxSpendMap<uint256>::iterator> range)
+{
+    SyncMetaData<uint256>(range);
+}
+
+bool CWallet::HasSaplingSPKM() const
+{
+    return GetSaplingScriptPubKeyMan()->IsEnabled();
 }
 
 /**
@@ -787,6 +862,45 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFromLoadWallet, CWalletD
     }
     return true;
 }
+
+bool CWallet::FindNotesDataAndAddMissingIVKToKeystore(const CTransaction& tx, Optional<mapSaplingNoteData_t>& saplingNoteData)
+{
+    auto saplingNoteDataAndAddressesToAdd = m_sspk_man->FindMySaplingNotes(tx);
+    saplingNoteData = saplingNoteDataAndAddressesToAdd.first;
+    auto addressesToAdd = saplingNoteDataAndAddressesToAdd.second;
+    // Add my addresses
+    for (const auto& addressToAdd : addressesToAdd) {
+        if (!m_sspk_man->AddSaplingIncomingViewingKey(addressToAdd.second, addressToAdd.first)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void CWallet::AddExternalNotesDataToTx(CWalletTx& wtx) const
+{
+    if (HasSaplingSPKM() && wtx.tx->IsShieldedTx()) {
+        const uint256& txId = wtx.GetHash();
+        // Add the external outputs.
+        SaplingOutPoint op {txId, 0};
+        for (unsigned int i = 0; i < wtx.tx->sapData->vShieldedOutput.size(); i++) {
+            op.n = i;
+            if (wtx.mapSaplingNoteData.count(op)) continue;     // internal output
+            auto recovered = GetSaplingScriptPubKeyMan()->TryToRecoverNote(wtx, op);
+            if (recovered) {
+                // Always true for 'IsFromMe' transactions
+                wtx.mapSaplingNoteData[op].address = recovered->second;
+                wtx.mapSaplingNoteData[op].amount = recovered->first.value();
+                const auto& memo = recovered->first.memo();
+                // don't save empty memo (starting with 0xF6)
+                if (memo[0] < 0xF6) {
+                    wtx.mapSaplingNoteData[op].memo = memo;
+                }
+            }
+        }
+    }
+}
+
 
 /**
  * Add a transaction to the wallet, or update it.
@@ -3449,12 +3563,12 @@ bool CWallet::SetAddressBook(const CWDestination& address, const std::string& st
     if (!fFileBacked)
         return false;
 
-    if (!strPurpose.empty() && !CWalletDB(strWalletFile).WritePurpose(EncodeDestination(address), strPurpose))
+    if (!strPurpose.empty() && !CWalletDB(strWalletFile).WritePurpose(Standard::EncodeDestination(address), strPurpose))
         return false;
-    return CWalletDB(strWalletFile).WriteName(EncodeDestination(address), strName);
+    return CWalletDB(strWalletFile).WriteName(Standard::EncodeDestination(address), strName);
 }
 
-bool CWallet::DelAddressBook(const CTxDestination& address, const CChainParams::Base58Type addrType)
+bool CWallet::DelAddressBook(const CWDestination& address, const CChainParams::Base58Type addrType)
 {
     std::string strAddress =  CBTCUAddress(address, addrType).ToString();
     std::string purpose = purposeForAddress(address);
@@ -4166,6 +4280,11 @@ void CWallet::AutoCombineDust()
     }
 }
 
+const CKeyingMaterial& CWallet::GetEncryptionKey() const
+{
+    return vMasterKey;
+}
+
 bool CWallet::MultiSend()
 {
     LOCK2(cs_main, cs_wallet);
@@ -4182,7 +4301,7 @@ bool CWallet::MultiSend()
     }
 
     std::vector<COutput> vCoins;
-    AvailableCoins(&vCoins);
+    AvailableCoins(&vCoins, nullptr);
     bool stakeSent = false;
     bool mnSent = false;
     for (const COutput& out : vCoins) {
@@ -4604,6 +4723,50 @@ int CWallet::GetVersion()
     return nWalletVersion;
 }
 
+///////////////// Sapling Methods //////////////////////////
+////////////////////////////////////////////////////////////
+
+libzcash::SaplingPaymentAddress CWallet::GenerateNewSaplingZKey(std::string label) {
+    if (!m_sspk_man->IsEnabled()) {
+        throw std::runtime_error("Cannot generate shielded addresses. Start with -upgradewallet in order to upgrade a non-HD wallet to HD and Sapling features");
+    }
+
+    auto address = m_sspk_man->GenerateNewSaplingZKey();
+    SetAddressBook(address, label, AddressBook::AddressBookPurpose::SEND);
+    return address;
+}
+
+void CWallet::IncrementNoteWitnesses(const CBlockIndex* pindex,
+                                     const CBlock* pblock,
+                                     SaplingMerkleTree& saplingTree) { m_sspk_man->IncrementNoteWitnesses(pindex, pblock, saplingTree); }
+
+void CWallet::DecrementNoteWitnesses(const CBlockIndex* pindex) { m_sspk_man->DecrementNoteWitnesses(pindex->nHeight); }
+
+void CWallet::ClearNoteWitnessCache() { m_sspk_man->ClearNoteWitnessCache(); }
+
+bool CWallet::AddSaplingZKey(const libzcash::SaplingExtendedSpendingKey &key) { return m_sspk_man->AddSaplingZKey(key); }
+
+bool CWallet::AddSaplingIncomingViewingKeyW(
+        const libzcash::SaplingIncomingViewingKey &ivk,
+        const libzcash::SaplingPaymentAddress &addr) { return m_sspk_man->AddSaplingIncomingViewingKey(ivk, addr); }
+
+bool CWallet::AddCryptedSaplingSpendingKeyW(
+        const libzcash::SaplingExtendedFullViewingKey &extfvk,
+        const std::vector<unsigned char> &vchCryptedSecret) { return m_sspk_man->AddCryptedSaplingSpendingKeyDB(extfvk, vchCryptedSecret); }
+
+bool CWallet::HaveSpendingKeyForPaymentAddress(const libzcash::SaplingPaymentAddress &zaddr) const { return m_sspk_man->HaveSpendingKeyForPaymentAddress(zaddr); }
+bool CWallet::LoadSaplingZKey(const libzcash::SaplingExtendedSpendingKey &key) { return m_sspk_man->LoadSaplingZKey(key); }
+bool CWallet::LoadSaplingZKeyMetadata(const libzcash::SaplingIncomingViewingKey &ivk, const CKeyMetadata &meta) { return m_sspk_man->LoadSaplingZKeyMetadata(ivk, meta); }
+bool CWallet::LoadCryptedSaplingZKey(const libzcash::SaplingExtendedFullViewingKey &extfvk,
+                                     const std::vector<unsigned char> &vchCryptedSecret) { return m_sspk_man->LoadCryptedSaplingZKey(extfvk, vchCryptedSecret); }
+
+bool CWallet::LoadSaplingPaymentAddress(
+        const libzcash::SaplingPaymentAddress &addr,
+        const libzcash::SaplingIncomingViewingKey &ivk) { return m_sspk_man->LoadSaplingPaymentAddress(addr, ivk); }
+
+///////////////// End Sapling Methods //////////////////////
+////////////////////////////////////////////////////////////
+
 void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
 {
    if (key.IsCompressed() && (type == OUTPUT_TYPE_P2SH_SEGWIT || type == OUTPUT_TYPE_BECH32)) {
@@ -4803,6 +4966,79 @@ void CWalletTx::BindWallet(CWallet* pwalletIn)
     MarkDirty();
 }
 
+
+void CWalletTx::SetSaplingNoteData(mapSaplingNoteData_t &noteData)
+{
+    mapSaplingNoteData.clear();
+    for (const std::pair<SaplingOutPoint, SaplingNoteData> nd : noteData) {
+        if (nd.first.n < tx->sapData->vShieldedOutput.size()) {
+            mapSaplingNoteData[nd.first] = nd.second;
+        } else {
+            throw std::logic_error("CWalletTx::SetSaplingNoteData(): Invalid note");
+        }
+    }
+}
+
+Optional<std::pair<
+        libzcash::SaplingNotePlaintext,
+        libzcash::SaplingPaymentAddress>> CWalletTx::DecryptSaplingNote(const SaplingOutPoint& op) const
+{
+    // Check whether we can decrypt this SaplingOutPoint with the ivk
+    auto it = this->mapSaplingNoteData.find(op);
+    if (it == this->mapSaplingNoteData.end() || !it->second.IsMyNote()) {
+        return nullopt;
+    }
+
+    auto output = this->tx->sapData->vShieldedOutput[op.n];
+    auto nd = this->mapSaplingNoteData.at(op);
+
+    auto maybe_pt = libzcash::SaplingNotePlaintext::decrypt(
+            output.encCiphertext,
+            *(nd.ivk),
+            output.ephemeralKey,
+            output.cmu);
+    assert(static_cast<bool>(maybe_pt));
+    auto notePt = maybe_pt.get();
+
+    auto maybe_pa = nd.ivk->address(notePt.d);
+    assert(static_cast<bool>(maybe_pa));
+    auto pa = maybe_pa.get();
+
+    return std::make_pair(notePt, pa);
+}
+
+Optional<std::pair<
+        libzcash::SaplingNotePlaintext,
+        libzcash::SaplingPaymentAddress>> CWalletTx::RecoverSaplingNote(const SaplingOutPoint& op, const std::set<uint256>& ovks) const
+{
+    auto output = this->tx->sapData->vShieldedOutput[op.n];
+
+    for (const auto& ovk : ovks) {
+        auto outPt = libzcash::SaplingOutgoingPlaintext::decrypt(
+                output.outCiphertext,
+                ovk,
+                output.cv,
+                output.cmu,
+                output.ephemeralKey);
+        if (!outPt) {
+            continue;
+        }
+
+        auto maybe_pt = libzcash::SaplingNotePlaintext::decrypt(
+                output.encCiphertext,
+                output.ephemeralKey,
+                outPt->esk,
+                outPt->pk_d,
+                output.cmu);
+        assert(static_cast<bool>(maybe_pt));
+        auto notePt = maybe_pt.get();
+
+        return std::make_pair(notePt, libzcash::SaplingPaymentAddress(notePt.d, outPt->pk_d));
+    }
+
+    // Couldn't recover with any of the provided OutgoingViewingKeys
+    return nullopt;
+}
 
 bool CWalletTx::HasP2CSInputs() const
 {

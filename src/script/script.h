@@ -209,7 +209,7 @@ enum opcodetype
 
     // cold staking
     OP_CHECKCOLDSTAKEVERIFY = 0xd1,
-
+    OP_CHECKCOLDSTAKEVERIFY_LOF = 0xd2,     // last output free for masternode/budget payment
     // leasing
     OP_CHECKLEASEVERIFY = 0xd7,
     OP_LEASINGREWARD = 0xd8,
@@ -237,6 +237,7 @@ enum opcodetype
     OP_PUBKEY = 0xfe,
 
     OP_INVALIDOPCODE = 0xff,
+
 };
 
 const char* GetOpName(opcodetype opcode);

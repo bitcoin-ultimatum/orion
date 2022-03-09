@@ -11,6 +11,8 @@
 #include <memory>
 #include <vector>
 
+#ifndef ZERO_AFTER_FREE_ALLOCATOR
+#define ZERO_AFTER_FREE_ALLOCATOR
 template <typename T>
 struct zero_after_free_allocator : public std::allocator<T> {
     // MSVC8 default copy constructor is broken
@@ -41,7 +43,7 @@ struct zero_after_free_allocator : public std::allocator<T> {
         std::allocator<T>::deallocate(p, n);
     }
 };
-
+#endif
 // Byte-vector that clears its contents before deletion.
 typedef std::vector<char, zero_after_free_allocator<char> > CSerializeData;
 

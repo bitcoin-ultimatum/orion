@@ -9,7 +9,7 @@
 #include "policy/policy.h" // for GetDustThreshold
 #include "sapling/key_io_sapling.h"
 #include "utilmoneystr.h"        // for FormatMoney
-
+#include "primitives/tx_in_out.h"
 struct TxValues
 {
     CAmount transInTotal{0};
@@ -192,7 +192,7 @@ OperationResult SaplingOperation::build()
                 tkeyChange = new CReserveKey(wallet);
             }
             CPubKey vchPubKey;
-            if (!tkeyChange->GetReservedKey(vchPubKey, true)) {
+            if (!tkeyChange->GetReservedKey(vchPubKey)) {
                 return errorOut("Could not generate a taddr to use as a change address");
             }
             CTxDestination changeAddr = vchPubKey.GetID();
@@ -258,9 +258,10 @@ OperationResult SaplingOperation::build()
 
 OperationResult SaplingOperation::send(std::string& retTxHash)
 {
-    const CWallet::CommitResult& res = wallet->CommitTransaction(finalTx, tkeyChange, g_connman.get());
-    if (res.status != CWallet::CommitStatus::OK) {
-        return errorOut(res.ToString());
+    CWalletTx wtxNew(wallet, std::move((*finalTx.get())));
+    const auto res = wallet->CommitTransaction(wtxNew, (*tkeyChange));
+    if (!wallet->CommitTransaction(wtxNew, (*tkeyChange))) {
+        return OperationResult(false);
     }
 
     retTxHash = finalTx->GetHash().ToString();
@@ -305,7 +306,7 @@ OperationResult SaplingOperation::loadUtxos(TxValues& txValues)
             const auto* tx = wallet->GetWalletTx(outpoint.outPoint.hash);
             if (!tx) continue;
             nSelectedValue += tx->tx->vout[outpoint.outPoint.n].nValue;
-            selectedUTXOInputs.emplace_back(tx, outpoint.outPoint.n, 0, true, true, true);
+            selectedUTXOInputs.emplace_back(tx, outpoint.outPoint.n, 0, true);
         }
         return loadUtxos(txValues, selectedUTXOInputs, nSelectedValue);
     }
@@ -550,7 +551,7 @@ OperationResult GetMemoFromString(const std::string& s, std::array<unsigned char
 OperationResult CheckTransactionSize(std::vector<SendManyRecipient>& recipients, bool fromTaddr)
 {
     CMutableTransaction mtx;
-    mtx.nVersion = CTransaction::TxVersion::SAPLING;
+    mtx.nVersion = CTransaction::SAPLING_VERSION;
     unsigned int max_tx_size = MAX_TX_SIZE_AFTER_SAPLING;
 
     // As a sanity check, estimate and verify that the size of the transaction will be valid.

@@ -21,6 +21,9 @@ class CScript;
 class CTransaction;
 class uint256;
 
+/** Special case nIn for signing Sapling txs. */
+const unsigned int NOT_AN_INPUT = UINT_MAX;
+
 /** Signature hash types/flags */
 enum
 {
@@ -145,6 +148,7 @@ enum class SigVersion
    WITNESS_V0 = 1,  //!< Witness v0 (P2WPKH and P2WSH); see BIP 141
    TAPROOT = 2,     //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, key path spending; see BIP 341
    TAPSCRIPT = 3,   //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, script path spending, leaf version 0xc0; see BIP 342
+   SIGVERSION_SAPLING = 4,
 };
 
 namespace BTC

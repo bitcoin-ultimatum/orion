@@ -34,6 +34,8 @@ inline bool MoneyRange(const CAmount& nValue) { return (nValue >= 0 && nValue <=
 /**
  * Fee rate in BTCU per kilobyte: CAmount / kB
  */
+#ifndef FEERATE
+#define FEERATE
 class CFeeRate
 {
 private:
@@ -62,5 +64,5 @@ public:
         READWRITE(nSatoshisPerK);
     }
 };
-
+#endif
 #endif //  BITCOIN_AMOUNT_H

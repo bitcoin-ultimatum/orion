@@ -14,7 +14,9 @@
 class CKeyStore;
 class CScript;
 
+
 /** IsMine() return codes */
+
 enum isminetype {
     ISMINE_NO = 0,
     //! Indicates that we dont know how to create a scriptSig that would solve this if we were given the appropriate private keys
@@ -30,11 +32,15 @@ enum isminetype {
     ISMINE_LEASING = 32,
     //! Indicates that we have the owner spending key of a P2L
     ISMINE_LEASED = 64,
-
+    //! Indicates that we don't have the spending key of a shielded spend/output
+    ISMINE_WATCH_ONLY_SHIELDED = 1 << 4,
+    //! Indicates that we have the spending key of a shielded spend/output.
+    ISMINE_SPENDABLE_SHIELDED = 1 << 5,
     ISMINE_SPENDABLE_ALL = ISMINE_SPENDABLE_DELEGATED | ISMINE_LEASED | ISMINE_SPENDABLE,
     ISMINE_SPENDABLE_STAKEABLE = ISMINE_SPENDABLE_DELEGATED | ISMINE_COLD,
     ISMINE_SPENDABLE_LEASING = ISMINE_LEASED | ISMINE_LEASING,
-    ISMINE_ALL = ISMINE_WATCH_ONLY | ISMINE_SPENDABLE | ISMINE_COLD | ISMINE_SPENDABLE_DELEGATED | ISMINE_LEASING | ISMINE_LEASED,
+    ISMINE_ALL = ISMINE_WATCH_ONLY | ISMINE_SPENDABLE | ISMINE_COLD | ISMINE_SPENDABLE_DELEGATED | ISMINE_SPENDABLE_SHIELDED | ISMINE_WATCH_ONLY_SHIELDED,
+    ISMINE_ENUM_ELEMENTS,
     ISMINE_SPENDABLE_ALL_NON_LEASED = ISMINE_SPENDABLE_DELEGATED | ISMINE_SPENDABLE
 };
 /** used for bitflags of isminetype */

@@ -47,7 +47,7 @@ public:
 
     /* witnesses/ivk: only for own (received) outputs */
     std::list<SaplingWitness> witnesses;
-    Optional<libzcash::SaplingIncomingViewingKey> ivk {nullopt};
+    Optional<libzcash::SaplingIncomingViewingKey> ivk{nullopt};
     inline bool IsMyNote() const { return ivk != nullopt; }
 
     /**

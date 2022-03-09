@@ -11,11 +11,13 @@
 #include "key.h"
 #include "script/standard.h"
 #include <bitset>
+#include "wallet/wallet_ismine.h"
 
 class CKeyStore;
 class CScript;
 
 /** IsMine() return codes */
+/*=
 enum isminetype {
     ISMINE_NO = 0,
     ISMINE_WATCH_ONLY = 1 << 0,
@@ -34,7 +36,7 @@ enum isminetype {
     ISMINE_WATCH_ONLY_ALL = ISMINE_WATCH_ONLY | ISMINE_WATCH_ONLY_SHIELDED,
     ISMINE_ALL = ISMINE_WATCH_ONLY | ISMINE_SPENDABLE | ISMINE_COLD | ISMINE_SPENDABLE_DELEGATED | ISMINE_SPENDABLE_SHIELDED | ISMINE_WATCH_ONLY_SHIELDED,
     ISMINE_ENUM_ELEMENTS
-};
+};*/
 /** used for bitflags of isminetype */
 typedef uint8_t isminefilter;
 

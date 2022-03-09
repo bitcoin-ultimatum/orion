@@ -206,6 +206,7 @@ CScript GetScriptForStakeDelegation(const CKeyID& stakingKey, const CKeyID& spen
 CScript GetScriptForLeasing(const CKeyID& leaserKey, const CKeyID& ownerKey);
 CScript GetScriptForLeasingCLTV(const CKeyID& leaserKey, const CKeyID& ownerKey, uint32_t nLockTime);
 CScript GetScriptForLeasingReward(const COutPoint& outPoint, const CTxDestination& dest);
+CScript GetScriptForStakeDelegationLOF(const CKeyID& stakingKey, const CKeyID& spendingKey);
 
 /**
  * Generate a pay-to-witness script for the given redeem script. If the redeem
@@ -217,4 +218,6 @@ CScript GetScriptForLeasingReward(const COutPoint& outPoint, const CTxDestinatio
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
 
+/** Generate an OP_RETURN output script with the given data. */
+CScript GetScriptForOpReturn(const uint256& message);
 #endif // BITCOIN_SCRIPT_STANDARD_H

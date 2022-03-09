@@ -181,7 +181,8 @@ static const uint64_t nMinDiskSpace = 52428800;
 void RegisterNodeSignals(CNodeSignals& nodeSignals);
 /** Unregister a network node */
 void UnregisterNodeSignals(CNodeSignals& nodeSignals);
-
+/** Default multiplier used in the computation for shielded txes min fee */
+static const unsigned int DEFAULT_SHIELDEDTXFEE_K = 100;
 /**
  * Process an incoming block. This only returns after the best known valid
  * block is made active. Note that it does not, however, guarantee that the
@@ -271,6 +272,12 @@ struct CNodeStateStats {
 };
 
 CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowFree);
+CAmount GetMinRelayFee(unsigned int nBytes);
+
+/**
+ * Return the minimum fee for a shielded tx.
+ */
+CAmount GetShieldedTxMinFee(const CTransaction& tx);
 
 /**
  * Check transaction inputs, and make sure any

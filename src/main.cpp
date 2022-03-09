@@ -418,6 +418,16 @@ void MarkBlockAsReceived(const uint256& hash)
     }
 }
 
+CAmount GetShieldedTxMinFee(const CTransaction& tx)
+{
+    assert (tx.IsShieldedTx());
+    unsigned int K = DEFAULT_SHIELDEDTXFEE_K;   // Fixed (100) for now
+    CAmount nMinFee = ::minRelayTxFee.GetFee(tx.GetTotalSize()) * K;
+    if (!Params().GetConsensus().MoneyRange(nMinFee))
+        nMinFee = Params().GetConsensus().nMaxMoneyOut;
+    return nMinFee;
+}
+
 // Requires cs_main.
 void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, CBlockIndex* pindex = NULL)
 {
@@ -1102,6 +1112,15 @@ CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowF
 
     if (!MoneyRange(nMinFee))
         nMinFee = MAX_MONEY_OUT;
+    return nMinFee;
+}
+
+CAmount GetMinRelayFee(unsigned int nBytes)
+{
+    CAmount nMinFee = ::minRelayTxFee.GetFee(nBytes);
+    if (!Params().GetConsensus().MoneyRange(nMinFee)) {
+        nMinFee = Params().GetConsensus().nMaxMoneyOut;
+    }
     return nMinFee;
 }
 

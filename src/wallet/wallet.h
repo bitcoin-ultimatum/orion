@@ -30,6 +30,11 @@
 #include "zbtcu/zbtcumodule.h"
 #include "zbtcu/zbtcuwallet.h"
 #include "zbtcu/zbtcutracker.h"
+#include "sapling/incrementalmerkletree.h"
+#include "wallet/scriptpubkeyman.h"
+#include "sapling/saplingscriptpubkeyman.h"
+//#include "sapling/address.h"
+//#include "destination_io.h"
 
 #include <algorithm>
 #include <map>
@@ -41,6 +46,8 @@
 #include <vector>
 #include <interfaces/chain.h>
 #include <interfaces/node.h>
+#include "script/ismine.h"
+
 /**
  * Settings
  */
@@ -72,6 +79,9 @@ class CReserveKey;
 class CScript;
 class CWalletTx;
 class CLeasingManager;
+class SaplingScriptPubKeyMan;
+class SaplingNoteData;
+struct SaplingNoteEntry;
 
 /** (client) version numbers for particular wallet features */
 enum WalletFeature {
@@ -80,7 +90,11 @@ enum WalletFeature {
     FEATURE_WALLETCRYPT = 40000, // wallet encryption
     FEATURE_COMPRPUBKEY = 60000, // compressed public keys
 
+    FEATURE_SAPLING = 170000, // Upgraded to Saplings key manager.
+
     FEATURE_LATEST = 61000
+
+    //FEATURE_LATEST = FEATURE_SAPLING
 };
 
 enum AvailableCoinsType {
@@ -199,6 +213,11 @@ public:
     bool IsActive() { return (timeLastStakeAttempt + 30) >= GetTime(); }
 };
 
+template <class T>
+using TxSpendMap = std::multimap<T, uint256>;
+typedef std::map<SaplingOutPoint, SaplingNoteData> mapSaplingNoteData_t;
+
+
 /**
  * A CWallet is an extension of a keystore, which also maintains a set of transactions and balances,
  * and provides the ability to create new transactions.
@@ -217,12 +236,19 @@ private:
     //! the maximum wallet format version: memory-only variable that specifies to what version this wallet may be upgraded
     int nWalletMaxVersion;
 
+    /** Internal database handle. */
+    std::unique_ptr<WalletDatabase> database;
+
     int64_t nNextResend;
     int64_t nLastResend;
 
     interfaces::Chain* m_chain;
     Node* m_node;
 
+    std::unique_ptr<ScriptPubKeyMan> m_spk_man = std::make_unique<ScriptPubKeyMan>(this);
+    std::unique_ptr<SaplingScriptPubKeyMan> m_sspk_man = std::make_unique<SaplingScriptPubKeyMan>(this);
+
+    int m_last_block_processed_height GUARDED_BY(cs_wallet) = -1;
     /**
      * Used to keep track of spent outpoints, and
      * detect and report conflicts (double-spends or
@@ -238,6 +264,11 @@ private:
 
     void SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator>);
 
+    template <class T>
+    void SyncMetaData(std::pair<typename TxSpendMap<T>::iterator, typename TxSpendMap<T>::iterator> range);
+
+    void ChainTipAdded(const CBlockIndex *pindex, const CBlock *pblock, SaplingMerkleTree saplingTree);
+
     int ScanBitcoinStateForWalletTransactions(std::unique_ptr<CCoinsViewIterator> pCoins, bool fUpdate, bool fromStartup);
 public:
 
@@ -245,6 +276,28 @@ public:
 
     bool StakeableCoins(std::vector<COutput>* pCoins = nullptr);
     bool IsCollateralAmount(CAmount nInputAmount) const;
+
+    bool IsSaplingUpgradeEnabled() const;
+
+    //! Get spkm
+    ScriptPubKeyMan* GetScriptPubKeyMan() const;
+    SaplingScriptPubKeyMan* GetSaplingScriptPubKeyMan() const { return m_sspk_man.get(); }
+
+    bool HasSaplingSPKM() const;
+
+    /** Get database handle used by this wallet. Ideally this function would
+ * not be necessary.
+ */
+    WalletDatabase* GetDBHandlePtr() const { return database.get(); }
+    WalletDatabase& GetDBHandle() const { return *database; }
+
+    /** Get last block processed height */
+    int GetLastBlockHeight() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet)
+    {
+        AssertLockHeld(cs_wallet);
+        assert(m_last_block_processed_height >= 0);
+        return m_last_block_processed_height;
+    };
 
     /*
      * Main wallet lock.
@@ -305,11 +358,12 @@ public:
     int64_t nOrderPosNext;
     std::map<uint256, int> mapRequestCount;
 
-    std::map<CTxDestination, AddressBook::CAddressBookData> mapAddressBook;
-
     std::set<COutPoint> setLockedCoins;
 
     int64_t nTimeFirstKey;
+
+    // Public SyncMetadata interface used for the sapling spent nullifier map.
+    void SyncMetaDataN(std::pair<TxSpendMap<uint256>::iterator, TxSpendMap<uint256>::iterator> range);
 
     const CWalletTx* GetWalletTx(const uint256& hash) const;
 
@@ -390,6 +444,11 @@ public:
     std::map<CBTCUAddress, std::vector<COutput> > AvailableCoinsByAddress(bool fConfirmed = true, CAmount maxCoinValue = 0);
     bool SelectCoinsMinConf(const CAmount& nTargetValue, int nConfMine, int nConfTheirs, std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet) const;
 
+    /**
+     * Return list of available shield notes grouped by sapling address.
+     */
+    std::map<libzcash::SaplingPaymentAddress, std::vector<SaplingNoteEntry>> ListNotes() const;
+
     /// Get 1000 BTCU output and keys which can be used for the Masternode
     bool GetMasternodeVinAndKeys(CTxIn& txinRet, CPubKey& pubKeyRet, CKey& keyRet, CPubKey& pubKeyLeasing, CKey& keyLeasing, std::string strTxHash = "", std::string strOutputIndex = "");
     /// Extract txin information and keys from output
@@ -413,6 +472,56 @@ public:
     PairResult getNewLeasingAddress(CBTCUAddress& ret, std::string label);
     int64_t GetKeyCreationTime(CPubKey pubkey);
     int64_t GetKeyCreationTime(const CBTCUAddress& address);
+    int64_t GetKeyCreationTime(const libzcash::SaplingPaymentAddress& address);
+
+    //////////// Sapling //////////////////
+
+    // Search for notes and addresses from this wallet in the tx, and add the addresses --> IVK mapping to the keystore if missing.
+    bool FindNotesDataAndAddMissingIVKToKeystore(const CTransaction& tx, Optional<mapSaplingNoteData_t>& saplingNoteData);
+    // Decrypt sapling output notes with the inputs ovk and updates saplingNoteDataMap
+    void AddExternalNotesDataToTx(CWalletTx& wtx) const;
+
+    //! Generates new Sapling key
+    libzcash::SaplingPaymentAddress GenerateNewSaplingZKey(std::string label = "");
+
+    //! pindex is the new tip being connected.
+    void IncrementNoteWitnesses(const CBlockIndex* pindex,
+                                const CBlock* pblock,
+                                SaplingMerkleTree& saplingTree);
+
+    //! pindex is the old tip being disconnected.
+    void DecrementNoteWitnesses(const CBlockIndex* pindex);
+
+    //! clear note witness cache
+    void ClearNoteWitnessCache();
+
+
+    //! Adds Sapling spending key to the store, and saves it to disk
+    bool AddSaplingZKey(const libzcash::SaplingExtendedSpendingKey &key);
+    bool AddSaplingIncomingViewingKeyW(
+            const libzcash::SaplingIncomingViewingKey &ivk,
+            const libzcash::SaplingPaymentAddress &addr);
+    bool AddCryptedSaplingSpendingKeyW(
+            const libzcash::SaplingExtendedFullViewingKey &extfvk,
+            const std::vector<unsigned char> &vchCryptedSecret);
+    //! Returns true if the wallet contains the spending key
+    bool HaveSpendingKeyForPaymentAddress(const libzcash::SaplingPaymentAddress &zaddr) const;
+
+
+    //! Adds spending key to the store, without saving it to disk (used by LoadWallet)
+    bool LoadSaplingZKey(const libzcash::SaplingExtendedSpendingKey &key);
+    //! Load spending key metadata (used by LoadWallet)
+    bool LoadSaplingZKeyMetadata(const libzcash::SaplingIncomingViewingKey &ivk, const CKeyMetadata &meta);
+    //! Adds a Sapling payment address -> incoming viewing key map entry,
+    //! without saving it to disk (used by LoadWallet)
+    bool LoadSaplingPaymentAddress(
+            const libzcash::SaplingPaymentAddress &addr,
+            const libzcash::SaplingIncomingViewingKey &ivk);
+    //! Adds an encrypted spending key to the store, without saving it to disk (used by LoadWallet)
+    bool LoadCryptedSaplingZKey(const libzcash::SaplingExtendedFullViewingKey &extfvk,
+                                const std::vector<unsigned char> &vchCryptedSecret);
+
+    //////////// End Sapling //////////////
 
     //! Adds a key to the store, and saves it to disk.
     bool AddKeyPubKey(const CKey& key, const CPubKey& pubkey);
@@ -618,6 +727,10 @@ public:
     /** notify wallet file backed up */
     boost::signals2::signal<void (const bool& fSuccess, const std::string& filename)> NotifyWalletBacked;
 
+
+    /* SPKM Helpers */
+    const CKeyingMaterial& GetEncryptionKey() const;
+    bool HasEncryptionKeys() const;
 
     /* Legacy ZC - implementations in wallet_zerocoin.cpp */
 
@@ -835,6 +948,7 @@ private:
 
 public:
     mapValue_t mapValue;
+    mapSaplingNoteData_t mapSaplingNoteData;
     std::vector<std::pair<std::string, std::string> > vOrderForm;
     unsigned int fTimeReceivedIsTxTime;
     unsigned int nTimeReceived; //! time received by this node
@@ -942,6 +1056,17 @@ public:
     void MarkDirty();
 
     void BindWallet(CWallet* pwalletIn);
+
+    void SetSaplingNoteData(mapSaplingNoteData_t& noteData);
+
+    Optional<std::pair<
+            libzcash::SaplingNotePlaintext,
+            libzcash::SaplingPaymentAddress>> DecryptSaplingNote(const SaplingOutPoint& op) const;
+
+    Optional<std::pair<
+            libzcash::SaplingNotePlaintext,
+            libzcash::SaplingPaymentAddress>> RecoverSaplingNote(const SaplingOutPoint& op, const std::set<uint256>& ovks) const;
+
     //! checks whether a tx has P2CS inputs or not
     bool HasP2CSInputs() const;
 
