@@ -89,7 +89,10 @@ class TransactionSignatureCreator : public BTC::BaseSignatureCreator {
       bool CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const override;
    };
 
-   /** Produce a script signature using a generic signature creator. */
+    /** Produce a script signature using a generic signature creator. */
+    bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, SigVersion sigversion, bool fColdStake, ScriptError* serror = nullptr);
+
+    /** Produce a script signature using a generic signature creator. */
    bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& scriptPubKey, SignatureData& sigdata, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
 
    /* Check whether we know how to sign for an output like this, assuming we

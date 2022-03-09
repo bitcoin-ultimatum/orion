@@ -918,6 +918,31 @@ namespace BTC {
       return dummyChecker;
    }
 
+    bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, SigVersion sigversion, bool fColdStake, ScriptError* serror)
+    {
+        CScript script = fromPubKey;
+        bool solved = true;
+        std::vector<valtype> result;
+        txnouttype whichType;
+        solved = SignStep(creator, script, result, whichType, sigversion, fColdStake);
+        CScript subscript;
+
+        if (solved && whichType == TX_SCRIPTHASH)
+        {
+            // Solver returns the subscript that needs to be evaluated;
+            // the final scriptSig is the signatures from that
+            // and then the serialized subscript:
+            script = subscript = CScript(result[0].begin(), result[0].end());
+            solved = solved && SignStep(creator, script, result, whichType, sigversion, fColdStake) && whichType != TX_SCRIPTHASH;
+            result.emplace_back(subscript.begin(), subscript.end());
+        }
+
+        sigdata.scriptSig = PushAll(result);
+
+        // Test solution
+        return solved && BTC::VerifyScript(sigdata.scriptSig, fromPubKey, nullptr, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker(), serror);
+    }
+
    bool DummySignatureCreator::CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const
    {
       // Create a dummy signature that is a valid DER-encoding
