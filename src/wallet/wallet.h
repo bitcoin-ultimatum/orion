@@ -319,7 +319,65 @@ public:
     //! check whether we are allowed to upgrade (or already support) to the named feature
     bool CanSupportFeature(enum WalletFeature wf);
 
+    struct AvailableCoinsFilter {
+    public:
+        AvailableCoinsFilter() {}
+        AvailableCoinsFilter(bool _fIncludeDelegated,
+                             bool _fIncludeColdStaking,
+                             bool _fOnlySafe,
+                             bool _fOnlySpendable,
+                             std::set<CTxDestination>* _onlyFilteredDest,
+                             int _minDepth,
+                             bool _fIncludeLocked = false,
+                             CAmount _nMaxOutValue = 0) :
+                fIncludeDelegated(_fIncludeDelegated),
+                fIncludeColdStaking(_fIncludeColdStaking),
+                fOnlySafe(_fOnlySafe),
+                fOnlySpendable(_fOnlySpendable),
+                onlyFilteredDest(_onlyFilteredDest),
+                minDepth(_minDepth),
+                fIncludeLocked(_fIncludeLocked),
+                nMaxOutValue(_nMaxOutValue) {}
+
+        bool fIncludeDelegated{true};
+        bool fIncludeColdStaking{false};
+        bool fOnlySafe{true};
+        bool fOnlySpendable{false};
+        std::set<CTxDestination>* onlyFilteredDest{nullptr};
+        int minDepth{0};
+        bool fIncludeLocked{false};
+        // Select outputs with value <= nMaxOutValue
+        CAmount nMaxOutValue{0}; // 0 means not active
+        CAmount nMinOutValue{0}; // 0 means not active
+        CAmount nMinimumSumAmount{0}; // 0 means not active
+        unsigned int nMaximumCount{0}; // 0 means not active
+    };
+
+    struct OutputAvailabilityResult
+    {
+        bool available{false};
+        bool solvable{false};
+        bool spendable{false};
+    };
+
+    OutputAvailabilityResult CheckOutputAvailability(const CTxOut& output,
+                                                     const unsigned int outIndex,
+                                                     const uint256& wtxid,
+                                                     const CCoinControl* coinControl,
+                                                     const bool fCoinsSelected,
+                                                     const bool fIncludeColdStaking,
+                                                     const bool fIncludeDelegated,
+                                                     const bool fIncludeLocked) const;
+
     bool AvailableCoins(std::vector<COutput>* pCoins, bool fOnlyConfirmed = true, const CCoinControl* coinControl = NULL, bool fIncludeZeroValue = false, AvailableCoinsType nCoinType = ALL_COINS, bool fUseIX = false, int nWatchonlyConfig = 1, bool fIncludeColdStaking=false, bool fIncludeDelegated=true, bool fIncludeLeasing=false, bool fIncludeLeased=false, bool fIncludeLeasingReward=true) const;
+
+    /**
+ * populate vCoins with vector of available COutputs.
+ */
+    bool AvailableCoins(std::vector<COutput>* pCoins,   // --> populates when != nullptr
+                        const CCoinControl* coinControl = nullptr,
+                        AvailableCoinsFilter coinsFilter = AvailableCoinsFilter()
+    ) const;
 
     // Get available p2cs utxo
     void GetAvailableP2CSCoins(std::vector<COutput>& vCoins) const;

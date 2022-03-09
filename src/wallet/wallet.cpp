@@ -2271,6 +2271,157 @@ bool CWallet::AvailableCoins(
         return (pCoins && pCoins->size() > 0);
     }
 }
+/**
+ * Test if the transaction is spendable.
+ */
+static bool CheckTXAvailabilityInternal(const CWalletTx* pcoin, bool fOnlySafe, int& nDepth, bool& safeTx)
+{
+    safeTx = pcoin->IsTrusted();
+    if (fOnlySafe && !safeTx) return false;
+    if (pcoin->GetBlocksToMaturity() > 0) return false;
+
+    nDepth = pcoin->GetDepthInMainChain();
+
+    // We should not consider coins which aren't at least in our mempool
+    // It's possible for these to be conflicted via ancestors which we may never be able to detect
+    if (nDepth == 0 && !pcoin->InMempool()) return false;
+
+    return true;
+}
+
+// cs_main lock required
+static bool CheckTXAvailability(const CWalletTx* pcoin, bool fOnlySafe, int& nDepth, bool& safeTx)
+{
+    AssertLockHeld(cs_main);
+    if (!CheckFinalTx((*pcoin->tx.get()))) return false;
+    return CheckTXAvailabilityInternal(pcoin, fOnlySafe, nDepth, safeTx);
+}
+
+bool CWallet::AvailableCoins(std::vector<COutput>* pCoins,      // --> populates when != nullptr
+                             const CCoinControl* coinControl,   // Default: nullptr
+                             AvailableCoinsFilter coinsFilter) const
+{
+    if (pCoins) pCoins->clear();
+    const bool fCoinsSelected = (coinControl != nullptr) && coinControl->HasSelected();
+    // include delegated coins when coinControl is active
+    if (!coinsFilter.fIncludeDelegated && fCoinsSelected)
+        coinsFilter.fIncludeDelegated = true;
+
+    {
+        LOCK(cs_wallet);
+        CAmount nTotal = 0;
+        for (const auto& entry : mapWallet) {
+            const uint256& wtxid = entry.first;
+            const CWalletTx* pcoin = &entry.second;
+
+            // Check if the tx is selectable
+            int nDepth = 0;
+            bool safeTx = false;
+            if (!CheckTXAvailability(pcoin, coinsFilter.fOnlySafe, nDepth, safeTx))
+                continue;
+
+            // Check min depth filtering requirements
+            if (nDepth < coinsFilter.minDepth) continue;
+
+            for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++) {
+                const auto& output = pcoin->tx->vout[i];
+
+                // Filter by value if needed
+                if (coinsFilter.nMaxOutValue > 0 && output.nValue > coinsFilter.nMaxOutValue) {
+                    continue;
+                }
+                if (coinsFilter.nMinOutValue > 0 && output.nValue < coinsFilter.nMinOutValue) {
+                    continue;
+                }
+
+                // Filter by specific destinations if needed
+                if (coinsFilter.onlyFilteredDest && !coinsFilter.onlyFilteredDest->empty()) {
+                    CTxDestination address;
+                    if (!ExtractDestination(output.scriptPubKey, address) || !coinsFilter.onlyFilteredDest->count(address)) {
+                        continue;
+                    }
+                }
+
+                // Now check for chain availability
+                auto res = CheckOutputAvailability(
+                        output,
+                        i,
+                        wtxid,
+                        coinControl,
+                        fCoinsSelected,
+                        coinsFilter.fIncludeColdStaking,
+                        coinsFilter.fIncludeDelegated,
+                        coinsFilter.fIncludeLocked);
+
+                if (!res.available) continue;
+                if (coinsFilter.fOnlySpendable && !res.spendable) continue;
+
+                // found valid coin
+                if (!pCoins) return true;
+                pCoins->emplace_back(COutput(pcoin, (int) i, nDepth, res.spendable));
+
+                // Checks the sum amount of all UTXO's.
+                if (coinsFilter.nMinimumSumAmount != 0) {
+                    nTotal += output.nValue;
+
+                    if (nTotal >= coinsFilter.nMinimumSumAmount) {
+                        return true;
+                    }
+                }
+
+                // Checks the maximum number of UTXO's.
+                if (coinsFilter.nMaximumCount > 0 && pCoins->size() >= coinsFilter.nMaximumCount) {
+                    return true;
+                }
+            }
+        }
+        return (pCoins && !pCoins->empty());
+    }
+}
+
+CWallet::OutputAvailabilityResult CWallet::CheckOutputAvailability(
+        const CTxOut& output,
+        const unsigned int outIndex,
+        const uint256& wtxid,
+        const CCoinControl* coinControl,
+        const bool fCoinsSelected,
+        const bool fIncludeColdStaking,
+        const bool fIncludeDelegated,
+        const bool fIncludeLocked) const
+{
+    OutputAvailabilityResult res;
+
+    // Check if the utxo was spent.
+    if (IsSpent(wtxid, outIndex)) return res;
+
+    isminetype mine = IsMine(output);
+
+    // Check If not mine
+    if (mine == ISMINE_NO) return res;
+
+    // Skip locked utxo
+    if (!fIncludeLocked && IsLockedCoin(wtxid, outIndex)) return res;
+
+    // Check if we should include zero value utxo
+    if (output.nValue <= 0) return res;
+    if (fCoinsSelected && coinControl && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(BaseOutPoint(wtxid, outIndex)))
+        return res;
+
+    // --Skip P2CS outputs
+    // skip cold coins
+    if (mine == ISMINE_COLD && (!fIncludeColdStaking || !HasDelegator(output))) return res;
+    // skip delegated coins
+    if (mine == ISMINE_SPENDABLE_DELEGATED && !fIncludeDelegated) return res;
+
+    res.solvable = IsSolvable(*this, output.scriptPubKey, mine == ISMINE_COLD);
+
+    res.spendable = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) ||
+                    (((mine & ISMINE_WATCH_ONLY) != ISMINE_NO) && (coinControl && coinControl->fAllowWatchOnly && res.solvable)) ||
+                    ((mine & ((fIncludeColdStaking ? ISMINE_COLD : ISMINE_NO) |
+                              (fIncludeDelegated ? ISMINE_SPENDABLE_DELEGATED : ISMINE_NO) )) != ISMINE_NO);
+    res.available = true;
+    return res;
+}
 
 std::map<CBTCUAddress, std::vector<COutput> > CWallet::AvailableCoinsByAddress(bool fConfirmed, CAmount maxCoinValue)
 {

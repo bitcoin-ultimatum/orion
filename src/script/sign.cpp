@@ -444,6 +444,21 @@ CScript CombineSignatures(const CScript& scriptPubKey, const CTransaction& txTo,
     return CombineSignatures(scriptPubKey, txTo, nIn, txType, vSolutions, stack1, stack2);
 }
 
+bool IsSolvable(const CKeyStore& store, const CScript& script, bool fColdStaking)
+{
+    // This check is to make sure that the script we created can actually be solved for and signed by us
+    // if we were to have the private keys. This is just to make sure that the script is valid and that,
+    // if found in a transaction, we would still accept and relay that transaction. In particular,
+    BTC::DummySignatureCreator creator(&store);
+    SignatureData sigs;
+    if (ProduceSignature(creator, script, sigs, SigVersion::BASE, fColdStaking)) {
+        // VerifyScript check is just defensive, and should never fail.
+        assert(BTC::VerifyScript(sigs.scriptSig, script, nullptr, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker(), nullptr));
+        return true;
+    }
+    return false;
+}
+
 namespace BTC {
    namespace
    {

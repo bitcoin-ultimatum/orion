@@ -98,4 +98,17 @@ class TransactionSignatureCreator : public BTC::BaseSignatureCreator {
  * Solvability is unrelated to whether we consider this output to be ours. */
    bool IsSolvable(const CKeyStore& store, const CScript& script);
 }
+/* Check whether we know how to sign for an output like this, assuming we
+* have all private keys. While this function does not need private keys, the passed
+* keystore is used to look up public keys and redeemscripts by hash.
+* Solvability is unrelated to whether we consider this output to be ours. */
+bool IsSolvable(const CKeyStore& store, const CScript& script, bool fColdStaking);
+/** A signature creator that just produces 72-byte empty signatyres. */
+/*
+class DummySignatureCreator : public BTC::BaseSignatureCreator {
+public:
+    DummySignatureCreator(const CKeyStore* keystoreIn) : BaseSignatureCreator(keystoreIn) {}
+    const BTC::BaseSignatureChecker& Checker() const;
+    bool CreateSig(std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const;
+};*/
 #endif // BITCOIN_SCRIPT_SIGN_H
