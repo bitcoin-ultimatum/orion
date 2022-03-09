@@ -452,8 +452,10 @@ UniValue mnregvalidatorlist(const UniValue& params, bool fHelp)
 {
     auto validatorsRegistrationList = g_ValidatorsState.get_registrations();
     std::string valRegStr;
+    int count = 1;
     for(auto &valReg : validatorsRegistrationList)
-       valRegStr += " 1. PubKey: " +  HexStr(valReg.pubKey) + "\nVin: " + valReg.vin.ToString() + "\n";
+       valRegStr += itostr(count++) + ".Validator candidate: \n\taddress: " + CBTCUAddress(valReg.pubKey.GetID()).ToString() + "\n\t"
+                 + "public key: " + HexStr(valReg.pubKey) + "\n";
     return UniValue(valRegStr);
 }
 
@@ -466,7 +468,20 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
        valVoteStr += "Voting address: " + CBTCUAddress(valVote.pubKey.GetID()).ToString() + "\n";
        valVoteStr +="\tVotes:\n";
        for(auto &vote:valVote.votes)
-          valVoteStr += "\t\t Vin: " + vote.vin.ToString() + "; Vote -" + (vote.vote == VoteYes ? "yes": "no") + "\n" ;
+       {
+          CTxOut prevOut;
+          CValidationState state;
+          if(!GetOutput(vote.vin.prevout.hash, vote.vin.prevout.n, state, prevOut)){
+             throw JSONRPCError(RPC_INTERNAL_ERROR, "public zerocoin spend prev output not found");
+          }
+          CTxDestination dest;
+          CBTCUAddress address;
+          if (ExtractDestination(prevOut.scriptPubKey, dest) && address.Set(dest))
+          {
+             valVoteStr +=
+             "\t\t Candidate address: " + address.ToString() + "; Vote -" + (vote.vote == VoteYes ? "yes": "no") + "\n";
+          }
+       }
     }
     return UniValue(valVoteStr);
 }
@@ -476,7 +491,10 @@ UniValue mnvalidatorlist(const UniValue& params, bool fHelp)
     auto validatorsList = g_ValidatorsState.get_validators();
     
     std::string valStr;
+    int count = 1;
     for(auto &val : validatorsList)
-       valStr += " 1. Address: " +  CBTCUAddress(val.pubKey.GetID()).ToString() + "\nVin: " + val.vin.ToString() + "\n";
+       valStr += itostr(count++) + ". Validator: \n\taddress: " + CBTCUAddress(val.pubKey.GetID()).ToString() + "\n\t"
+       + "public key: " + HexStr(val.pubKey) + "\n";
+
     return UniValue(valStr);
 }
