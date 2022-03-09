@@ -32,7 +32,7 @@ namespace Standard {
     CWDestination DecodeDestination(const std::string& strAddress, bool& isStaking, bool& isShielded)
     {
         CWDestination dest;
-        CTxDestination regDest = ::DecodeDestination(strAddress, isStaking);
+        CTxDestination regDest = ::DecodeDestination(strAddress);
         if (!IsValidDestination(regDest)) {
             const auto sapDest = KeyIO::DecodeSaplingPaymentAddress(strAddress);
             if (sapDest) {

@@ -290,7 +290,7 @@ UniValue listunspent(const UniValue& params, bool fHelp)
             if (!ExtractDestination(out.tx->vout[out.i].scriptPubKey, address))
                 continue;
 
-            if (!setAddress.count(address))
+            if (!setAddress.count(CBTCUAddress(address)))
                 continue;
         }
 
