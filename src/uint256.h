@@ -317,6 +317,109 @@ public:
     friend class uint512;
 };
 
+/** Template base class for fixed-sized opaque blobs. */
+template<unsigned int BITS>
+class base_blob
+{
+protected:
+    static constexpr int WIDTH = BITS / 8;
+    uint8_t m_data[WIDTH];
+public:
+    /* construct 0 value by default */
+    constexpr base_blob() : m_data() {}
+
+    /* constructor for constants between 1 and 255 */
+    constexpr explicit base_blob(uint8_t v) : m_data{v} {}
+
+    explicit base_blob(const std::vector<unsigned char>& vch);
+
+    bool IsNull() const
+    {
+        for (int i = 0; i < WIDTH; i++)
+            if (m_data[i] != 0)
+                return false;
+        return true;
+    }
+
+    void SetNull()
+    {
+        memset(m_data, 0, sizeof(m_data));
+    }
+
+    inline int Compare(const base_blob& other) const { return memcmp(m_data, other.m_data, sizeof(m_data)); }
+
+    friend inline bool operator==(const base_blob& a, const base_blob& b) { return a.Compare(b) == 0; }
+    friend inline bool operator!=(const base_blob& a, const base_blob& b) { return a.Compare(b) != 0; }
+    friend inline bool operator<(const base_blob& a, const base_blob& b) { return a.Compare(b) < 0; }
+
+    std::string GetHex() const;
+    void SetHex(const char* psz);
+    void SetHex(const std::string& str);
+    std::string ToString() const;
+
+    const unsigned char* data() const { return m_data; }
+    unsigned char* data() { return m_data; }
+
+    unsigned char* begin()
+    {
+        return &m_data[0];
+    }
+
+    unsigned char* end()
+    {
+        return &m_data[WIDTH];
+    }
+
+    const unsigned char* begin() const
+    {
+        return &m_data[0];
+    }
+
+    const unsigned char* end() const
+    {
+        return &m_data[WIDTH];
+    }
+
+    unsigned int size() const
+    {
+        return sizeof(m_data);
+    }
+
+    uint64_t GetUint64(int pos) const
+    {
+        const uint8_t* ptr = m_data + pos * 8;
+        return ((uint64_t)ptr[0]) | \
+               ((uint64_t)ptr[1]) << 8 | \
+               ((uint64_t)ptr[2]) << 16 | \
+               ((uint64_t)ptr[3]) << 24 | \
+               ((uint64_t)ptr[4]) << 32 | \
+               ((uint64_t)ptr[5]) << 40 | \
+               ((uint64_t)ptr[6]) << 48 | \
+               ((uint64_t)ptr[7]) << 56;
+    }
+
+    template<typename Stream>
+    void Serialize(Stream& s) const
+    {
+        s.write((char*)m_data, sizeof(m_data));
+    }
+
+    template<typename Stream>
+    void Unserialize(Stream& s)
+    {
+        s.read((char*)m_data, sizeof(m_data));
+    }
+};
+
+/** 88-bit opaque blob.
+ */
+class blob88 : public base_blob<88> {
+public:
+    blob88() {}
+    blob88(const base_blob<88>& b) : base_blob<88>(b) {}
+    explicit blob88(const std::vector<unsigned char>& vch) : base_blob<88>(vch) {}
+};
+
 /** 160-bit unsigned big integer. */
 class uint160 : public base_uint<160>
 {
@@ -383,6 +486,11 @@ inline uint256 uint256S(const std::string& str)
     rv.SetHex(str);
     return rv;
 }
+/** constant uint256 instances */
+const uint256 UINT256_ZERO = uint256();
+const uint256 UINT256_ONE = uint256S("0000000000000000000000000000000000000000000000000000000000000001");
+const uint256 UINT256_MAX = uint256S("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+
 
 /** 512-bit unsigned big integer. */
 class uint512 : public base_uint<512>

@@ -24,6 +24,17 @@
 #include "libzerocoin/SpendType.h"
 #include "sporkid.h"
 #include <span.h>
+#include "sapling/sapling.h"
+#include "uint256.h"
+
+#include <boost/optional.hpp>
+
+//! Substitute for C++17 std::optional
+template <typename T>
+using Optional = boost::optional<T>;
+
+//#include "sapling/address.h"
+//#include "sapling/zip32.h"
 
 #ifdef WIN32
 #include <sstream>
@@ -74,7 +85,7 @@ enum {
 };
 
 #define READWRITE(obj) (::SerReadWrite(s, (obj), nType, nVersion, ser_action))
-
+#define READWRITEM(...) (::SerReadWriteMany(s, ser_action, __VA_ARGS__))
 /**
  * Implement three methods for serializable objects. These are actually wrappers over
  * "SerializationOp" template, which implements the body of each class' serialization
@@ -198,6 +209,57 @@ template <typename Stream>
 inline void Serialize(Stream& s, double a, int, int = 0)
 {
     WRITEDATA(s, a);
+}
+/*
+template <typename Stream>
+inline void Serialize(Stream& s, boost::optional<libzcash::SaplingIncomingViewingKey> a, int, int = 0)
+{
+    libzcash::SaplingIncomingViewingKey t;
+
+    for (auto i = a.begin(); i < a.end(); ++i)
+        WRITEDATA(s, *a;
+}*/
+template <typename Stream>
+inline void Serialize(Stream& s, diversifier_t a, int, int = 0)
+{
+    for (int i = 0; i < ZC_DIVERSIFIER_SIZE; ++i)
+        WRITEDATA(s, a);
+}
+
+template <typename Stream>
+inline void Serialize(Stream& s, std::array<unsigned char, ZC_MEMO_SIZE > a, int, int = 0)
+{
+    for (int i = 0; i < ZC_MEMO_SIZE; ++i)
+        WRITEDATA(s, a[i]);
+}
+/*
+template <typename Stream>
+inline void Unserialize(Stream& s, libzcash::SaplingExtendedSpendingKey& a, int, int = 0)
+{
+    for (auto i = a.begin(); i != a.end(), ++i;)
+        READDATA(s, *i);
+}
+*/
+
+template <typename Stream>
+inline void Unserialize(Stream& s, diversifier_t a, int, int = 0)
+{
+    for (int i = 0; i < ZC_DIVERSIFIER_SIZE; ++i)
+        WRITEDATA(s, a);
+}
+
+template <typename Stream>
+inline void Unserialize(Stream& s, std::array<unsigned char, ZC_MEMO_SIZE > a, int, int = 0)
+{
+    for (int i = 0; i < ZC_MEMO_SIZE; ++i)
+        WRITEDATA(s, a[i]);
+}
+
+template <typename Stream>
+inline void Unserialize(Stream& s, uint256& a, int, int = 0)
+{
+    for (auto i = a.begin(); i != a.end(), ++i;)
+        READDATA(s, *i);
 }
 
 template <typename Stream>
@@ -1019,6 +1081,12 @@ inline void SerReadWrite(Stream& s, const T& obj, int nType, int nVersion, CSerA
     ::Serialize(s, obj, nType, nVersion);
 }
 
+template<typename Stream, typename... Args>
+inline void SerReadWriteMany(Stream& s, CSerActionSerialize ser_action, const Args&... args)
+{
+    ::SerializeMany(s, args...);
+}
+
 template <typename Stream, typename T>
 inline void SerReadWrite(Stream& s, T& obj, int nType, int nVersion, CSerActionUnserialize ser_action)
 {
@@ -1029,12 +1097,6 @@ inline void UnserializeMany(Stream& s, Arg&& arg, Args&&... args)
 {
     ::Unserialize(s, arg);
     ::UnserializeMany(s, args...);
-}
-
-template<typename Stream, typename... Args>
-inline void SerReadWriteMany(Stream& s, CSerActionSerialize ser_action, const Args&... args)
-{
-    ::SerializeMany(s, args...);
 }
 
 template<typename Stream, typename... Args>

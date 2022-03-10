@@ -13,6 +13,7 @@
 
 #include <array>
 #include <boost/variant.hpp>
+//#include "serialize.h"
 
 namespace libzcash {
 class InvalidEncoding {
@@ -35,8 +36,15 @@ public:
     SaplingPaymentAddress() {}
     SaplingPaymentAddress(const diversifier_t& _d, const uint256& _pk_d) : d(_d), pk_d(_pk_d) { }
 
-    SERIALIZE_METHODS(SaplingPaymentAddress, obj) { READWRITE(obj.d, obj.pk_d); }
+    //SERIALIZE_METHODS(SaplingPaymentAddress, obj) { READWRITE(obj.d, obj.pk_d); }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(d);
+        READWRITE(pk_d);
+    }
     //! Get the 256-bit SHA256d hash of this payment address.
     uint256 GetHash() const;
 
@@ -67,8 +75,16 @@ public:
     SaplingFullViewingKey() : ak(), nk(), ovk() { }
     SaplingFullViewingKey(uint256 ak, uint256 nk, uint256 ovk) : ak(ak), nk(nk), ovk(ovk) { }
 
-    SERIALIZE_METHODS(SaplingFullViewingKey, obj) { READWRITE(obj.ak, obj.nk, obj.ovk); }
+    //SERIALIZE_METHODS(SaplingFullViewingKey, obj) { READWRITE(obj.ak, obj.nk, obj.ovk); }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(ak);
+        READWRITE(nk);
+        READWRITE(ovk);
+    }
     //! Get the fingerprint of this full viewing key (as defined in ZIP 32).
     uint256 GetFingerprint() const;
 
@@ -95,7 +111,16 @@ public:
     SaplingExpandedSpendingKey() : ask(), nsk(), ovk() { }
     SaplingExpandedSpendingKey(uint256 ask, uint256 nsk, uint256 ovk) : ask(ask), nsk(nsk), ovk(ovk) { }
 
-    SERIALIZE_METHODS(SaplingExpandedSpendingKey, obj) { READWRITE(obj.ask, obj.nsk, obj.ovk); }
+    //SERIALIZE_METHODS(SaplingExpandedSpendingKey, obj) { READWRITE(obj.ask, obj.nsk, obj.ovk); }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(ask);
+        READWRITE(nsk);
+        READWRITE(ovk);
+    }
 
     SaplingFullViewingKey full_viewing_key() const;
     bool IsNull() { return ask.IsNull() && nsk.IsNull() && ovk.IsNull(); }

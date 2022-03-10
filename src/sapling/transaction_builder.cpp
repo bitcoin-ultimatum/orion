@@ -268,7 +268,7 @@ TransactionBuilderResult TransactionBuilder::ProveAndSign()
             }
 
             CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-            ss << spend.witness.path();
+            //ss << spend.witness.path();
             std::vector<unsigned char> witness(ss.begin(), ss.end());
 
             SpendDescription sdesc;

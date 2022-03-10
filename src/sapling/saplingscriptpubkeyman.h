@@ -6,6 +6,7 @@
 #define PIVX_SAPLINGSCRIPTPUBKEYMAN_H
 
 #include "consensus/consensus.h"
+#include "consensus/params.h"
 #include "sapling/note.h"
 #include "wallet/hdchain.h"
 #include "wallet/wallet.h"
@@ -93,7 +94,7 @@ public:
      */
     Optional<uint256> nullifier;
 
-    SERIALIZE_METHODS(SaplingNoteData, obj)
+    /*SERIALIZE_METHODS(SaplingNoteData, obj)
     {
         int nVersion = s.GetVersion();
         if (!(s.GetType() & SER_GETHASH)) {
@@ -106,8 +107,20 @@ public:
         READWRITE(obj.amount);
         READWRITE(obj.address);
         READWRITE(obj.memo);
-    }
+    }*/
+/*
+    ADD_SERIALIZE_METHODS;
 
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITEM(ivk);
+        READWRITE(nullifier);
+        READWRITE(witnesses);
+        READWRITE(witnessHeight);
+        READWRITE(amount);
+        READWRITE(address);
+        READWRITE(memo);
+    }*/
     friend bool operator==(const SaplingNoteData& a, const SaplingNoteData& b) {
         return (a.ivk == b.ivk &&
                 a.nullifier == b.nullifier &&

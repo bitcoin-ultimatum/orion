@@ -38,11 +38,22 @@ public:
     uint8_t chainType{HDChain::ChainCounterType::Standard};
 
     CHDChain(const uint8_t& _chainType = HDChain::ChainCounterType::Standard) : chainType(_chainType) { SetNull(); }
-
+    /*
     SERIALIZE_METHODS(CHDChain, obj)
     {
         READWRITE(obj.nVersion, obj.seed_id, obj.nExternalChainCounter, obj.nInternalChainCounter, obj.nStakingChainCounter);
         if (obj.nVersion > 1) READWRITE(obj.chainType);
+    }*/
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(nVersion);
+        READWRITE(seed_id);
+        READWRITE(nExternalChainCounter);
+        READWRITE(nInternalChainCounter);
+        READWRITE(nStakingChainCounter);
+        if (nVersion > 1) READWRITE(chainType);
     }
 
     bool SetNull();

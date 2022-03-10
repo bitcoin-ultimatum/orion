@@ -111,11 +111,21 @@ public:
     IncrementalWitness<Depth, Hash> witness() const {
         return IncrementalWitness<Depth, Hash>(*this);
     }
-
+    /*
     SERIALIZE_METHODS(IncrementalMerkleTree, obj)
     {
         READWRITE(obj.left, obj.right, obj.parents);
         obj.wfcheck();
+    }*/
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(left.value());
+        READWRITE(right.value());
+        READWRITE(parents.data()->value());
+        this->wfcheck();
     }
 
     static Hash empty_root() {
@@ -177,10 +187,19 @@ public:
 
     void append(Hash obj);
 
-    SERIALIZE_METHODS(IncrementalWitness, obj)
+    /*SERIALIZE_METHODS(IncrementalWitness, obj)
     {
         READWRITE(obj.tree, obj.filled, obj.cursor);
         SER_READ(obj, obj.cursor_depth = obj.tree.next_depth(obj.filled.size()));
+    }*/
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(tree);
+        READWRITE(filled);
+        READWRITE(cursor.value());
     }
 
     template <size_t D, typename H>

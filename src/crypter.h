@@ -216,4 +216,16 @@ public:
     boost::signals2::signal<void(CCryptoKeyStore* wallet)> NotifyStatusChanged;
 };
 
+class CSecureDataStream : public CBaseDataStream<CKeyingMaterial>
+{
+public:
+    explicit CSecureDataStream(int nTypeIn, int nVersionIn) : CBaseDataStream(nTypeIn, nVersionIn) { }
+
+    CSecureDataStream(const_iterator pbegin, const_iterator pend, int nTypeIn, int nVersionIn) :
+            CBaseDataStream(pbegin, pend, nTypeIn, nVersionIn) { }
+
+    CSecureDataStream(const vector_type& vchIn, int nTypeIn, int nVersionIn) :
+            CBaseDataStream(vchIn, nTypeIn, nVersionIn) { }
+};
+
 #endif // BITCOIN_CRYPTER_H

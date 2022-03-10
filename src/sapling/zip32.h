@@ -56,7 +56,20 @@ struct SaplingExtendedFullViewingKey {
     libzcash::SaplingFullViewingKey fvk;
     uint256 dk;
 
-    SERIALIZE_METHODS(SaplingExtendedFullViewingKey, obj) { READWRITE(obj.depth, obj.parentFVKTag, obj.childIndex, obj.chaincode, obj.fvk, obj.dk); }
+    //SERIALIZE_METHODS(SaplingExtendedFullViewingKey, obj) { READWRITE(obj.depth, obj.parentFVKTag, obj.childIndex, obj.chaincode, obj.fvk, obj.dk); }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(depth);
+        READWRITE(parentFVKTag);
+        READWRITE(childIndex);
+        READWRITE(chaincode);
+        READWRITE(fvk);
+        READWRITE(dk);
+
+    }
 
     Optional<SaplingExtendedFullViewingKey> Derive(uint32_t i) const;
 
@@ -92,8 +105,20 @@ struct SaplingExtendedSpendingKey {
     libzcash::SaplingExpandedSpendingKey expsk;
     uint256 dk;
 
-    SERIALIZE_METHODS(SaplingExtendedSpendingKey, obj) { READWRITE(obj.depth, obj.parentFVKTag, obj.childIndex, obj.chaincode, obj.expsk, obj.dk); }
+    //SERIALIZE_METHODS(SaplingExtendedSpendingKey, obj) { READWRITE(obj.depth, obj.parentFVKTag, obj.childIndex, obj.chaincode, obj.expsk, obj.dk); }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(depth);
+        READWRITE(parentFVKTag);
+        READWRITE(childIndex);
+        READWRITE(chaincode);
+        READWRITE(expsk);
+        READWRITE(dk);
+
+    }
     static SaplingExtendedSpendingKey Master(const HDSeed& seed);
 
     SaplingExtendedSpendingKey Derive(uint32_t i) const;

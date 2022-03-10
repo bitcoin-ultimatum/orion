@@ -357,7 +357,7 @@ std::pair<mapSaplingNoteData_t, SaplingIncomingViewingKeyMap> SaplingScriptPubKe
         return {};
     }
 
-    LOCK(wallet->cs_KeyStore);
+    //LOCK(wallet->cs_KeyStore);
     const uint256& hash = tx.GetHash();
 
     mapSaplingNoteData_t noteData;
@@ -400,7 +400,7 @@ std::pair<mapSaplingNoteData_t, SaplingIncomingViewingKeyMap> SaplingScriptPubKe
 
 std::vector<libzcash::SaplingPaymentAddress> SaplingScriptPubKeyMan::FindMySaplingAddresses(const CTransaction& tx) const
 {
-    LOCK(wallet->cs_KeyStore);
+    LOCK(wallet->cs_wallet);
     std::vector<libzcash::SaplingPaymentAddress> ret;
     if (!tx.sapData) return ret;
 
@@ -788,7 +788,7 @@ CAmount SaplingScriptPubKeyMan::GetShieldedChange(const CWalletTx& wtx) const
 
 bool SaplingScriptPubKeyMan::IsNoteSaplingChange(const SaplingOutPoint& op, libzcash::SaplingPaymentAddress address) const
 {
-    LOCK2(wallet->cs_wallet, wallet->cs_KeyStore);
+    //LOCK2(wallet->cs_wallet, wallet->cs_KeyStore);
     std::set<libzcash::PaymentAddress> shieldedAddresses = {address};
     std::set<std::pair<libzcash::PaymentAddress, uint256>> nullifierSet = GetNullifiersForAddresses(shieldedAddresses);
     return IsNoteSaplingChange(nullifierSet, address, op);
@@ -1049,7 +1049,7 @@ bool SaplingScriptPubKeyMan::AddSaplingSpendingKey(
         const libzcash::SaplingExtendedSpendingKey &sk)
 {
     {
-        LOCK(wallet->cs_KeyStore);
+        //LOCK(cs_KeyStore);
         if (!wallet->IsCrypted()) {
             return wallet->AddSaplingSpendingKey(sk); // keystore
         }
@@ -1060,7 +1060,7 @@ bool SaplingScriptPubKeyMan::AddSaplingSpendingKey(
 
         std::vector<unsigned char> vchCryptedSecret;
         CSecureDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-        ss << sk;
+        //ss << sk;
         CKeyingMaterial vchSecret(ss.begin(), ss.end());
         auto extfvk = sk.ToXFVK();
         if (!EncryptSecret(wallet->GetEncryptionKey(), vchSecret, extfvk.fvk.GetFingerprint(), vchCryptedSecret)) {
@@ -1099,7 +1099,7 @@ bool SaplingScriptPubKeyMan::EncryptSaplingKeys(CKeyingMaterial& vMasterKeyIn)
     for (SaplingSpendingKeyMap::value_type& mSaplingSpendingKey : wallet->mapSaplingSpendingKeys) {
         const libzcash::SaplingExtendedSpendingKey &sk = mSaplingSpendingKey.second;
         CSecureDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-        ss << sk;
+        //ss << sk;
         CKeyingMaterial vchSecret(ss.begin(), ss.end());
         auto extfvk = sk.ToXFVK();
         std::vector<unsigned char> vchCryptedSecret;
