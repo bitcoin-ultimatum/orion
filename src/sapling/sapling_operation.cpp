@@ -220,12 +220,12 @@ OperationResult SaplingOperation::build()
                 return errorOut(strprintf("The transaction fee is too high: %s > %s", FormatMoney(nFeeRet), FormatMoney(100 * nFeeNeeded)));
             }
             // Done, enough fee included
-            LogPrint(BCLog::SAPLING, "%s: spending %s to send %s with fee %s (min required %s)\n", __func__ , FormatMoney(txValues.target),
+            LogPrint("SAPLING", "%s: spending %s to send %s with fee %s (min required %s)\n", __func__ , FormatMoney(txValues.target),
                     FormatMoney(txValues.shieldedOutTotal + txValues.transOutTotal), FormatMoney(nFeeRet), FormatMoney(nFeeNeeded));
-            LogPrint(BCLog::SAPLING, "%s: transparent input: %s (to choose from)\n", __func__ , FormatMoney(txValues.transInTotal));
-            LogPrint(BCLog::SAPLING, "%s: private input: %s (to choose from)\n", __func__ , FormatMoney(txValues.shieldedInTotal));
-            LogPrint(BCLog::SAPLING, "%s: transparent output: %s\n", __func__ , FormatMoney(txValues.transOutTotal));
-            LogPrint(BCLog::SAPLING, "%s: private output: %s\n", __func__ , FormatMoney(txValues.shieldedOutTotal));
+                     LogPrint("SAPLING", "%s: transparent input: %s (to choose from)\n", __func__ , FormatMoney(txValues.transInTotal));
+            LogPrint("SAPLING", "%s: private input: %s (to choose from)\n", __func__ , FormatMoney(txValues.shieldedInTotal));
+            LogPrint("SAPLING", "%s: transparent output: %s\n", __func__ , FormatMoney(txValues.transOutTotal));
+            LogPrint("SAPLING", "%s: private output: %s\n", __func__ , FormatMoney(txValues.shieldedOutTotal));
             break;
         }
         if (fee > 0 && nFeeNeeded > fee) {
@@ -237,7 +237,7 @@ OperationResult SaplingOperation::build()
             return errorOut("Unable to compute optimal fee. Set manually.");
         }
         // include more fee and try again
-        LogPrint(BCLog::SAPLING, "%s: incrementing fee: %s --> %s\n", __func__ , FormatMoney(nFeeRet), FormatMoney(nFeeNeeded));
+        LogPrint("SAPLING", "%s: incrementing fee: %s --> %s\n", __func__ , FormatMoney(nFeeRet), FormatMoney(nFeeNeeded));
         clearTx();
         nFeeRet = nFeeNeeded;
     }
