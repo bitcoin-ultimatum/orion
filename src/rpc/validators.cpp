@@ -437,7 +437,7 @@ UniValue mnvotevalidator(const UniValue& params, bool fHelp)
            if (valVoteOpt.is_initialized()){
                 ret = CreateAndSendTransaction(boost::optional<CValidatorRegister>(), valVoteOpt);
             } else {
-              throw JSONRPCError(RPC_INVALID_PARAMETER, "Failed to get validator masternode key: CreateValidatorVote failed. Check your masternode status.");
+              throw JSONRPCError(RPC_INVALID_PARAMETER, "Failed to get validator key: CreateValidatorVote failed. You don't have permission for voting transaction.");
            }
         } else {
            throw JSONRPCError(RPC_INVALID_PARAMETER, "Votes are empty");
