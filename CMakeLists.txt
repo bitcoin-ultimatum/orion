@@ -49,6 +49,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 message(${CMAKE_MODULE_PATH})
 enable_language(Rust)
 include(CMakeCargo)
+include(FetchContent)
 
 message(STATUS "CMAKE_TOOLCHAIN_FILE ${CMAKE_TOOLCHAIN_FILE}")
 # Trying to set toolchain if not presented
@@ -855,6 +856,12 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     include(WindowsVersionInfo)
 endif()
 
+find_package(sodium REQUIRED)
+if(SODIUM_FOUND)
+    message(STATUS SODIUM_FOUND:)
+    message (STATUS ${sodium_LIBRARY_RELEASE})
+
+endif()
 find_package(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
     message(STATUS "Found OpenSSL (${OPENSSL_VERSION}): ${OPENSSL_LIBRARIES}")
@@ -1376,7 +1383,7 @@ set(SERVER_SOURCES
         ./src/validation.cpp
         ./src/consensus/consensus.cpp
         ./src/zbtcuchain.cpp
-        
+        ./src/script/ismine.cpp
         # currently used only as experimental feature on Windows
         ./src/shutdown.cpp
         )
@@ -1494,6 +1501,7 @@ set(WALLET_SOURCES
         ./src/zbtcu/zbtcumodule.cpp
         ./src/zbtcu/zpos.cpp
         ./src/stakeinput.cpp
+        ./src/wallet/hdchain.cpp
         )
 
 if(ZeroMQ_FOUND)
@@ -1534,6 +1542,7 @@ target_include_directories(WALLET_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${OPENSSL_INCLUDE_DIR}
         ${BerkeleyDB_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling
         )
 if(GMP_FOUND)
     target_include_directories(WALLET_A PUBLIC ${GMP_INCLUDE_DIR})
@@ -1555,6 +1564,10 @@ set(BITCOIN_CRYPTO_SOURCES
         ./src/crypto/jh.c
         ./src/crypto/keccak.c
         ./src/crypto/skein.c
+        ./src/uint256.cpp
+        ./src/utilstrencodings.cpp
+        ./src/allocators.cpp
+        ./src/support/cleanse.cpp
         )
 add_library(BITCOIN_CRYPTO_A ${BITCOIN_CRYPTO_SOURCES})
 target_link_libraries(BITCOIN_CRYPTO_A
@@ -1606,12 +1619,12 @@ set(COMMON_SOURCES
         ./src/sporkdb.cpp
         ./src/validators_state.cpp
         ./src/validators_voting.cpp
-
+        ./src/consensus/upgrades.cpp
         ./src/cpp-ethereum/libethashseal/Ethash.cpp
         ./src/cpp-ethereum/libethashseal/EthashCPUMiner.cpp
         ./src/cpp-ethereum/libethashseal/EthashProofOfWork.cpp
-
         ./src/cpp-ethereum/libethashseal/GenesisInfo.cpp
+        ./src/uint256.cpp
         )
 
 add_library(COMMON_A STATIC ${BitcoinHeaders} ${COMMON_SOURCES})
@@ -1628,6 +1641,8 @@ target_include_directories(COMMON_A
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/ethash/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp-ethereum/evmc/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/qtum
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/crates/rustzcash-lib/src
         )
 target_link_libraries(COMMON_A
             BITCOIN_CRYPTO_A
@@ -1756,21 +1771,24 @@ set(SAPLING_SOURCES
         ./src/sapling/transaction_builder.cpp
         ./src/sapling/saplingscriptpubkeyman.cpp
         ./src/sapling/sapling_operation.cpp
+        ./src/qtum/fs.cpp
         )
 
 add_library(SAPLING_A STATIC ${BitcoinHeaders} ${SAPLING_SOURCES})
 target_include_directories(SAPLING_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling
         ${CMAKE_CURRENT_SOURCE_DIR}/src/crates/rustzcash-lib/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
-        ${BerkeleyDB_INCLUDE_DIRS}
         )
 
 link_directories(
-        ${CMAKE_SOURCE_DIR}/src/univalue/.libs
-        ${CMAKE_SOURCE_DIR}/src/secp256k1/.libs
         ${CMAKE_SOURCE_DIR}/target/release
 )
+
+target_link_libraries(SAPLING_A
+        UTIL_A
+        COMMON_A
+        ${Boost_LIBRARIES}
+        )
 
 link_directories(${CMAKE_BINARY_DIR})
 
@@ -1902,6 +1920,7 @@ if(ENABLE_DAEMON)
             COMMON_A
             ZEROCOIN_A
             UTIL_A
+            SAPLING_A
             BITCOIN_CRYPTO_A
             leveldb
             leveldb_sse42
@@ -1911,6 +1930,7 @@ if(ENABLE_DAEMON)
             ${OPENSSL_LIBRARIES}
             ${Boost_LIBRARIES}
             ${LibEvent_LIBRARIES}
+            ${sodium_LIBRARY_RELEASE}
             )
     if(GMP_FOUND)
         target_link_libraries(btcud ${GMP_LIBRARIES})
