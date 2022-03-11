@@ -6,7 +6,7 @@
 #ifndef ZC_UTIL_H_
 #define ZC_UTIL_H_
 
-#include "fs.h"
+#include "qtum/fs.h"
 #include "uint256.h"
 
 #include <sodium.h>
