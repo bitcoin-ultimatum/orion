@@ -15,6 +15,7 @@
 
 #include <array>
 #include <deque>
+#include "version.h"
 
 namespace libzcash {
 
@@ -37,8 +38,8 @@ public:
             }
         }
         indexInt = convertVectorToInt(index);
-        ::Serialize(s, pathBytes);
-        ::Serialize(s, indexInt);
+        ::Serialize(s, pathBytes, PROTOCOL_VERSION);
+        ::Serialize(s, indexInt, PROTOCOL_VERSION);
     }
 
     template<typename Stream>
