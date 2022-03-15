@@ -1060,7 +1060,7 @@ bool SaplingScriptPubKeyMan::AddSaplingSpendingKey(
 
         std::vector<unsigned char> vchCryptedSecret;
         CSecureDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-        //ss << sk;
+        ss << sk;
         CKeyingMaterial vchSecret(ss.begin(), ss.end());
         auto extfvk = sk.ToXFVK();
         if (!EncryptSecret(wallet->GetEncryptionKey(), vchSecret, extfvk.fvk.GetFingerprint(), vchCryptedSecret)) {
@@ -1099,7 +1099,7 @@ bool SaplingScriptPubKeyMan::EncryptSaplingKeys(CKeyingMaterial& vMasterKeyIn)
     for (SaplingSpendingKeyMap::value_type& mSaplingSpendingKey : wallet->mapSaplingSpendingKeys) {
         const libzcash::SaplingExtendedSpendingKey &sk = mSaplingSpendingKey.second;
         CSecureDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-        //ss << sk;
+        ss << sk;
         CKeyingMaterial vchSecret(ss.begin(), ss.end());
         auto extfvk = sk.ToXFVK();
         std::vector<unsigned char> vchCryptedSecret;

@@ -12,6 +12,7 @@
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
 #include "sapling/incrementalmerkletree.h"
+#include "optional.h"
 
 //! Size of witness cache
 //  Should be large enough that we can expect not to reorg beyond our cache
@@ -108,19 +109,20 @@ public:
         READWRITE(obj.address);
         READWRITE(obj.memo);
     }*/
-/*
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-        READWRITEM(ivk);
+        READWRITE(ivk);
         READWRITE(nullifier);
-        READWRITE(witnesses);
+        //TO_FIX
+        //READWRITE(witnesses);
         READWRITE(witnessHeight);
         READWRITE(amount);
         READWRITE(address);
         READWRITE(memo);
-    }*/
+    }
     friend bool operator==(const SaplingNoteData& a, const SaplingNoteData& b) {
         return (a.ivk == b.ivk &&
                 a.nullifier == b.nullifier &&

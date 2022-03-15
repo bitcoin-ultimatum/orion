@@ -575,7 +575,7 @@ public:
     CBaseDataStream& operator<<(const T& obj)
     {
         // Serialize to this stream
-        ::Serialize(*this, obj);
+        ::Serialize(*this, obj, nType, nVersion);
         return (*this);
     }
 
@@ -583,7 +583,7 @@ public:
     CBaseDataStream& operator>>(T&& obj)
     {
         // Unserialize from this stream
-        ::Unserialize(*this, obj);
+        ::Unserialize(*this, obj, nType, nVersion);
         return (*this);
     }
 

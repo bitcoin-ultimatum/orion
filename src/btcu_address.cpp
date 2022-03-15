@@ -105,6 +105,7 @@ bool CBTCUAddress::Set(const CTxDestination& dest, const CChainParams::Base58Typ
 
 bool CBTCUAddress::Set(const CWDestination& dest, const CChainParams::Base58Type addrType)
 {
+    //TO_FIX: add visitor
     return false;//boost::apply_visitor(CBTCUAddressVisitor(this, addrType), dest);
 }
 

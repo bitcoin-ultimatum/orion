@@ -25,7 +25,7 @@ public:
     std::vector<bool> index;
 
     template<typename Stream>
-    void Serialize(Stream &s) const
+    void Serialize(Stream &s, int nType, int nVersion) const
     {
         std::vector<std::vector<unsigned char>> pathBytes;
         uint64_t indexInt;
@@ -38,8 +38,8 @@ public:
             }
         }
         indexInt = convertVectorToInt(index);
-        ::Serialize(s, pathBytes, PROTOCOL_VERSION);
-        ::Serialize(s, indexInt, PROTOCOL_VERSION);
+        ::Serialize(s, pathBytes, nType, nVersion);
+        ::Serialize(s, indexInt, nType, nVersion);
     }
 
     template<typename Stream>

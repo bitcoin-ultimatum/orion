@@ -102,7 +102,7 @@ Optional<SaplingOutgoingPlaintext> SaplingOutgoingPlaintext::decrypt(
 
     // Deserialize from the plaintext
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    //ss << pt.get();
+    ss << pt;
 
     SaplingOutgoingPlaintext ret;
     ss >> ret;
@@ -126,7 +126,7 @@ Optional<SaplingNotePlaintext> SaplingNotePlaintext::decrypt(
 
     // Deserialize from the plaintext
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    //ss << pt.get();
+    ss << pt;
 
     SaplingNotePlaintext ret;
     ss >> ret;
@@ -172,7 +172,7 @@ Optional<SaplingNotePlaintext> SaplingNotePlaintext::decrypt(
 
     // Deserialize from the plaintext
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    //ss << pt.get();
+    ss << pt;
 
     SaplingNotePlaintext ret;
     ss >> ret;

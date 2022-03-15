@@ -41,7 +41,7 @@ static bool DecryptSaplingSpendingKey(const CKeyingMaterial& vMasterKey,
         return false;
 
     CSecureDataStream ss(vchSecret, SER_NETWORK, PROTOCOL_VERSION);
-    //ss >> sk;
+    ss >> sk;
     return sk.expsk.full_viewing_key() == extfvk.fvk;
 }
 
