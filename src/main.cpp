@@ -1273,6 +1273,16 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
 
             nValueIn = view.GetValueIn(tx);
 
+           //check validator transaction
+           std::vector<CTransaction> validatorTransactions;
+           for(auto &t: pool.mapTx){
+              const CTransaction &valTx = t.second.GetTx();
+              if(valTx.IsValidatorVote() || valTx.IsValidatorRegister())
+                 validatorTransactions.push_back(valTx);
+           }
+           if(!CheckValidatorTransaction(tx, state, view, chainActive.Height(), validatorTransactions))
+              return false;
+
             // we have all inputs cached now, so switch back to dummy, so we don't need to keep lock on mempool
             view.SetBackend(dummy);
         }

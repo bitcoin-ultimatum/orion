@@ -26,7 +26,7 @@
 
 void SendMoney(const CTxDestination& address, CAmount nValue, CWalletTx& wtxNew, bool fUseIX = false,
         const std::vector<CValidatorRegister> &validatorRegister = std::vector<CValidatorRegister>(),
-        const std::vector<CValidatorVote> &validatorVote = std::vector<CValidatorVote>());
+        const std::vector<CValidatorVote> &validatorVote = std::vector<CValidatorVote>(), CCoinsViewCache* pView = nullptr);
 
 boost::optional<CKey> GetCollateralKey(CMasternode *pmn)
 {
@@ -295,7 +295,7 @@ UniValue CreateAndSendTransaction(const boost::optional<CValidatorRegister> &val
 
       EnsureWalletIsUnlocked();
       // Create and send transaction
-      SendMoney(myAddress, nAmount, wtx, false, valReg, valVote);
+      SendMoney(myAddress, nAmount, wtx, false, valReg, valVote, &view);
 
       // Get hash of the created transaction
       return UniValue(wtx.GetHash().GetHex());

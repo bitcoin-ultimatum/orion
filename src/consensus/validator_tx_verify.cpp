@@ -193,29 +193,39 @@ bool CheckValidatorTransaction(
 {
     if (tx.IsValidatorRegister() && tx.IsValidatorVote())
     {
-        return state.DoS(10, error("CheckValidatorTransaction() : check failed"),
+        return state.DoS(10, error("CheckValidatorTransaction() check failed: validator-register-and-vote"),
                          REJECT_INVALID, "validator-register-and-vote");
     }
     // Check that transaction from the same MN wasn't included into a current block
     if(AlreadyPresent(tx, validatorTransactionsInCurrentBlock))
     {
-        return state.DoS(10, error("CheckValidatorTransaction() : check failed"),
+        return state.DoS(10, error("CheckValidatorTransaction() check failed: duplicated-validator-transaction"),
                          REJECT_INVALID, "duplicated-validator-transaction");
     } else {
         if (tx.IsValidatorRegister())
         {
-            if(!CheckValidatorRegister(tx, view, nHeight) || AlreadyRegistered(tx))
+            if(!CheckValidatorRegister(tx, view, nHeight))
             {
-                return state.DoS(10, error("CheckValidatorTransaction() : check failed"),
+                return state.DoS(10, error("CheckValidatorTransaction() check failed: bad-validator-register"),
                                  REJECT_INVALID, "bad-validator-register");
+            }
+            if(AlreadyRegistered(tx))
+            {
+               return state.DoS(10, error("CheckValidatorTransaction() check failed: bad-validator-already-registered"),
+                                REJECT_INVALID, "bad-validator-already-registered");
             }
         }
         else if (tx.IsValidatorVote())
         {
-            if(!CheckValidatorVote(tx, view, nHeight) || AlreadyVoted(tx))
+            if(!CheckValidatorVote(tx, view, nHeight))
             {
-                return state.DoS(10, error("CheckValidatorTransaction() : check failed"),
+                return state.DoS(10, error("CheckValidatorTransaction() check failed: bad-validator-vote"),
                                  REJECT_INVALID, "bad-validator-vote");
+            }
+            if(AlreadyVoted(tx))
+            {
+               return state.DoS(10, error("CheckValidatorTransaction() check failed: bad-validator-already-voted"),
+                               REJECT_INVALID, "bad-validator-already-voted");
             }
         }
         return true;
