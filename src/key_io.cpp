@@ -167,7 +167,7 @@ private:
 public:
     explicit DestinationEncoder(const CChainParams& params) : m_params(params) {}
 
-    //TO_FIX: set body this operator
+
     std::string operator()(const CKeyID& id) const
     {
         std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
@@ -175,7 +175,7 @@ public:
         return EncodeBase58Check(data);
     }
 
-    //TO_FIX: set body this operator
+
     std::string operator()(const CScriptID& id) const
     {
         std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
@@ -185,11 +185,11 @@ public:
 
     std::string operator()(const WitnessV0KeyHash& id) const
     {
-        std::vector<unsigned char> data = {0};
+        std::vector<uint8_t> data = {0};
         data.reserve(33);
         ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.begin(), id.end());
-        //TO_FIX: Link with body
-       // return bech32::Encode(m_params.Bech32HRP(), data);
+        //TO_FIX: Check param - CChainParams::SAPLING_PAYMENT_ADDRESS
+        return bech32::Encode(m_params.Bech32HRP(CChainParams::SAPLING_PAYMENT_ADDRESS), data);
     }
 
     std::string operator()(const WitnessV0ScriptHash& id) const
@@ -197,8 +197,8 @@ public:
         std::vector<unsigned char> data = {0};
         data.reserve(53);
         ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.begin(), id.end());
-        //TO_FIX: Link with body
-        //return bech32::Encode(m_params.Bech32HRP(), data);
+        //TO_FIX: Check param - CChainParams::SAPLING_PAYMENT_ADDRESS
+        return bech32::Encode(m_params.Bech32HRP(CChainParams::SAPLING_PAYMENT_ADDRESS), data);
     }
 
     std::string operator()(const WitnessUnknown& id) const
@@ -209,8 +209,8 @@ public:
         std::vector<unsigned char> data = {(unsigned char)id.version};
         data.reserve(1 + (id.length * 8 + 4) / 5);
         ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.program, id.program + id.length);
-        //TO_FIX: Link with body
-        //return bech32::Encode(m_params.Bech32HRP(), data);
+        //TO_FIX: Check param - CChainParams::SAPLING_PAYMENT_ADDRESS
+        return bech32::Encode(m_params.Bech32HRP(CChainParams::SAPLING_PAYMENT_ADDRESS), data);
     }
 
     std::string operator()(const CNoDestination& no) const { return {}; }

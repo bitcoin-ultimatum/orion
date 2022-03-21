@@ -47,6 +47,8 @@
 #include <interfaces/chain.h>
 #include <interfaces/node.h>
 #include "script/ismine.h"
+typedef CWallet* CWalletRef;
+extern std::vector<CWalletRef> vpwallets;
 
 /**
  * Settings
@@ -82,6 +84,8 @@ class CLeasingManager;
 class SaplingScriptPubKeyMan;
 class SaplingNoteData;
 struct SaplingNoteEntry;
+class ScriptPubKeyMan;
+class CAffectedKeysVisitor;
 
 /** (client) version numbers for particular wallet features */
 enum WalletFeature {
@@ -92,7 +96,9 @@ enum WalletFeature {
 
     FEATURE_SAPLING = 170000, // Upgraded to Saplings key manager.
 
-    FEATURE_LATEST = 61000
+    FEATURE_LATEST = 61000,
+
+    FEATURE_PRE_SPLIT_KEYPOOL = 169900, // Upgraded to HD SPLIT and can have a pre-split keypool
 
     //FEATURE_LATEST = FEATURE_SAPLING
 };
@@ -175,9 +181,18 @@ class CKeyPool
 public:
     int64_t nTime;
     CPubKey vchPubKey;
+    //! Whether this keypool entry is in the internal, external or staking keypool.
+    uint8_t type;
+    //! Whether this key was generated for a keypool before the wallet was upgraded to HD-split
+    bool m_pre_split;
 
     CKeyPool();
     CKeyPool(const CPubKey& vchPubKeyIn);
+    CKeyPool(const CPubKey& vchPubKeyIn, const uint8_t& type);
+
+    bool IsInternal() const { return type == HDChain::ChangeType::INTERNAL; }
+    bool IsExternal() const { return type == HDChain::ChangeType::EXTERNAL; }
+    bool IsStaking() const { return type == HDChain::ChangeType::STAKING; }
 
     ADD_SERIALIZE_METHODS;
 
@@ -225,6 +240,10 @@ typedef std::map<SaplingOutPoint, SaplingNoteData> mapSaplingNoteData_t;
 class CWallet : public CCryptoKeyStore, public CValidationInterface
 {
 private:
+    std::atomic<bool> fScanningWallet; //controlled by WalletRescanReserver
+    std::mutex mutexScanning;
+    friend class WalletRescanReserver;
+
     bool SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = true, bool fIncludeColdStaking=false, bool fIncludeDelegated=true, bool fIncludeLeased=false) const;
     //it was public bool SelectCoins(int64_t nTargetValue, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet, const CCoinControl *coinControl = NULL, AvailableCoinsType coin_type=ALL_COINS, bool useIX = true) const;
 
@@ -561,6 +580,8 @@ public:
     bool Unlock(const SecureString& strWalletPassphrase, bool anonimizeOnly = false);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
+
+    std::vector<CKeyID> GetAffectedKeys(const CScript& spk);
 
     void GetKeyBirthTimes(std::map<CKeyID, int64_t>& mapKeyBirth) const;
     unsigned int ComputeTimeSmart(const CWalletTx& wtx) const;
@@ -1009,6 +1030,36 @@ public:
 
     CTransactionRef tx;
 
+    /* New transactions start as UNCONFIRMED. At BlockConnected,
+* they will transition to CONFIRMED. In case of reorg, at BlockDisconnected,
+* they roll back to UNCONFIRMED. If we detect a conflicting transaction at
+* block connection, we update conflicted tx and its dependencies as CONFLICTED.
+* If tx isn't confirmed and outside of mempool, the user may switch it to ABANDONED
+* by using the abandontransaction call. This last status may be override by a CONFLICTED
+* or CONFIRMED transition.
+*/
+    enum Status {
+        UNCONFIRMED,
+        CONFIRMED,
+        CONFLICTED,
+        ABANDONED
+    };
+
+    /* Confirmation includes tx status and a triplet of {block height/block hash/tx index in block}
+ * at which tx has been confirmed. All three are set to 0 if tx is unconfirmed or abandoned.
+ * Meaning of these fields changes with CONFLICTED state where they instead point to block hash
+ * and block height of the deepest conflicting tx.
+ */
+    struct Confirmation {
+        Status status;
+        int block_height;
+        uint256 hashBlock;
+        int nIndex;
+        Confirmation(Status s = UNCONFIRMED, int b = 0, const uint256& h = UINT256_ZERO, int i = 0) : status(s), block_height(b), hashBlock(h), nIndex(i) {}
+    };
+
+    Confirmation m_confirm;
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -1307,5 +1358,40 @@ private:
 
 /** Get all destinations (potentially) supported by the wallet for the given key. */
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key);
+
+/** RAII object to check and reserve a wallet rescan */
+class WalletRescanReserver
+{
+private:
+    CWalletRef m_wallet;
+    bool m_could_reserve;
+public:
+    explicit WalletRescanReserver(CWalletRef w) : m_wallet(w), m_could_reserve(false) {}
+
+    bool reserve()
+    {
+        assert(!m_could_reserve);
+        std::lock_guard<std::mutex> lock(m_wallet->mutexScanning);
+        if (m_wallet->fScanningWallet) {
+            return false;
+        }
+        m_wallet->fScanningWallet = true;
+        m_could_reserve = true;
+        return true;
+    }
+
+    bool isReserved() const
+    {
+        return (m_could_reserve && m_wallet->fScanningWallet);
+    }
+
+    ~WalletRescanReserver()
+    {
+        std::lock_guard<std::mutex> lock(m_wallet->mutexScanning);
+        if (m_could_reserve) {
+            m_wallet->fScanningWallet = false;
+        }
+    }
+};
 
 #endif // BITCOIN_WALLET_H

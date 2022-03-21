@@ -17,7 +17,7 @@
 #include <attributes.h>
 #include <compat.h>
 #include <compat/assumptions.h>
-#include <logging.h>
+//#include <logging.h>
 #include <sync.h>
 #include <tinyformat.h>
 #include <util/memory.h>
@@ -39,7 +39,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <chainparamsbase.h>
-
+#include "qtum/fs.h"
 #endif
 
 // Application startup time (used for uptime calculation)
@@ -92,7 +92,7 @@ fs::path GetConfigFile(const std::string& confPath);
 fs::path FSGetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
 #if HAVE_SYSTEM
-void runCommand(const std::string& strCommand);
+void runCommand(std::string& strCommand);
 #endif
 
 /**

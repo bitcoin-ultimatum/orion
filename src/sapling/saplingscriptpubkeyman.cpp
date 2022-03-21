@@ -357,7 +357,7 @@ std::pair<mapSaplingNoteData_t, SaplingIncomingViewingKeyMap> SaplingScriptPubKe
         return {};
     }
 
-    //LOCK(wallet->cs_KeyStore);
+    LOCK(wallet->cs_KeyStore);
     const uint256& hash = tx.GetHash();
 
     mapSaplingNoteData_t noteData;
@@ -788,7 +788,7 @@ CAmount SaplingScriptPubKeyMan::GetShieldedChange(const CWalletTx& wtx) const
 
 bool SaplingScriptPubKeyMan::IsNoteSaplingChange(const SaplingOutPoint& op, libzcash::SaplingPaymentAddress address) const
 {
-    //LOCK2(wallet->cs_wallet, wallet->cs_KeyStore);
+    LOCK2(wallet->cs_wallet, wallet->cs_KeyStore);
     std::set<libzcash::PaymentAddress> shieldedAddresses = {address};
     std::set<std::pair<libzcash::PaymentAddress, uint256>> nullifierSet = GetNullifiersForAddresses(shieldedAddresses);
     return IsNoteSaplingChange(nullifierSet, address, op);
@@ -1049,7 +1049,7 @@ bool SaplingScriptPubKeyMan::AddSaplingSpendingKey(
         const libzcash::SaplingExtendedSpendingKey &sk)
 {
     {
-        //LOCK(cs_KeyStore);
+        LOCK(wallet->cs_KeyStore);
         if (!wallet->IsCrypted()) {
             return wallet->AddSaplingSpendingKey(sk); // keystore
         }

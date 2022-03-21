@@ -24,10 +24,13 @@ class CScriptID;
 class CKeyStore
 {
 protected:
-    mutable CCriticalSection cs_KeyStore;
+    //mutable CCriticalSection cs_KeyStore;
 
 public:
     virtual ~CKeyStore() {}
+
+    // todo: Make it protected again once we are more advanced in the wallet/spkm decoupling.
+    mutable CCriticalSection cs_KeyStore;
 
     //! Add a key to the store.
     virtual bool AddKeyPubKey(const CKey& key, const CPubKey& pubkey) = 0;

@@ -77,6 +77,16 @@ TxValues calculateTarget(const std::vector<SendManyRecipient>& recipients, const
     return txValues;
 }
 
+CAmount GetShieldedTxMinFee(const CTransaction& tx)
+{
+    assert (tx.IsShieldedTx());
+    unsigned int K = DEFAULT_SHIELDEDTXFEE_K;   // Fixed (100) for now
+    CAmount nMinFee = ::minRelayTxFee.GetFee(tx.GetTotalSize()) * K;
+    if (!Params().GetConsensus().MoneyRange(nMinFee))
+        nMinFee = Params().GetConsensus().nMaxMoneyOut;
+    return nMinFee;
+}
+
 OperationResult SaplingOperation::build()
 {
     bool isFromtAddress = false;

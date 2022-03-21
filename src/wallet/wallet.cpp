@@ -28,6 +28,7 @@
 
 #include "keystore.h"
 
+std::vector<CWalletRef> vpwallets;
 /**
  * Settings
  */
@@ -132,6 +133,71 @@ PairResult CWallet::getNewAddress(CBTCUAddress& ret, const std::string addressLa
 
     ret = CBTCUAddress(keyID, addrType);
     return PairResult(true);
+}
+
+class CAffectedKeysVisitor : public boost::static_visitor<void>
+{
+private:
+    const CKeyStore& keystore;
+    std::vector<CKeyID>& vKeys;
+
+public:
+    CAffectedKeysVisitor(const CKeyStore& keystoreIn, std::vector<CKeyID>& vKeysIn) : keystore(keystoreIn), vKeys(vKeysIn) {}
+
+    void Process(const CScript& script)
+    {
+        txnouttype type;
+        std::vector<CTxDestination> vDest;
+        int nRequired;
+        if (ExtractDestinations(script, type, vDest, nRequired)) {
+            for (const CTxDestination& dest : vDest)
+                boost::apply_visitor(*this, dest);
+        }
+    }
+
+    void operator()(const CKeyID& keyId)
+    {
+        if (keystore.HaveKey(keyId))
+            vKeys.push_back(keyId);
+    }
+
+    void operator()(const CScriptID& scriptId)
+    {
+        CScript script;
+        if (keystore.GetCScript(scriptId, script))
+            Process(script);
+    }
+
+    void operator()(const WitnessV0KeyHash& id)
+    {
+        CKeyID keyId(id);
+        if (keystore.HaveKey(keyId))
+            vKeys.push_back(keyId);
+    }
+
+    void operator()(const WitnessV0ScriptHash& id)
+    {
+        CScriptID scriptId;
+        CRIPEMD160().Write(id.begin(), id.size()).Finalize(scriptId.begin());
+        CScript script;
+        if (keystore.GetCScript(scriptId, script))
+            Process(script);
+    }
+
+    void operator()(const WitnessUnknown& id) {}
+
+    void operator()(const CNoDestination& none) {}
+};
+
+std::vector<CKeyID> CWallet::GetAffectedKeys(const CScript& spk)
+{
+    std::vector<CKeyID> ret;
+    std::vector<CKeyID> vAffected;
+    CAffectedKeysVisitor(*this, vAffected).Process(spk);
+    for (const CKeyID& keyid : vAffected) {
+        ret.emplace_back(keyid);
+    }
+    return ret;
 }
 
 CPubKey CWallet::GenerateNewKey()
@@ -4003,59 +4069,6 @@ void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts)
 
 /** @} */ // end of Actions
 
-class CAffectedKeysVisitor : public boost::static_visitor<void>
-{
-private:
-    const CKeyStore& keystore;
-    std::vector<CKeyID>& vKeys;
-
-public:
-    CAffectedKeysVisitor(const CKeyStore& keystoreIn, std::vector<CKeyID>& vKeysIn) : keystore(keystoreIn), vKeys(vKeysIn) {}
-
-    void Process(const CScript& script)
-    {
-        txnouttype type;
-        std::vector<CTxDestination> vDest;
-        int nRequired;
-        if (ExtractDestinations(script, type, vDest, nRequired)) {
-            for (const CTxDestination& dest : vDest)
-                boost::apply_visitor(*this, dest);
-        }
-    }
-
-    void operator()(const CKeyID& keyId)
-    {
-        if (keystore.HaveKey(keyId))
-            vKeys.push_back(keyId);
-    }
-
-    void operator()(const CScriptID& scriptId)
-    {
-        CScript script;
-        if (keystore.GetCScript(scriptId, script))
-            Process(script);
-    }
-
-    void operator()(const WitnessV0KeyHash& id)
-    {
-        CKeyID keyId(id);
-        if (keystore.HaveKey(keyId))
-            vKeys.push_back(keyId);
-    }
-
-    void operator()(const WitnessV0ScriptHash& id)
-    {
-        CScriptID scriptId;
-        CRIPEMD160().Write(id.begin(), id.size()).Finalize(scriptId.begin());
-        CScript script;
-        if (keystore.GetCScript(scriptId, script))
-            Process(script);
-    }
-
-    void operator()(const WitnessUnknown& id) {}
-
-    void operator()(const CNoDestination& none) {}
-};
 
 void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t>& mapKeyBirth) const
 {
@@ -5064,6 +5077,11 @@ bool CWalletTx::IsFromMe(const isminefilter& filter) const
     return (GetDebit(filter) > 0);
 }
 
+bool CWallet::HasEncryptionKeys() const
+{
+    return !mapMasterKeys.empty();
+}
+
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
 {
    CKeyID keyid = key.GetID();
@@ -5074,4 +5092,12 @@ std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
    } else {
       return std::vector<CTxDestination>{std::move(keyid)};
    }
+}
+
+CKeyPool::CKeyPool(const CPubKey& vchPubKeyIn, const uint8_t& _type)
+{
+    nTime = GetTime();
+    vchPubKey = vchPubKeyIn;
+    type = _type;
+    m_pre_split = false;
 }

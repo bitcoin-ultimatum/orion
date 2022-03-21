@@ -1502,6 +1502,7 @@ set(WALLET_SOURCES
         ./src/zbtcu/zpos.cpp
         ./src/stakeinput.cpp
         ./src/wallet/hdchain.cpp
+        ./src/wallet/scriptpubkeyman.cpp
         )
 
 if(ZeroMQ_FOUND)
@@ -1772,12 +1773,17 @@ set(SAPLING_SOURCES
         ./src/sapling/saplingscriptpubkeyman.cpp
         ./src/sapling/sapling_operation.cpp
         ./src/qtum/fs.cpp
+        ./src/policy/fees.cpp
+        ./src/policy/policy.cpp
+        ./src/main.cpp
+        ./src/uint256.cpp
         )
 
 add_library(SAPLING_A STATIC ${BitcoinHeaders} ${SAPLING_SOURCES})
 target_include_directories(SAPLING_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling
         ${CMAKE_CURRENT_SOURCE_DIR}/src/crates/rustzcash-lib/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wallet
         )
 
 link_directories(
@@ -1787,6 +1793,7 @@ link_directories(
 target_link_libraries(SAPLING_A
         UTIL_A
         COMMON_A
+        SERVER_A
         ${Boost_LIBRARIES}
         )
 
@@ -2239,6 +2246,8 @@ if(ENABLE_TESTS)
             ${Boost_LIBRARIES}
             ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
             ${LibEvent_LIBRARIES}
+            SAPLING_A
+            ${sodium_LIBRARY_RELEASE}
         )
 
     if(BUILD_STATIC)

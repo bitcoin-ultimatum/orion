@@ -13,6 +13,9 @@
 
 #include <string>
 
+/** Default multiplier used in the computation for shielded txes min fee */
+//const unsigned int DEFAULT_SHIELDEDTXFEE_K = 100;
+
 class CCoinsViewCache;
 class CTxOut;
 

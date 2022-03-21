@@ -28,6 +28,7 @@
 #include <boost/assign/list_of.hpp>
 
 #include <univalue.h>
+#include "key_io.h"
 
 extern std::vector<CSporkDef> sporkDefs;
 
@@ -246,12 +247,14 @@ private:
 public:
     DescribeAddressVisitor(isminetype mineIn) : mine(mineIn) {}
     //TO_FIX: Add correct body for function
+    /*
     void ProcessSubScript(const CScript& subscript, UniValue& obj) const
-    {   /*
+    {
         // Always present: script type and redeemscript
         std::vector<std::vector<unsigned char>> solutions_data;
-        txnouttype which_type = Solver(subscript, solutions_data);
-        obj.pushKV("script", GetTxnOutputType(which_type));
+        txnouttype whichType;
+        Solver(subscript, whichType, solutions_data);
+        obj.pushKV("script", GetTxnOutputType(whichType));
         obj.pushKV("hex", HexStr(subscript.begin(), subscript.end()));
 
         CTxDestination embedded;
@@ -267,7 +270,7 @@ public:
             // Always report the pubkey at the top level, so that `getnewaddress()['pubkey']` always works.
             if (subobj.exists("pubkey")) obj.pushKV("pubkey", subobj["pubkey"]);
             obj.pushKV("embedded", std::move(subobj));
-        } else if (which_type == TX_MULTISIG) {
+        } else if (whichType == TX_MULTISIG) {
             // Also report some information on multisig scripts (which do not have a corresponding address).
             // TODO: abstract out the common functionality between this logic and ExtractDestinations.
             obj.pushKV("sigsrequired", solutions_data[0][0]);
@@ -278,8 +281,8 @@ public:
             }
             obj.pushKV("pubkeys", std::move(pubkeys));
         }
-        */
-    }
+
+    }*/
 
     UniValue operator()(const CNoDestination &dest) const { return UniValue(UniValue::VOBJ); }
 

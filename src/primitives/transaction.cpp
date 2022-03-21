@@ -23,6 +23,11 @@ std::string COutPoint::ToString() const
     return strprintf("COutPoint(%s, %u)", hash.ToString()/*.substr(0,10)*/, n);
 }
 
+std::string SaplingOutPoint::ToString() const
+{
+    return strprintf("SaplingOutPoint(%s, %u)", hash.ToString().substr(0, 10), n);
+}
+
 std::string COutPoint::ToStringShort() const
 {
     return strprintf("%s-%u", hash.ToString().substr(0,64), n);
