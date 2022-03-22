@@ -42,7 +42,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
         {"leasetoaddress", 2},
         {"leasetoaddress", 4},
         {"leasetoaddress", 5},
-        {"leasetoaddress", 6},
         {"sendtoaddress", 1},
         {"sendtoaddressix", 1},
         {"settxfee", 0},

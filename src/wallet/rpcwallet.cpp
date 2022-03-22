@@ -1390,7 +1390,8 @@ void SendMoney(const CTxDestination& address, CAmount nValue, CWalletTx& wtxNew,
          validatorTransactions.push_back(valTx);
    }
    CValidationState state;
-   if(!CheckValidatorTransaction(wtxNew, state, pView, chainActive.Height(), validatorTransactions))
+   // nHeight is +1 due to current transaction should be included at least into the next block
+   if(!CheckValidatorTransaction(wtxNew, state, pView, chainActive.Height() + 1, validatorTransactions))
       throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Failed CheckValidatorTransaction(): %s", state.GetRejectReason()));
 
     if (!pwalletMain->CommitTransaction(wtxNew, reservekey, (!fUseIX ? "tx" : "ix")))

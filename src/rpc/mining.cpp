@@ -141,7 +141,7 @@ UniValue generate(const UniValue& params, bool fHelp)
     //Only regtest: setting genesis validator private key for validator's signing
     UniValue params_(UniValue::VType::VARR);
     params_.push_back("cTQ9SoEvbb41ctdf7Q7UFPogivXGcN88WBkowWQ5L1NWDiF9fahy");
-    importprivkey(params_, false).get_str();
+    importprivkey(params_, false);
     
     const int nGenerate = params[0].get_int();
     int nHeightEnd = 0;

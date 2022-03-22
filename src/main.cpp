@@ -1280,7 +1280,8 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
               if(valTx.IsValidatorVote() || valTx.IsValidatorRegister())
                  validatorTransactions.push_back(valTx);
            }
-           if(!CheckValidatorTransaction(tx, state, view, chainActive.Height(), validatorTransactions))
+           // nHeight is +1 due to current transaction should be included at least into the next block
+           if(!CheckValidatorTransaction(tx, state, view, chainActive.Height() + 1, validatorTransactions))
               return false;
 
             // we have all inputs cached now, so switch back to dummy, so we don't need to keep lock on mempool
