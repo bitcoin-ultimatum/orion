@@ -451,22 +451,30 @@ UniValue mnvotevalidator(const UniValue& params, bool fHelp)
 UniValue mnregvalidatorlist(const UniValue& params, bool fHelp)
 {
     auto validatorsRegistrationList = g_ValidatorsState.get_registrations();
-    std::string valRegStr;
     int count = 1;
-    for(auto &valReg : validatorsRegistrationList)
-       valRegStr += itostr(count++) + ".Validator candidate: \n\taddress: " + CBTCUAddress(valReg.pubKey.GetID()).ToString() + "\n\t"
-                 + "public key: " + HexStr(valReg.pubKey) + "\n";
-    return UniValue(valRegStr);
+
+    UniValue ret(UniValue::VARR);
+    for(auto &valReg : validatorsRegistrationList) {
+       UniValue obj(UniValue::VOBJ);
+       obj.push_back(Pair("addr", CBTCUAddress(valReg.pubKey.GetID()).ToString()));
+       obj.push_back(Pair("pubkey", HexStr(valReg.pubKey)));
+       ret.push_back(obj);
+    }
+
+    return ret;
 }
 
 UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
 {
+    UniValue ret(UniValue::VARR);
     auto validatorsVotesList = g_ValidatorsState.get_votes();
-    std::string valVoteStr;
+    //std::string valVoteStr;
     for(auto &valVote : validatorsVotesList)
     {
-       valVoteStr += "Voting address: " + CBTCUAddress(valVote.pubKey.GetID()).ToString() + "\n";
-       valVoteStr +="\tVotes:\n";
+       UniValue validator(UniValue::VOBJ);
+       validator.push_back(Pair("validator", CBTCUAddress(valVote.pubKey.GetID()).ToString()));
+       //valVoteStr += "Voting address: " + CBTCUAddress(valVote.pubKey.GetID()).ToString() + "\n";
+       //valVoteStr +="\tVotes:\n";
        for(auto &vote:valVote.votes)
        {
           CTxOut prevOut;
@@ -478,23 +486,27 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
           CBTCUAddress address;
           if (ExtractDestination(prevOut.scriptPubKey, dest) && address.Set(dest))
           {
-             valVoteStr +=
-             "\t\t Candidate address: " + address.ToString() + "; Vote -" + (vote.vote == VoteYes ? "yes": "no") + "\n";
+             UniValue validator_vote(UniValue::VOBJ);
+             validator_vote.push_back(Pair("address", address.ToString()));
+             validator_vote.push_back(Pair("vote", (vote.vote == VoteYes ? "yes": "no") ));
+             validator.push_back(validator_vote);
           }
        }
+       ret.push_back(validator);
     }
-    return UniValue(valVoteStr);
+    return ret;
 }
 
 UniValue mnvalidatorlist(const UniValue& params, bool fHelp)
 {
-    auto validatorsList = g_ValidatorsState.get_validators();
-    
-    std::string valStr;
-    int count = 1;
-    for(auto &val : validatorsList)
-       valStr += itostr(count++) + ". Validator: \n\taddress: " + CBTCUAddress(val.pubKey.GetID()).ToString() + "\n\t"
-       + "public key: " + HexStr(val.pubKey) + "\n";
+   UniValue ret(UniValue::VARR);
+   auto validatorsList = g_ValidatorsState.get_validators();
+   for(auto &val : validatorsList) {
+      UniValue obj(UniValue::VOBJ);
+      obj.push_back(Pair("addr", CBTCUAddress(val.pubKey.GetID()).ToString()));
+      obj.push_back(Pair("pubkey", HexStr(val.pubKey)));
+      ret.push_back(obj);
+   }
 
-    return UniValue(valStr);
+   return ret;
 }
