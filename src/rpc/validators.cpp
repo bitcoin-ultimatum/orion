@@ -489,7 +489,7 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
              UniValue validator_vote(UniValue::VOBJ);
              validator_vote.push_back(Pair("address", address.ToString()));
              validator_vote.push_back(Pair("vote", (vote.vote == VoteYes ? "yes": "no") ));
-             validator.push_back(validator_vote);
+             validator.push_back(Pair("voteto", validator_vote));
           }
        }
        ret.push_back(validator);

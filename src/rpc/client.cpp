@@ -28,6 +28,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
         {"setgenerate", 0},
         {"setgenerate", 1},
         {"generate", 0},
+        {"generate", 1},
         {"reprocess", 0},
         {"getnetworkhashps", 0},
         {"getnetworkhashps", 1},
