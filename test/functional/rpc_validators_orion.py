@@ -14,11 +14,11 @@ class BTCU_RPCValidatorsTest(BtcuTestFramework):
         self.setup_clean_chain = True
         self.extra_args = [[]] * self.num_nodes
         self.extra_args[0].append('-sporkkey=932HEevBSujW2ud7RfB1YF91AFygbBRQj3de3LyaCRqNzKKgWXi')
+        self.extra_args[0].append('-debug=staking')
 
     def setup_network(self, split=False):
         super().setup_network()
         connect_nodes_bi(self.nodes, 0, 2)
-        connect_nodes_bi(self.nodes, 1, 2)
 
     def run_test(self):
         sporkName = "SPORK_1017_LEASING_ENFORCEMENT"
@@ -27,6 +27,7 @@ class BTCU_RPCValidatorsTest(BtcuTestFramework):
         self.master_id = 0
         self.miner_id = 1
         self.nominer_id = 2
+
         self.master = self.nodes[self.master_id]
         self.miner = self.nodes[self.miner_id]
         self.nominer = self.nodes[self.nominer_id]
@@ -34,12 +35,9 @@ class BTCU_RPCValidatorsTest(BtcuTestFramework):
         #activate leasing
         res = self.activate_spork(0, sporkName)
 
-        self.miner.generate(110)
-        self.sync_all()
-        #send to no miner node 100 btcu for test custom validator raising exception
-        self.miner.sendtoaddress(self.nominer.getnewaddress(), 2000)
         #generate to POS
-        self.miner.generate(140)
+        self.miner.generate(250)
+
         self.sync_all()
         self.master_priv_key = self.master.createmasternodekey()
         self.master_priv_key = self.master_priv_key.split(" : ")[0]
@@ -105,30 +103,65 @@ class BTCU_RPCValidatorsTest(BtcuTestFramework):
         #send to masternode address 100 btcu for validator transactions
         self.miner.sendtoaddress(mn_address, 100)
 
+        #message registration validator in non-registration epoch
+        assert_equal(self.master.mnregvalidator(self.master_alias), "39 blocks until start of the registration phase")
+
         #generate 39 blocks until validator registration phase
         self.miner.generate(39)
         self.sync_all()
 
+        #exception non-masternode
+        assert_raises_rpc_error(-8, 'CreateValidatorReg failed', self.miner.mnregvalidator, self.master_alias)
+
+        #exception with fake name masternode
+        assert_raises_rpc_error(-8, "CreateValidatorReg failed", self.master.mnregvalidator, "fakename")
+
         #reg validator phase
         self.master.mnregvalidator(self.master_alias)
-        self.miner.generate(40)
+
+        #exception double registration transaction in mempool
+        assert_raises_rpc_error(-4, 'Failed CheckValidatorTransaction(): duplicated-validator-transaction', self.master.mnregvalidator, self.master_alias)
+
+        self.miner.generate(10)
         self.sync_all()
+
+        #exception double registration transaction in block history
+        assert_raises_rpc_error(-4, 'Failed CheckValidatorTransaction(): bad-validator-already-registered', self.master.mnregvalidator, self.master_alias)
+
         registered_validators = self.miner.mnregvalidatorlist()
         self.log.info("Registered validators:")
         self.log.info(registered_validators)
 
         #vote to validator
         input = [{ "pubkey" : registered_validators[0]['pubkey'], "vote" : "yes"}]
-        res = self.miner.mnvotevalidator(input)
-        self.miner.generate(1)
+
+        #message voting validator in non-vote epoch
+        assert_equal(self.miner.mnvotevalidator(input), '30 blocks until start of the voting phase')
+
+        self.miner.generate(30)
         self.sync_all()
+
+        #exception with no validator node voting
+        assert_raises_rpc_error(-8, "Failed to get validator key: CreateValidatorVote failed. You don't have permission for voting transaction.", self.nominer.mnvotevalidator, input)
+
+        #vote
+        self.miner.mnvotevalidator(input)
+
+        #exception double voting transaction in mempool
+        assert_raises_rpc_error(-4, 'Failed CheckValidatorTransaction(): duplicated-validator-transaction', self.miner.mnvotevalidator, input)
+
+        self.miner.generate(10)
+        self.sync_all()
+
+        #exception double voting transaction in block history
+        assert_raises_rpc_error(-4, 'Failed CheckValidatorTransaction(): bad-validator-already-voted', self.miner.mnvotevalidator, input)
 
         #list votes
         self.log.info("Voted validators:")
         self.log.info(self.master.mnvotevalidatorlist())
 
 
-        self.miner.generate(39)
+        self.miner.generate(30)
         self.sync_all()
 
         #list validators
@@ -137,21 +170,14 @@ class BTCU_RPCValidatorsTest(BtcuTestFramework):
 
         #try generate block with custom validator signing
         count1 = self.master.getinfo()["blocks"]
-
-        #raise exception because nominer don't have custom and gebesis validator priv key
-        assert_raises_rpc_error(-32603, "Validator's signing of the new block failed", self.nominer.generate, 1, True)
+        self.log.info("Generating block with custom validator")
         self.master.generate(1, True)
         self.sync_all()
         count2 = self.master.getinfo()["blocks"]
         #check count of blocks before and after generate with custom validator
         assert_equal(count1, count2 - 1)
+
         self.log.info("done")
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
