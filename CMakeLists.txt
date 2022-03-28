@@ -860,6 +860,8 @@ find_package(sodium REQUIRED)
 if(SODIUM_FOUND)
     message(STATUS SODIUM_FOUND:)
     message (STATUS ${sodium_LIBRARY_RELEASE})
+    message (STATUS ${sodium_INCLUDE_DIR})
+
 
 endif()
 find_package(OpenSSL REQUIRED)
@@ -1512,7 +1514,8 @@ if(ZeroMQ_FOUND)
         ./src/zmq/zmqpublishnotifier.cpp
     )
     add_library(ZMQ_A STATIC ${BitcoinHeaders} ${ZMQ_SOURCES})
-    target_include_directories(ZMQ_A PUBLIC 
+    target_include_directories(ZMQ_A PUBLIC
+        ${sodium_INCLUDE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src ${ZeroMQ_INCLUDE_DIRS} 
         ${OPENSSL_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
@@ -1532,7 +1535,9 @@ if(ZeroMQ_FOUND)
 endif()
 
 add_library(WALLET_A STATIC ${BitcoinHeaders} ${WALLET_SOURCES})
-target_include_directories(WALLET_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+target_include_directories(WALLET_A PUBLIC
+        ${sodium_INCLUDE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
@@ -1630,7 +1635,7 @@ set(COMMON_SOURCES
 
 add_library(COMMON_A STATIC ${BitcoinHeaders} ${COMMON_SOURCES})
 target_include_directories(COMMON_A 
-    PUBLIC 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
@@ -1721,7 +1726,8 @@ add_library(UTIL_A
             ${UTIL_SOURCES}
         )
         
-target_include_directories(UTIL_A PUBLIC 
+target_include_directories(UTIL_A PUBLIC
+            ${sodium_INCLUDE_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
             ${OPENSSL_INCLUDE_DIR}
