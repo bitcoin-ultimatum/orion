@@ -1636,6 +1636,7 @@ set(COMMON_SOURCES
 add_library(COMMON_A STATIC ${BitcoinHeaders} ${COMMON_SOURCES})
 target_include_directories(COMMON_A 
     PUBLIC
+        ${sodium_INCLUDE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
@@ -2147,7 +2148,7 @@ if(ENABLE_TESTS)
             )
     endif()
     target_include_directories(SERVER_A_test
-        PUBLIC 
+        PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
             ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
@@ -2212,7 +2213,9 @@ if(ENABLE_TESTS)
     target_compile_definitions(SERVER_A_test PRIVATE TEST_BTCU)
 
     add_library(WALLET_A_test STATIC ${BitcoinHeaders} ${WALLET_SOURCES})
-    target_include_directories(WALLET_A_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+    target_include_directories(WALLET_A_test PUBLIC
+            ${sodium_INCLUDE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
             ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
             ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
