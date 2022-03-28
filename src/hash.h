@@ -29,8 +29,7 @@
 #include <sstream>
 #include <vector>
 #include <boost/filesystem.hpp>
-
-#include </usr/local/include/sodium.h>
+#include <sodium.h>
 
 typedef uint256 ChainCode;
 

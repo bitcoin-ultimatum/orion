@@ -1786,10 +1786,6 @@ target_include_directories(SAPLING_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wallet
         )
 
-link_directories(
-        ${CMAKE_SOURCE_DIR}/target/release
-)
-
 target_link_libraries(SAPLING_A
         UTIL_A
         COMMON_A

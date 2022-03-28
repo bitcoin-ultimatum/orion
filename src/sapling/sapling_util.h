@@ -9,7 +9,7 @@
 #include "qtum/fs.h"
 #include "uint256.h"
 
-#include </usr/local/include/sodium.h>
+#include <sodium.h>
 #include <vector>
 #include <cstdint>
 
