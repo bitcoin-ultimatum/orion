@@ -201,3 +201,9 @@ src/cpp-ethereum/ethash/test/integration/CMakeFiles/
 src/cpp-ethereum/ethash/test/ethash-bench
 src/cpp-ethereum/ethash/test/ethash-test
 src/cpp-ethereum/ethash/test/kiss99-tester
+
+### Rust
+src/crates/CMakeFiles/
+src/crates/rustzcash-lib/CMakeFiles/
+src/crates/rustzcash-lib/aarch64-apple-darwin/
+src/crates/rustzcash-lib/debug/
