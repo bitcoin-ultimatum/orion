@@ -207,3 +207,4 @@ src/crates/CMakeFiles/
 src/crates/rustzcash-lib/CMakeFiles/
 src/crates/rustzcash-lib/aarch64-apple-darwin/
 src/crates/rustzcash-lib/debug/
+.cmake/
