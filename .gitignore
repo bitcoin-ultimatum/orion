@@ -206,5 +206,6 @@ src/cpp-ethereum/ethash/test/kiss99-tester
 src/crates/CMakeFiles/
 src/crates/rustzcash-lib/CMakeFiles/
 src/crates/rustzcash-lib/aarch64-apple-darwin/
+src/crates/rustzcash-lib/x86_64-unknown-linux-gnu/
 src/crates/rustzcash-lib/debug/
 .cmake/
