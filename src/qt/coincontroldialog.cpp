@@ -468,7 +468,7 @@ void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
 {
     if (column == COLUMN_CHECKBOX && item->text(COLUMN_TXHASH).length() == 64) // transaction hash is 64 characters (this means its a child node, so its not a parent node in tree mode)
     {
-        COutPoint outpt(uint256(item->text(COLUMN_TXHASH).toStdString()), item->text(COLUMN_VOUT_INDEX).toUInt());
+       const BaseOutPoint outpt(uint256(item->text(COLUMN_TXHASH).toStdString()), item->text(COLUMN_VOUT_INDEX).toUInt());
 
         if (item->checkState(COLUMN_CHECKBOX) == Qt::Unchecked)
             coinControl->UnSelect(outpt);
@@ -541,7 +541,7 @@ void CoinControlDialog::updateDialogLabels()
         return;
     }
 
-    std::vector<COutPoint> vCoinControl;
+    std::vector<OutPointWrapper> vCoinControl;
     std::vector<COutput> vOutputs;
     coinControl->ListSelected(vCoinControl);
     model->getOutputs(vCoinControl, vOutputs);
@@ -552,7 +552,7 @@ void CoinControlDialog::updateDialogLabels()
         // unselect already spent, very unlikely scenario, this could happen
         // when selected are spent elsewhere, like rpc or another computer
         uint256 txhash = out.tx->GetHash();
-        COutPoint outpt(txhash, out.i);
+        const BaseOutPoint outpt(txhash, out.i);
         if(model->isSpent(outpt)) {
             coinControl->UnSelect(outpt);
             continue;
@@ -599,7 +599,7 @@ void CoinControlDialog::updateLabels(WalletModel* model, QDialog* dialog)
     int nQuantityUncompressed = 0;
     bool fAllowFree = false;
 
-    std::vector<COutPoint> vCoinControl;
+    std::vector<OutPointWrapper> vCoinControl;
     std::vector<COutput> vOutputs;
     coinControl->ListSelected(vCoinControl);
     model->getOutputs(vCoinControl, vOutputs);
@@ -608,7 +608,7 @@ void CoinControlDialog::updateLabels(WalletModel* model, QDialog* dialog)
         // unselect already spent, very unlikely scenario, this could happen
         // when selected are spent elsewhere, like rpc or another computer
         uint256 txhash = out.tx->GetHash();
-        COutPoint outpt(txhash, out.i);
+        const BaseOutPoint outpt(txhash, out.i);
         if (model->isSpent(outpt)) {
             coinControl->UnSelect(outpt);
             continue;
@@ -833,7 +833,7 @@ void CoinControlDialog::updateView()
             if (fMultiSigUTXO) {
 
                 if (!fMultisigEnabled) {
-                    COutPoint outpt(out.tx->GetHash(), out.i);
+                    const BaseOutPoint outpt(out.tx->GetHash(), out.i);
                     coinControl->UnSelect(outpt); // just to be sure
                     itemOutput->setDisabled(true);
                     itemOutput->setIcon(COLUMN_CHECKBOX, QIcon(":/icons/lock_closed"));
@@ -896,16 +896,17 @@ void CoinControlDialog::updateView()
             // vout index
             itemOutput->setText(COLUMN_VOUT_INDEX, QString::number(out.i));
 
+            const BaseOutPoint outpt(txhash, out.i);
             // disable locked coins
             if (model->isLockedCoin(txhash, out.i)) {
-                COutPoint outpt(txhash, out.i);
+
                 coinControl->UnSelect(outpt); // just to be sure
                 itemOutput->setDisabled(true);
                 itemOutput->setIcon(COLUMN_CHECKBOX, QIcon(":/icons/lock_closed"));
             }
 
             // set checkbox
-            if (coinControl->IsSelected(txhash, out.i))
+            if (coinControl->IsSelected(outpt))
                 itemOutput->setCheckState(COLUMN_CHECKBOX, Qt::Checked);
         }
 

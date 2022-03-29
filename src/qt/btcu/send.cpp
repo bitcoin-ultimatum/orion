@@ -509,7 +509,7 @@ void SendWidget::updateEntryLabels(QList<SendCoinsRecipient> recipients){
         if(!label.isNull()) {
             QString labelOld = walletModel->getAddressTableModel()->labelForAddress(rec.address);
             if(label.compare(labelOld) != 0) {
-                CTxDestination dest = CBTCUAddress(rec.address.toStdString()).Get();
+                CWDestination dest = CBTCUAddress(rec.address.toStdString()).Get();
                 if (!walletModel->updateAddressBookLabels(dest, label.toStdString(),
                                                           this->walletModel->isMine(dest) ?
                                                                   AddressBook::AddressBookPurpose::RECEIVE :

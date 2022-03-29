@@ -280,7 +280,7 @@ void CreateContract::onCreateContract()
             if (!fValidAddress || senderAddress != destAdress)
                 continue;
 
-            coinControl->Select(COutPoint(out.tx->GetHash(),out.i));
+            coinControl->Select(BaseOutPoint(out.tx->GetHash(),out.i));
             break;
         }
 

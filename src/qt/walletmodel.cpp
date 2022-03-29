@@ -424,11 +424,11 @@ bool WalletModel::validateLeasingAddress(const QString& address) {
     return addressParsed.IsLeasingAddress();
 }
 
-bool WalletModel::updateAddressBookLabels(const CTxDestination& dest, const std::string& strName, const std::string& strPurpose)
+bool WalletModel::updateAddressBookLabels(const CWDestination& dest, const std::string& strName, const std::string& strPurpose)
 {
     LOCK(wallet->cs_wallet);
 
-    std::map<CTxDestination, AddressBook::CAddressBookData>::iterator mi = wallet->mapAddressBook.find(dest);
+    std::map<CWDestination, AddressBook::CAddressBookData>::iterator mi = wallet->mapAddressBook.find(dest);
 
     // Check if we have a new address or an updated label
     if (mi == wallet->mapAddressBook.end()) {
@@ -811,9 +811,9 @@ static void NotifyKeyStoreStatusChanged(WalletModel* walletmodel, CCryptoKeyStor
     QMetaObject::invokeMethod(walletmodel, "updateStatus", Qt::QueuedConnection);
 }
 
-static void NotifyAddressBookChanged(WalletModel* walletmodel, CWallet* wallet, const CTxDestination& address, const std::string& label, bool isMine, const std::string& purpose, ChangeType status)
+static void NotifyAddressBookChanged(WalletModel* walletmodel, CWallet* wallet, const CWDestination& address, const std::string& label, bool isMine, const std::string& purpose, ChangeType status)
 {
-    QString strAddress = QString::fromStdString(pwalletMain->ParseIntoAddress(address, purpose).ToString());
+    QString strAddress = QString::fromStdString(pwalletMain->ParseIntoAddress(boost::get<CTxDestination>(address), purpose).ToString());
     QString strLabel = QString::fromStdString(label);
     QString strPurpose = QString::fromStdString(purpose);
 
@@ -1040,7 +1040,7 @@ std::string WalletModel::getLabelForAddress(const CBTCUAddress& address) {
     std::string label = "";
     {
         LOCK(wallet->cs_wallet);
-        std::map<CTxDestination, AddressBook::CAddressBookData>::iterator mi = wallet->mapAddressBook.find(address.Get());
+        std::map<CWDestination, AddressBook::CAddressBookData>::iterator mi = wallet->mapAddressBook.find(address.Get());
         if (mi != wallet->mapAddressBook.end()) {
             label = mi->second.name;
         }
@@ -1049,20 +1049,20 @@ std::string WalletModel::getLabelForAddress(const CBTCUAddress& address) {
 }
 
 // returns a list of COutputs from COutPoints
-void WalletModel::getOutputs(const std::vector<COutPoint>& vOutpoints, std::vector<COutput>& vOutputs)
+void WalletModel::getOutputs(const std::vector<OutPointWrapper>& vOutpoints, std::vector<COutput>& vOutputs)
 {
     LOCK2(cs_main, wallet->cs_wallet);
-    for (const COutPoint& outpoint : vOutpoints) {
-        if (!wallet->mapWallet.count(outpoint.hash)) continue;
+    for (const OutPointWrapper& outpoint : vOutpoints) {
+        if (!wallet->mapWallet.count(outpoint.outPoint.hash)) continue;
         bool fConflicted;
-        const int nDepth = wallet->mapWallet[outpoint.hash].GetDepthAndMempool(fConflicted);
+        const int nDepth = wallet->mapWallet[outpoint.outPoint.hash].GetDepthAndMempool(fConflicted);
         if (nDepth < 0 || fConflicted) continue;
-        COutput out(&wallet->mapWallet[outpoint.hash], outpoint.n, nDepth, true);
+        COutput out(&wallet->mapWallet[outpoint.outPoint.hash], outpoint.outPoint.n, nDepth, true);
         vOutputs.push_back(out);
     }
 }
 
-bool WalletModel::isSpent(const COutPoint& outpoint) const
+bool WalletModel::isSpent(const BaseOutPoint& outpoint) const
 {
     LOCK2(cs_main, wallet->cs_wallet);
     return wallet->IsSpent(outpoint.hash, outpoint.n);
@@ -1139,7 +1139,7 @@ void WalletModel::listZerocoinMints(std::set<CMintMeta>& setMints, bool fUnusedO
 void WalletModel::loadReceiveRequests(std::vector<std::string>& vReceiveRequests)
 {
     LOCK(wallet->cs_wallet);
-    for (const PAIRTYPE(CTxDestination, AddressBook::CAddressBookData) & item : wallet->mapAddressBook)
+    for (const PAIRTYPE(CWDestination, AddressBook::CAddressBookData) & item : wallet->mapAddressBook)
         for (const PAIRTYPE(std::string, std::string) & item2 : item.second.destdata)
             if (item2.first.size() > 2 && item2.first.substr(0, 2) == "rr") // receive request
                 vReceiveRequests.push_back(item2.second);

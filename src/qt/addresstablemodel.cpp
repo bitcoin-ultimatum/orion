@@ -116,7 +116,7 @@ public:
         cachedAddressTable.clear();
         {
             LOCK(wallet->cs_wallet);
-            for (const PAIRTYPE(CTxDestination, AddressBook::CAddressBookData) & item : wallet->mapAddressBook) {
+            for (const PAIRTYPE(CWDestination, AddressBook::CAddressBookData) & item : wallet->mapAddressBook) {
 
                 const CChainParams::Base58Type addrType = [&]() -> CChainParams::Base58Type {
                     if (AddressBook::IsColdStakingPurpose(item.second.purpose)) {
@@ -586,7 +586,7 @@ QString AddressTableModel::labelForAddress(const QString& address) const
         {
             LOCK(wallet->cs_wallet);
             CBTCUAddress address_parsed(address.toStdString());
-            std::map<CTxDestination, AddressBook::CAddressBookData>::iterator mi = wallet->mapAddressBook.find(address_parsed.Get());
+            std::map<CWDestination, AddressBook::CAddressBookData>::iterator mi = wallet->mapAddressBook.find(address_parsed.Get());
             if (mi != wallet->mapAddressBook.end()) {
                 return QString::fromStdString(mi->second.name);
             }
