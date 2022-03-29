@@ -1864,6 +1864,7 @@ if(BUILD_UTILS)
             WALLET_A
             ZEROCOIN_A
             UTIL_A
+            SAPLING_A
             BITCOIN_CRYPTO_A
             leveldb
             leveldb_sse42
@@ -1872,6 +1873,7 @@ if(BUILD_UTILS)
             ${Boost_LIBRARIES} 
             ${OPENSSL_LIBRARIES}
             ${LibEvent_LIBRARIES}
+            ${sodium_LIBRARY_RELEASE}
             )
     if(GMP_FOUND)
         target_link_libraries(btcu-tx ${GMP_LIBRARIES})
