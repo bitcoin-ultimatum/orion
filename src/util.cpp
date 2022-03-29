@@ -407,13 +407,13 @@ static RecursiveMutex csPathCached;
 static fs::path ZC_GetBaseParamsDir()
 {
     // Copied from GetDefaultDataDir and adapter for zcash params.
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\PIVXParams
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\PIVXParams
-    // Mac: ~/Library/Application Support/PIVXParams
-    // Unix: ~/.pivx-params
+    // Windows < Vista: C:\Documents and Settings\Username\Application Data\BTCUParams
+    // Windows >= Vista: C:\Users\Username\AppData\Roaming\BTCUParams
+    // Mac: ~/Library/Application Support/BTCUParams
+    // Unix: ~/.btcu-params
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "PIVXParams";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "BTCUParams";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -425,10 +425,10 @@ static fs::path ZC_GetBaseParamsDir()
     // Mac
     pathRet /= "Library/Application Support";
     TryCreateDirectories(pathRet);
-    return pathRet / "PIVXParams";
+    return pathRet / "BTCUParams";
 #else
     // Unix
-    return pathRet / ".pivx-params";
+    return pathRet / ".btcu-params";
 #endif
 #endif
 }
