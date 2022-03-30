@@ -26,7 +26,6 @@
 #include "sporkid.h"
 #include <span.h>
 #include "sapling/sapling.h"
-#include "uint256.h"
 
 #include <boost/optional.hpp>
 
@@ -243,13 +242,6 @@ inline void Unserialize(Stream& s, std::array<unsigned char, ZC_MEMO_SIZE > a, i
 {
     for (int i = 0; i < ZC_MEMO_SIZE; ++i)
         WRITEDATA(s, a[i]);
-}
-
-template <typename Stream>
-inline void Unserialize(Stream& s, uint256& a, int, int = 0)
-{
-    for (auto i = a.begin(); i != a.end(), ++i;)
-        READDATA(s, *i);
 }
 
 template <typename Stream>
