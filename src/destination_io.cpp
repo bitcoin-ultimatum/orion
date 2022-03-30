@@ -13,7 +13,7 @@ namespace Standard {
         if (!dest) {
             return KeyIO::EncodePaymentAddress(*boost::get<libzcash::SaplingPaymentAddress>(&address));
         }
-        return EncodeDestination(*dest, addrType);
+        return ::EncodeDestination(*dest);
     };
 
     CWDestination DecodeDestination(const std::string& strAddress)
