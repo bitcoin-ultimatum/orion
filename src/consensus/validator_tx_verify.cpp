@@ -8,7 +8,7 @@
 #include "main.h"
 #include "validator_tx_verify.h"
 #include "validators_voting.h"
-
+#include "spork.h"
 
 
 bool IsUtxoDestination(const CPubKey &pubKey, const CTxOut &vout)
@@ -191,6 +191,10 @@ bool CheckValidatorTransaction(
         int nHeight,
         std::vector<CTransaction> &validatorTransactionsInCurrentBlock)
 {
+   if ((tx.IsValidatorRegister() || tx.IsValidatorVote()) && !sporkManager.IsSporkActive(SPORK_1020_VALIDATOR_ENFORCEMENT)) {
+      return state.DoS(10, error("CheckValidatorTransaction() validator transaction are disabled"),
+                       REJECT_INVALID, "validator-register-and-vote-disabled");
+   }
     if (tx.IsValidatorRegister() && tx.IsValidatorVote())
     {
         return state.DoS(10, error("CheckValidatorTransaction() check failed: validator-register-and-vote"),

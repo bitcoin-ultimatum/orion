@@ -6167,7 +6167,10 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
                               !pSporkDB->SporkExists(SPORK_16_ZEROCOIN_MAINTENANCE_MODE) ||
                               !pSporkDB->SporkExists(SPORK_17_COLDSTAKING_ENFORCEMENT) ||
                               !pSporkDB->SporkExists(SPORK_1017_LEASING_ENFORCEMENT) ||
-                              !pSporkDB->SporkExists(SPORK_18_ZEROCOIN_PUBLICSPEND_V4);
+                              !pSporkDB->SporkExists(SPORK_18_ZEROCOIN_PUBLICSPEND_V4) ||
+                              !pSporkDB->SporkExists(SPORK_1018_MAX_VALIDATORS) ||
+                              !pSporkDB->SporkExists(SPORK_1019_CREATECONTRACT_ANY_ALLOWED) ||
+                              !pSporkDB->SporkExists(SPORK_1020_VALIDATOR_ENFORCEMENT);
 
         if (fMissingSporks || !fRequestedSporksIDB){
             LogPrintf("asking peer for sporks\n");
