@@ -6,9 +6,9 @@
 
 #ifndef BTCU_VALIDATOR_TX_VERIFY_H
 #define BTCU_VALIDATOR_TX_VERIFY_H
+#include "chainparams.h"
 
 ///half part of epoch is registration period and half is voting period
-#define VALIDATORS_VOTING_PERIOD_LENGTH 80
 #define VALIDATORS_REGISTER_START 0
 #define VALIDATORS_REGISTER_END ((VALIDATORS_VOTING_PERIOD_LENGTH / 2) - 1)
 #define VALIDATORS_VOTING_START (VALIDATORS_REGISTER_END + 1)
