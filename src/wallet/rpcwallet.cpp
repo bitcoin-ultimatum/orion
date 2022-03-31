@@ -36,6 +36,7 @@
 #include "validation.h"
 #include "coincontrol.h"
 #include "contract.h"
+#include "consensus/validator_tx_verify.h"
 
 int64_t nWalletUnlockTime;
 static CCriticalSection cs_nWalletUnlockTime;
@@ -1352,7 +1353,7 @@ UniValue getaddressesbyaccount(const UniValue& params, bool fHelp)
 
 void SendMoney(const CTxDestination& address, CAmount nValue, CWalletTx& wtxNew, bool fUseIX = false,
         const std::vector<CValidatorRegister> &validatorRegister = std::vector<CValidatorRegister>(),
-        const std::vector<CValidatorVote> &validatorVote = std::vector<CValidatorVote>())
+        const std::vector<CValidatorVote> &validatorVote = std::vector<CValidatorVote>(), CCoinsViewCache* pView = nullptr)
 {
     // Check amount
     if (nValue <= 0)
@@ -1380,6 +1381,19 @@ void SendMoney(const CTxDestination& address, CAmount nValue, CWalletTx& wtxNew,
         LogPrintf("SendMoney() : %s\n", strError);
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
+
+    //check validators before committing
+   std::vector<CTransaction> validatorTransactions;
+   for(auto &t: mempool.mapTx){
+      const CTransaction &valTx = t.second.GetTx();
+      if(valTx.IsValidatorVote() || valTx.IsValidatorRegister())
+         validatorTransactions.push_back(valTx);
+   }
+   CValidationState state;
+   // nHeight is +1 due to current transaction should be included at least into the next block
+   if(!CheckValidatorTransaction(wtxNew, state, pView, chainActive.Height() + 1, validatorTransactions))
+      throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Failed CheckValidatorTransaction(): %s", state.GetRejectReason()));
+
     if (!pwalletMain->CommitTransaction(wtxNew, reservekey, (!fUseIX ? "tx" : "ix")))
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
 }

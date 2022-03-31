@@ -155,9 +155,7 @@ UniValue importprivkey(const UniValue& params, bool fHelp)
             pwalletMain->ScanForWalletTransactions(pcoinsTip->SeekToFirst(), pIndex, true);
         }
     }
-
     return NullUniValue;
-    //return CBTCUAddress(vchAddress).ToString();
 }
 
 UniValue importaddress(const UniValue& params, bool fHelp)

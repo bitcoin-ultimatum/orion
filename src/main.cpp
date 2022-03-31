@@ -1273,6 +1273,17 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
 
             nValueIn = view.GetValueIn(tx);
 
+           //check validator transaction
+           std::vector<CTransaction> validatorTransactions;
+           for(auto &t: pool.mapTx){
+              const CTransaction &valTx = t.second.GetTx();
+              if(valTx.IsValidatorVote() || valTx.IsValidatorRegister())
+                 validatorTransactions.push_back(valTx);
+           }
+           // nHeight is +1 due to current transaction should be included at least into the next block
+           if(!CheckValidatorTransaction(tx, state, view, chainActive.Height() + 1, validatorTransactions))
+              return false;
+
             // we have all inputs cached now, so switch back to dummy, so we don't need to keep lock on mempool
             view.SetBackend(dummy);
         }
@@ -2991,27 +3002,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                        CKeyID senderAddr = CKeyID(uint160(GetSenderAddress(tx, &view, NULL, nOut)));
 
                        //okay, seek trx pubkey in validators
-                       //genesis validators
-                       auto genesisValidators = Params().GenesisBlock().vtx[0].validatorRegister;
-                       for(auto &gv : genesisValidators){
-                          if(senderAddr == gv.pubKey.GetID()){
-                             bSCValidatorFound = true;
-                             break;
-                          }
-                       }
+                       bSCValidatorFound = isAddressValidator(senderAddr);
 
-                       //voted validators
-                       if(!bSCValidatorFound)
-                       {
-                          auto validatorsRegistrationList = g_ValidatorsState.get_validators();
-                          for (auto& rv: validatorsRegistrationList)
-                          {
-                             if(senderAddr == rv.pubKey.GetID()){
-                                bSCValidatorFound = true;
-                                break;
-                             }
-                          }
-                       }
                        //if key found - break;
                        if(bSCValidatorFound)
                           break;
