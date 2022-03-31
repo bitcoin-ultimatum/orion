@@ -259,7 +259,7 @@ UniValue CreateAndSendTransaction(const boost::optional<CValidatorRegister> &val
             CPubKey pubkey = valRegOpt.value().pubKey;
             pwalletMain->pLeasingManager->GetAllAmountsLeasedTo(pubkey, amount);
 
-            if(amount < LEASED_TO_VALIDATOR_MIN_AMOUNT)
+            if(amount < LEASED_TO_VALIDATOR_MIN_AMOUNT * COIN)
                return UniValue("Not enough leased to validator candidate coins, min=" + std::to_string(LEASED_TO_VALIDATOR_MIN_AMOUNT) +
                ", current=" + std::to_string(amount) + ", validator pubkey=" + HexStr(pubkey));
          }
@@ -288,7 +288,7 @@ UniValue CreateAndSendTransaction(const boost::optional<CValidatorRegister> &val
       CTxDestination myAddress = vchPubKey.GetID();
 
       CAmount nAmount = AmountFromValue(
-      UniValue((double) 38 / COIN)); // send 38 satoshi (min tx fee per kb is 100 satoshi)
+      UniValue((double) /*38*/100000000 / COIN)); // send 38 satoshi (min tx fee per kb is 100 satoshi)
       CWalletTx wtx;
 
       EnsureWalletIsUnlocked();
