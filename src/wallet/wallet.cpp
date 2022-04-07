@@ -2224,6 +2224,9 @@ bool CWallet::AvailableCoins(
 
                     if (!Solver(scriptPubKeyKernel, whichType, vSolutions)) continue;
                     if (whichType != TX_PUBKEY && whichType != TX_PUBKEYHASH && whichType != TX_COLDSTAKE) continue;
+
+                    //check if leasing locktime has not yet come
+                    if (whichType == TX_LEASE_CLTV && CScriptNum::vch_to_uint64(vSolutions[0]) < chainActive.Tip()->GetBlockTime()) continue;
                 }
 
                 if (IsSpent(wtxid, i)) continue;
