@@ -1747,7 +1747,7 @@ UniValue leasetoaddress(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 2 || params.size() > 5)
         throw std::runtime_error(
-            "leasetoaddress \"leasingaddress\" amount ( \"owneraddress\" fExternalOwner fForceNotEnabled)\n"
+            "leasetoaddress \"leasingaddress\" amount ( timestamp \"owneraddress\" fExternalOwner fForceNotEnabled)\n"
             "\nLease an amount to a given address for mining. The amount is a real and is rounded to the nearest 0.00000001\n" +
             HelpRequiringPassphrase() + "\n"
 
@@ -1770,6 +1770,7 @@ UniValue leasetoaddress(const UniValue& params, bool fHelp)
 
             "\nExamples:\n" +
             HelpExampleCli("leasetoaddress", "\"S1t2a3kab9c8c71VA78xxxy4MxZg6vgeS6\" 100") +
+            HelpExampleCli("leasetoaddress", "\"S1t2a3kab9c8c71VA78xxxy4MxZg6vgeS6\" 100 1649328238") +
             HelpExampleCli("leasetoaddress", "\"S1t2a3kab9c8c71VA78xxxy4MxZg6vgeS6\" 1000 \"DMJRSsuU9zfyrvxVaAEFQqK4MxZg34fk\"") +
             HelpExampleRpc("leasetoaddress", "\"S1t2a3kab9c8c71VA78xxxy4MxZg6vgeS6\", 1000, \"DMJRSsuU9zfyrvxVaAEFQqK4MxZg34fk\""));
 
