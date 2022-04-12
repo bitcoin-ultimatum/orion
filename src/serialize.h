@@ -682,6 +682,8 @@ void Serialize(Stream& s, const Span<const unsigned char>& span, int nType, int 
 template<typename Stream>
 void Serialize(Stream& s, const Span<unsigned char>& span, int nType, int nVersion) { s.write(CharCast(span.data()), span.size()); }
 
+template<typename Stream, int N> void Serialize(Stream& s, const char (&a)[N], int nType, int nVersion) { s.write(a, N); }
+template<typename Stream, int N> void Serialize(Stream& s, const unsigned char (&a)[N], int nType, int nVersion) { s.write(CharCast(a), N); }
 
 /**
  * If none of the specialized versions above matched, default to calling member function.
