@@ -1001,5 +1001,231 @@ UniValue createrawzerocoinspend(const UniValue& params, bool fHelp)
     // output the raw transaction
     return EncodeHexTx(rawTx);
 }
-#endif
 
+UniValue combinerawtransaction(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw std::runtime_error(
+                "combinerawtransaction"
+                           "\nCombine multiple partially signed transactions into one transaction.\n"
+                           "The combined transaction may be another partially signed transaction or a \n"
+                           "fully signed transaction."
+
+                                   "txs (array, required) A json array of hex strings of partially signed transactions"
+                                   "hexstring (hexstr, optional) A transaction hash"
+                                   "\nResult:\n"
+                                   "\"hex\"            (string) The hex-encoded raw transaction with signature(s)\n" +
+
+                                   HelpExampleCli("combinerawtransaction", "[\"myhex1\", \"myhex2\", \"myhex3\"]"));
+
+
+    UniValue txs = params[0].get_array();
+    std::vector<CMutableTransaction> txVariants(txs.size());
+
+    for (unsigned int idx = 0; idx < txs.size(); idx++) {
+        CTransaction tx(txVariants[idx]);
+        if (!DecodeHexTx(tx, txs[idx].get_str())) {
+            throw JSONRPCError(RPC_DESERIALIZATION_ERROR, strprintf("TX decode failed for tx %d", idx));
+        }
+    }
+
+    if (txVariants.empty()) {
+        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Missing transactions");
+    }
+
+    // mergedTx will end up with all the signatures; it
+    // starts as a clone of the rawtx:
+    CMutableTransaction mergedTx(txVariants[0]);
+
+    // Fetch previous transactions (inputs):
+    CCoinsView viewDummy;
+    CCoinsViewCache view(&viewDummy);
+    {
+        LOCK(cs_main);
+        LOCK(mempool.cs);
+        CCoinsViewCache &viewChain = *pcoinsTip;
+        CCoinsViewMemPool viewMempool(&viewChain, mempool);
+        view.SetBackend(viewMempool); // temporarily switch cache backend to db+mempool view
+
+        for (const CTxIn& txin : mergedTx.vin) {
+            view.AccessCoins(txin.prevout.hash); // Load entries from viewChain into view; can fail.
+        }
+
+        view.SetBackend(viewDummy); // switch back to avoid locking mempool for too long
+    }
+
+    // Use CTransaction for the constant parts of the
+    // transaction to avoid rehashing.
+    const CTransaction txConst(mergedTx);
+    // Sign what we can:
+    for (unsigned int i = 0; i < mergedTx.vin.size(); i++) {
+        CTxIn& txin = mergedTx.vin[i];
+        const CCoins* coins = view.AccessCoins(txin.prevout.hash);
+        if ((coins == NULL || !coins->IsAvailable(txin.prevout.n))) {
+            throw JSONRPCError(RPC_VERIFY_ERROR, "Input not found or already spent");
+        }
+        BTC::SignatureData sigdata;
+
+        // ... and merge in other signatures:
+        for (const CMutableTransaction& txv : txVariants) {
+            if (txv.vin.size() > i) {
+                sigdata.MergeSignatureData(BTC::DataFromTransaction(txv, i, coins->vout[txv.vin[0].prevout.n]));
+            }
+        }
+        ProduceSignature(BTC::DUMMY_SIGNING_PROVIDER, BTC::MutableTransactionSignatureCreator(&mergedTx, i, coins->vout[mergedTx.vin[0].prevout.n].nValue, 1), coins->vout[mergedTx.vin[0].prevout.n].scriptPubKey, sigdata);
+
+        UpdateInput(txin, sigdata);
+    }
+
+    return EncodeHexTx(CTransaction(mergedTx));
+}
+
+UniValue SignTransaction(interfaces::Chain& chain, CMutableTransaction& mtx, const UniValue& prevTxsUnival, CBasicKeyStore *keystore, bool is_temp_keystore, const UniValue& hashType)
+{
+    // Fetch previous transactions (inputs):
+    CCoinsView viewDummy;
+    CCoinsViewCache view(&viewDummy);
+    {
+        LOCK2(cs_main, mempool.cs);
+        CCoinsViewCache &viewChain = *pcoinsTip;
+        CCoinsViewMemPool viewMempool(&viewChain, mempool);
+        view.SetBackend(viewMempool); // temporarily switch cache backend to db+mempool view
+
+        for (const CTxIn& txin : mtx.vin) {
+            view.AccessCoins(txin.prevout.hash); // Load entries from viewChain into view; can fail.
+        }
+
+        view.SetBackend(viewDummy); // switch back to avoid locking mempool for too long
+    }
+
+    // Add previous txouts given in the RPC call:
+    if (!prevTxsUnival.isNull()) {
+        UniValue prevTxs = prevTxsUnival.get_array();
+        for (unsigned int idx = 0; idx < prevTxs.size(); ++idx) {
+            const UniValue& p = prevTxs[idx];
+            if (!p.isObject()) {
+                throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "expected object with {\"txid'\",\"vout\",\"scriptPubKey\"}");
+            }
+
+            UniValue prevOut = p.get_obj();
+
+            RPCTypeCheckObj(prevOut,boost::assign::map_list_of("txid", UniValue::VSTR)("vout", UniValue::VNUM)("scriptPubKey", UniValue::VSTR));
+
+            uint256 txid = ParseHashO(prevOut, "txid");
+
+            int nOut = find_value(prevOut, "vout").get_int();
+            if (nOut < 0) {
+                throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
+            }
+
+            COutPoint out(txid, nOut);
+            std::vector<unsigned char> pkData(ParseHexO(prevOut, "scriptPubKey"));
+            CScript scriptPubKey(pkData.begin(), pkData.end());
+
+            {
+                const CCoins* coins = view.AccessCoins(out.hash);
+                if (!coins->IsAvailable(nOut) && coins->vout[out.n].scriptPubKey != scriptPubKey) {
+                    std::string err("Previous output scriptPubKey mismatch:\n");
+                    err = err + ScriptToAsmStr(coins->vout[out.n].scriptPubKey) + "\nvs:\n"+
+                          ScriptToAsmStr(scriptPubKey);
+                    throw JSONRPCError(RPC_DESERIALIZATION_ERROR, err);
+                }
+                /*CCoins newcoin;
+                newcoin.vout[out.n].scriptPubKey = scriptPubKey;
+                newcoin.vout[out.n].nValue = MAX_MONEY_OUT;
+                if (prevOut.exists("amount")) {
+                    newcoin.vout[out.n].nValue = AmountFromValue(find_value(prevOut, "amount"));
+                }
+                newcoin.nHeight = 1;*/
+                view.ModifyCoins(out.hash);
+            }
+
+            // if redeemScript and private keys were given, add redeemScript to the keystore so it can be signed
+            if (is_temp_keystore && (scriptPubKey.IsPayToScriptHash() || scriptPubKey.IsPayToWitnessScriptHash())) {
+                RPCTypeCheckObj(prevOut,boost::assign::map_list_of("txid", UniValue::VSTR)("scriptPubKey", UniValue::VSTR));
+
+                /*RPCTypeCheckObj(prevOut,
+                                {
+                                        {"redeemScript", UniValueType(UniValue::VSTR)},
+                                        {"witnessScript", UniValueType(UniValue::VSTR)},
+                                }, true);*/
+                UniValue rs = find_value(prevOut, "redeemScript");
+                if (!rs.isNull()) {
+                    std::vector<unsigned char> rsData(ParseHexV(rs, "redeemScript"));
+                    CScript redeemScript(rsData.begin(), rsData.end());
+                    keystore->AddCScript(redeemScript);
+                    // Automatically also add the P2WSH wrapped version of the script (to deal with P2SH-P2WSH).
+                    // This is only for compatibility, it is encouraged to use the explicit witnessScript field instead.
+                    keystore->AddCScript(GetScriptForWitness(redeemScript));
+                }
+                UniValue ws = find_value(prevOut, "witnessScript");
+                if (!ws.isNull()) {
+                    std::vector<unsigned char> wsData(ParseHexV(ws, "witnessScript"));
+                    CScript witnessScript(wsData.begin(), wsData.end());
+                    keystore->AddCScript(witnessScript);
+                    // Automatically also add the P2WSH wrapped version of the script (to deal with P2SH-P2WSH).
+                    keystore->AddCScript(GetScriptForWitness(witnessScript));
+                }
+                if (rs.isNull() && ws.isNull()) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "Missing redeemScript/witnessScript");
+                }
+            }
+        }
+    }
+
+    int nHashType = ParseSighashString(hashType);
+
+    bool fHashSingle = ((nHashType & ~SIGHASH_ANYONECANPAY) == SIGHASH_SINGLE);
+
+    // Script verification errors
+    UniValue vErrors(UniValue::VARR);
+
+    // Use CTransaction for the constant parts of the
+    // transaction to avoid rehashing.
+    const CTransaction txConst(mtx);
+    // Sign what we can:
+    for (unsigned int i = 0; i < mtx.vin.size(); i++) {
+        CTxIn& txin = mtx.vin[i];
+        const CCoins* coins = view.AccessCoins(txin.prevout.hash);
+        if (coins->IsAvailable(txin.prevout.n)) {
+            TxInErrorToJSON(txin, vErrors, "Input not found or already spent");
+            continue;
+        }
+        const CScript& prevPubKey = coins->vout[txin.prevout.n].scriptPubKey;
+        const CAmount& amount = coins->vout[txin.prevout.n].nValue;
+
+        BTC::SignatureData sigdata = BTC::DataFromTransaction(mtx, i, coins->vout[txin.prevout.n]);
+        // Only sign SIGHASH_SINGLE if there's a corresponding output:
+        if (!fHashSingle || (i < mtx.vout.size())) {
+            BTC::ProduceSignature(*keystore, BTC::MutableTransactionSignatureCreator(&mtx, i, amount, nHashType), prevPubKey, sigdata);
+        }
+
+        BTC::UpdateInput(txin, sigdata);
+
+        // amount must be specified for valid segwit signature
+        if (amount == MAX_MONEY_OUT) {
+            throw JSONRPCError(RPC_TYPE_ERROR, strprintf("Missing amount for %s", coins->vout[txin.prevout.n].ToString()));
+        }
+
+        ScriptError serror = SCRIPT_ERR_OK;
+        if (!BTC::VerifyScript(txin.scriptSig, prevPubKey, nullptr, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&txConst, i), &serror)) {
+            if (serror == SCRIPT_ERR_INVALID_STACK_OPERATION) {
+                // Unable to sign input and verification failed (possible attempt to partially sign).
+                TxInErrorToJSON(txin, vErrors, "Unable to sign input, invalid stack size (possibly missing key)");
+            } else {
+                TxInErrorToJSON(txin, vErrors, ScriptErrorString(serror));
+            }
+        }
+    }
+    bool fComplete = vErrors.empty();
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("hex", EncodeHexTx(CTransaction(mtx)));
+    result.pushKV("complete", fComplete);
+    if (!vErrors.empty()) {
+        result.pushKV("errors", vErrors);
+    }
+
+    return result;
+}
+#endif

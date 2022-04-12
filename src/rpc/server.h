@@ -300,6 +300,8 @@ extern UniValue createrawtransaction(const UniValue& params, bool fHelp);
 extern UniValue decoderawtransaction(const UniValue& params, bool fHelp);
 extern UniValue decodescript(const UniValue& params, bool fHelp);
 extern UniValue signrawtransaction(const UniValue& params, bool fHelp);
+extern UniValue combinerawtransaction(const UniValue& params, bool fHelp);
+extern UniValue signrawtransactionwithwallet(const UniValue& params, bool fHelp);
 extern UniValue sendrawtransaction(const UniValue& params, bool fHelp);
 extern UniValue createrawzerocoinspend(const UniValue& params, bool fHelp);
 
