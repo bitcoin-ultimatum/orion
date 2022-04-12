@@ -147,6 +147,8 @@ enum class SigVersion
    TAPSCRIPT = 3,   //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, script path spending, leaf version 0xc0; see BIP 342
 };
 
+bool CheckSignatureEncoding(const valtype &vchSig, unsigned int flags, ScriptError* serror);
+
 struct ScriptExecutionData
 {
    //! Whether m_tapleaf_hash is initialized.
@@ -198,6 +200,11 @@ public:
       return false;
    }
    virtual bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode) const
+    {
+        return false;
+    }
+
+    virtual bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const
     {
         return false;
     }
