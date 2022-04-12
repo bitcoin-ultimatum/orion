@@ -32,4 +32,7 @@ extern void ScriptPubKeyToUniv(const CScript& scriptPubKey,
     bool fIncludeHex);
 extern void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry);
 
+int ParseSighashString(const UniValue& sighash);
+std::string ScriptToAsmStr(const CScript& script, const bool fAttemptSighashDecode = false);
+
 #endif // BITCOIN_CORE_IO_H
