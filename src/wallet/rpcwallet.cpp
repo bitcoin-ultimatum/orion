@@ -29,6 +29,7 @@
 #include "zbtcu/deterministicmint.h"
 #include <boost/assign/list_of.hpp>
 #include <boost/thread/thread.hpp>
+#include "rpc/rawtransaction.h"
 
 #include <univalue.h>
 #include <iostream>
@@ -5521,3 +5522,61 @@ UniValue getsha256(const UniValue& params, bool fHelp)
     return ret;
 }
 
+UniValue signrawtransactionwithwallet(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() < 1 || params.size() > 3)
+        throw std::runtime_error("signrawtransactionwithwallet"
+                           "\nSign inputs for raw transaction (serialized, hex-encoded).\n"
+                           "The second optional argument (may be null) is an array of previous transaction outputs that\n"
+                           "this transaction depends on but may not yet be in the block chain.\n"
+                                   "hexstring (string required)  The transaction hex string\n"
+                                   "prevtxs (array optional) A json array of previous dependent transaction outputs\n"
+                                            " RPCArg::Type::OBJ, RPCArg::Optional::OMITTED\n"
+                                                     "txid (hexstring required) The transaction id\n"
+                                                     "vout (integer required)The output number\n"
+                                                     "scriptPubKey (hexstring required) script key\n"
+                                                     "redeemScript (hexstring optional)(required for P2SH) redeem script\n"
+                                                     "witnessScript (hexstring optional)(required for P2WSH or P2SH-P2WSH) witness script\n"
+                                                     "amount (integer required)The amount spent\n"
+
+                                   "sighashtype (string) The signature hash type. Must be one of\n"
+                                                                                           "       \"ALL\"\n"
+                                                                                           "       \"NONE\"\n"
+                                                                                           "       \"SINGLE\"\n"
+                                                                                           "       \"ALL|ANYONECANPAY\"\n"
+                                                                                           "       \"NONE|ANYONECANPAY\"\n"
+                                                                                           "       \"SINGLE|ANYONECANPAY\""
+                                   "{\n"
+                                   "  \"hex\" : \"value\",                  (string) The hex-encoded raw transaction with signature(s)\n"
+                                   "  \"complete\" : true|false,          (boolean) If the transaction has a complete set of signatures\n"
+                                   "  \"errors\" : [                      (json array of objects) Script verification errors (if there are any)\n"
+                                   "    {\n"
+                                   "      \"txid\" : \"hash\",              (string) The hash of the referenced, previous transaction\n"
+                                   "      \"vout\" : n,                   (numeric) The index of the output to spent and used as input\n"
+                                   "      \"scriptSig\" : \"hex\",          (string) The hex-encoded signature script\n"
+                                   "      \"sequence\" : n,               (numeric) Script sequence number\n"
+                                   "      \"error\" : \"text\"              (string) Verification or signing error related to the input\n"
+                                   "    }\n"
+                                   "    ,...\n"
+                                   "  ]\n"
+                                   "}\n" +
+
+                                   HelpExampleCli("signrawtransactionwithwallet", "\"myhex\"")
+                                   + HelpExampleRpc("signrawtransactionwithwallet", "\"myhex\"")
+                           );
+
+    RPCTypeCheck(params, {UniValue::VSTR, UniValue::VARR, UniValue::VSTR}, true);
+
+    CTransaction tx;
+    if (!DecodeHexTx(tx, params[0].get_str())) {
+        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
+    }
+
+    // Sign the transaction
+    auto locked_chain = pwalletMain->chain().lock();
+    LOCK2(cs_main, pwalletMain->cs_wallet);
+    EnsureWalletIsUnlocked(pwalletMain);
+
+    CMutableTransaction mtx(tx);
+    return SignTransaction(pwalletMain->chain(), mtx, params[1], pwalletMain, false, params[2]);
+}
