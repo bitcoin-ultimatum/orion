@@ -3,7 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "test/test_pivx.h"
+#include "test/test_btcu.h"
 
 #include <array>
 #include <stdexcept>
@@ -19,7 +19,7 @@
 #include <librustzcash.h>
 #include <sodium.h>
 
-BOOST_FIXTURE_TEST_SUITE(noteencryption_tests, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(noteencryption_tests, TestingSetup)
 
 BOOST_AUTO_TEST_CASE(note_plain_text_test)
 {
