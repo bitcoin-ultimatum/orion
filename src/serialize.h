@@ -231,20 +231,6 @@ inline void Serialize(Stream& s, double a, int, int = 0)
 }
 
 template <typename Stream>
-inline void Unserialize(Stream& s, diversifier_t a, int, int = 0)
-{
-    for (int i = 0; i < ZC_DIVERSIFIER_SIZE; ++i)
-        WRITEDATA(s, a);
-}
-
-template <typename Stream>
-inline void Unserialize(Stream& s, std::array<unsigned char, ZC_MEMO_SIZE > a, int, int = 0)
-{
-    for (int i = 0; i < ZC_MEMO_SIZE; ++i)
-        WRITEDATA(s, a[i]);
-}
-
-template <typename Stream>
 inline void Unserialize(Stream& s, char& a, int, int = 0)
 {
     READDATA(s, a);
