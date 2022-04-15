@@ -16,8 +16,7 @@
 #include <boost/thread.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
-namespace BTC {
-   namespace {
+namespace {
 /**
  * Valid signature cache, to avoid doing expensive ECDSA signature checking
  * twice for every transaction (once when accepted into memory pool, and
@@ -28,7 +27,7 @@ namespace BTC {
       private:
          //! Entries are SHA256(nonce || signature hash || public key || signature):
          uint256 nonce;
-         typedef CuckooCache::cache<uint256, BTC::SignatureCacheHasher> map_type;
+         typedef CuckooCache::cache<uint256, SignatureCacheHasher> map_type;
          map_type setValid;
          boost::shared_mutex cs_sigcache;
 
@@ -71,17 +70,15 @@ namespace BTC {
       static CSignatureCache signatureCache;
    } // namespace
 
-   bool CachingTransactionSignatureChecker::VerifySignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const
+   bool CachingTransactionSignatureChecker::VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const
    {
       uint256 entry;
       signatureCache.ComputeEntry(entry, sighash, vchSig, pubkey);
       if (signatureCache.Get(entry, !store))
          return true;
-      if (!TransactionSignatureChecker::VerifySignature(vchSig, pubkey, sighash))
+      if (!TransactionSignatureChecker::VerifyECDSASignature(vchSig, pubkey, sighash))
          return false;
       if (store)
          signatureCache.Set(entry);
       return true;
    }
-
-}

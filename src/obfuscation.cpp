@@ -19,6 +19,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
 
+#include <random>
 #include <algorithm>
 #include <boost/assign/list_of.hpp>
 #include <openssl/rand.h>
@@ -35,7 +36,6 @@ std::map<uint256, CObfuscationBroadcastTx> mapObfuscationBroadcastTxes;
 // Keep track of the active Masternode
 CActiveMasternode activeMasternode;
 
-int randomizeList(int i) { return std::rand() % i; }
 
 void CObfuscationPool::Reset()
 {
@@ -140,9 +140,13 @@ void CObfuscationPool::Check()
                     txNew.vin.push_back(s);
             }
 
+            std::random_device seed;
+            auto m_urng = std::mt19937_64(seed());
             // shuffle the outputs for improved anonymity
-            std::random_shuffle(txNew.vin.begin(), txNew.vin.end(), randomizeList);
-            std::random_shuffle(txNew.vout.begin(), txNew.vout.end(), randomizeList);
+            std::shuffle(txNew.vin.begin(), txNew.vin.end(), m_urng);
+
+            m_urng = std::mt19937_64(seed());
+            std::shuffle(txNew.vout.begin(), txNew.vout.end(), m_urng);
 
 
             LogPrint("obfuscation", "Transaction 1: %s\n", txNew.ToString());

@@ -19,12 +19,15 @@
 #include "script/script_error.h"
 #include "script/sign.h"
 #include "script/standard.h"
+#include <script/signingprovider.h>
 #include "swifttx.h"
 #include "uint256.h"
 #include "utilmoneystr.h"
 #include "zbtcuchain.h"
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
+#include "policy/policy.h"
+
 #endif
 
 #include <stdint.h>
@@ -799,14 +802,16 @@ UniValue signrawtransaction(const UniValue& params, bool fHelp)
 
         const CAmount& amount = coins->vout[txin.prevout.n].nValue;
         SignatureData sigdata;
+        SigningProvider provider;
+        ///TODO: copy/move from &keystore
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mergedTx.vout.size()))
-           BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(&keystore, &mergedTx, i, amount, nHashType), prevPubKey, sigdata, fColdStake, fLeasing, fForceLeaserSign);
+           ProduceSignature(provider, MutableTransactionSignatureCreator(&mergedTx, i, amount, nHashType), prevPubKey, sigdata, fColdStake, fLeasing, fForceLeaserSign);
 
         // ... and merge in other signatures:
         for (const CMutableTransaction& txv : txVariants) {
-           sigdata = BTC::CombineSignatures(prevPubKey, BTC::TransactionSignatureChecker(&txConst, i, amount), sigdata, BTC::DataFromTransaction(mergedTx, i));
-           BTC::UpdateTransaction(mergedTx, i, sigdata);
+           sigdata = CombineSignatures(txv.vout[0], mergedTx, sigdata, DataFromTransaction(mergedTx, i, coins->vout[txin.prevout.n]));
+           UpdateInput(txin, sigdata);
         }
 
        // amount must be specified for valid segwit signature
@@ -815,7 +820,7 @@ UniValue signrawtransaction(const UniValue& params, bool fHelp)
        }
 
        ScriptError serror = SCRIPT_ERR_OK;
-       if (!BTC::VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, BTC::TransactionSignatureChecker(&txConst, i, amount), &serror)) {
+       if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&txConst, i, amount, MissingDataBehavior::ASSERT_FAIL), &serror)) {
             TxInErrorToJSON(txin, vErrors, ScriptErrorString(serror));
         }
     }

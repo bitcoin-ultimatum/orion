@@ -22,11 +22,14 @@
 
 #ifdef ENABLE_LEASING_MANAGER
 #include "leasing/leasingmanager.h"
+#include "script/signingprovider.h"
+
 #endif
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 #include <key_io.h>
+#include <random>
 
 /**
  * Settings
@@ -2410,7 +2413,9 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, int nConfMine, int
     std::vector<std::pair<CAmount, std::pair<const CWalletTx*, unsigned int> > > vValue;
     CAmount nTotalLower = 0;
 
-    random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
+    std::random_device seed;
+    auto m_urng = std::mt19937_64(seed());
+    std::shuffle(vCoins.begin(), vCoins.end(), m_urng);
 
     // move denoms down on the list
     std::sort(vCoins.begin(), vCoins.end(), less_then_denom);
@@ -2825,14 +2830,16 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                         const CScript& scriptPubKey = GetScriptForDestination(signSenderAddress);
                         SignatureData sigdata;
                         const CAmount& amount = output.nValue;
-                        if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &txNew, nOut, amount, SIGHASH_ALL), scriptPubKey,sigdata))
+                        ///TODO:initialize provider with keystore(CKeyStore)
+                        SigningProvider provider = DUMMY_SIGNING_PROVIDER;
+                        if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&txNew, nOut, amount, SIGHASH_ALL), scriptPubKey,sigdata))
                         {
                            strFailReason = _("Signing transaction failed");
                            return false;
                         }
                         else
                         {
-                           BTC::UpdateTransaction(txNew, nOut, sigdata);
+                           UpdateInput(txNew.vin[nOut], sigdata);
                         }
                         nOut++;
                      }
@@ -2848,12 +2855,14 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                   assert(txin.prevout.n < coin.first->vout.size());
                   const CTxOut& txout = coin.first->vout[txin.prevout.n];
 
-                  if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+                  ///TODO:initialize provider with keystore(CKeyStore)
+                  SigningProvider provider = DUMMY_SIGNING_PROVIDER;
+                  if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
                   {
                      strFailReason = _("Signing transaction failed");
                      return false;
                   } else {
-                     BTC::UpdateTransaction(txNew, nIn, sigdata);
+                     UpdateInput(txin, sigdata);
                   }
                   nIn++;
                }
@@ -3045,11 +3054,13 @@ bool CWallet::CreateCoinStake(
             assert(txin.prevout.n < wtx->vout.size());
             const CTxOut& txout = wtx->vout[txin.prevout.n];
 
-            if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+            ///TODO:initialize provider with keystore(CKeyStore)
+            SigningProvider provider = DUMMY_SIGNING_PROVIDER;
+            if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
             {
                return error("CreateCoinStake : failed to sign coinstake");
             } else {
-               BTC::UpdateTransaction(txNew, nIn, sigdata);
+               UpdateInput(txin, sigdata);
             }
             nIn++;
         }
@@ -3127,11 +3138,13 @@ bool CWallet::CreateLeasingRewards(
    const CScript& scriptPubKey = GetScriptForDestination(pubKeySelf.GetID());
    SignatureData sigdata;
 
-   if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata, false, true))
+   ///TODO:initialize provider with keystore(CKeyStore)
+   SigningProvider provider = DUMMY_SIGNING_PROVIDER;
+   if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata, false, true))
    {
       return false;
    } else {
-      BTC::UpdateTransaction(tx, 0, sigdata);
+      UpdateInput(tx.vin[0], sigdata);
    }
 
 #endif
@@ -4462,7 +4475,9 @@ void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
       CTxDestination witdest = WitnessV0KeyHash(key.GetID());
       CScript witprog = GetScriptForDestination(witdest);
       // Make sure the resulting program is solvable.
-      assert(BTC::IsSolvable(*this, witprog));
+      ///TODO:initialize provider with keystore(CKeyStore)
+      SigningProvider provider = DUMMY_SIGNING_PROVIDER;
+      assert(IsSolvable(provider, witprog));
       AddCScript(witprog);
    }
 }

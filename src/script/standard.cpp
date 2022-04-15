@@ -21,12 +21,32 @@ typedef std::vector<unsigned char> valtype;
 
 unsigned nMaxDatacarrierBytes = MAX_OP_RETURN_RELAY;
 
-CScriptID::CScriptID(const CScript& in) : uint160(Hash160(in.begin(), in.end())) {}
+CScriptID::CScriptID(const CScript& in) : BaseHash(Hash160(in)) {}
+CScriptID::CScriptID(const ScriptHash& in) : BaseHash(static_cast<uint160>(in)) {}
+
+ScriptHash::ScriptHash(const CScript& in) : BaseHash(Hash160(in)) {}
+ScriptHash::ScriptHash(const CScriptID& in) : BaseHash(static_cast<uint160>(in)) {}
+
+PKHash::PKHash(const CPubKey& pubkey) : BaseHash(pubkey.GetID()) {}
+PKHash::PKHash(const CKeyID& pubkey_id) : BaseHash(pubkey_id) {}
+
+WitnessV0KeyHash::WitnessV0KeyHash(const CPubKey& pubkey) : BaseHash(pubkey.GetID()) {}
+WitnessV0KeyHash::WitnessV0KeyHash(const PKHash& pubkey_hash) : BaseHash(static_cast<uint160>(pubkey_hash)) {}
+
+CKeyID ToKeyID(const PKHash& key_hash)
+{
+   return CKeyID{static_cast<uint160>(key_hash)};
+}
+
+CKeyID ToKeyID(const WitnessV0KeyHash& key_hash)
+{
+   return CKeyID{static_cast<uint160>(key_hash)};
+}
+
 WitnessV0ScriptHash::WitnessV0ScriptHash(const CScript& in)
 {
    CSHA256().Write(in.data(), in.size()).Finalize(begin());
 }
-WitnessV0KeyHash::WitnessV0KeyHash(const CPubKey& pubkey) : uint160(pubkey.GetID()) {}
 
 const char* GetTxnOutputType(txnouttype t)
 {
@@ -49,6 +69,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_CALL: return "call";
     case TX_WITNESS_V0_KEYHASH: return "witness_v0_keyhash";
     case TX_WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
+    case TX_WITNESS_V1_TAPROOT: return "witness_v1_taproot";
     case TX_WITNESS_UNKNOWN: return "witness_unknown";
     }
     return NULL;
@@ -130,13 +151,18 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::v
    std::vector<unsigned char> witnessprogram;
    if (scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram)) {
       if (witnessversion == 0 && witnessprogram.size() == WITNESS_V0_KEYHASH_SIZE) {
-         vSolutionsRet.push_back(witnessprogram);
+         vSolutionsRet.push_back(std::move(witnessprogram));
          typeRet = TX_WITNESS_V0_KEYHASH;
          return true;
       }
       if (witnessversion == 0 && witnessprogram.size() == WITNESS_V0_SCRIPTHASH_SIZE) {
-         vSolutionsRet.push_back(witnessprogram);
+         vSolutionsRet.push_back(std::move(witnessprogram));
          typeRet = TX_WITNESS_V0_SCRIPTHASH;
+         return true;
+      }
+      if (witnessversion == 1 && witnessprogram.size() == WITNESS_V1_TAPROOT_SIZE) {
+         vSolutionsRet.push_back(std::move(witnessprogram));
+         typeRet = TX_WITNESS_V1_TAPROOT;
          return true;
       }
       if (witnessversion != 0) {
@@ -550,6 +576,11 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet,
         // 0 is TRXHASH
         // 1 is N
         addressRet = CKeyID(uint160(vSolutions[2]));
+    } else if (whichType == TX_WITNESS_V1_TAPROOT) {
+       WitnessV1Taproot tap;
+       std::copy(vSolutions[0].begin(), vSolutions[0].end(), tap.begin());
+       addressRet = tap;
+       return true;
     }
     // Multisig txns have more than one address...
     return false;
@@ -616,6 +647,11 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
         // 1. N
         addressRet.push_back(CKeyID(uint160(vSolutions[2])));
         return true;
+    } else if (typeRet == TX_WITNESS_V1_TAPROOT) {
+       WitnessV1Taproot tap;
+       std::copy(vSolutions[0].begin(), vSolutions[0].end(), tap.begin());
+       addressRet.push_back(std::move(tap));
+       return true;
     } else
     {
         nRequiredRet = 1;
@@ -806,4 +842,25 @@ CScript GetScriptForLeasingReward(const COutPoint& outPoint, const CTxDestinatio
     script << ToByteVector(outPoint.hash) << outPoint.n << OP_LEASINGREWARD;
     boost::apply_visitor(CScriptVisitor(&script), dest);
     return script;
+}
+
+void TaprootSpendData::Merge(TaprootSpendData other)
+{
+   // TODO: figure out how to better deal with conflicting information
+   // being merged.
+   if (internal_key.IsNull() && !other.internal_key.IsNull()) {
+      internal_key = other.internal_key;
+   }
+   if (merkle_root.IsNull() && !other.merkle_root.IsNull()) {
+      merkle_root = other.merkle_root;
+   }
+   for (auto& [key, control_blocks] : other.scripts) {
+      // Once P0083R3 is supported by all our targeted platforms,
+      // this loop body can be replaced with:
+      // scripts[key].merge(std::move(control_blocks));
+      auto& target = scripts[key];
+      for (auto& control_block: control_blocks) {
+         target.insert(std::move(control_block));
+      }
+   }
 }

@@ -77,7 +77,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     endif()
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG 1)
 cmake_policy(SET CMP0077 NEW)
@@ -1590,6 +1590,7 @@ set(COMMON_SOURCES
         ./src/script/interpreter.cpp
         ./src/script/script.cpp
         ./src/script/sign.cpp
+        ./src/script/signingprovider.cpp
         ./src/script/standard.cpp
         ./src/script/script_error.cpp
         ./src/spork.cpp

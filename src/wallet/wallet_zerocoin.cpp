@@ -13,6 +13,7 @@
 #include "utilmoneystr.h"
 #include "zbtcuchain.h"
 #include "zbtcu/deterministicmint.h"
+#include "script/signingprovider.h"
 
 
 /*
@@ -207,12 +208,15 @@ bool CWallet::CreateZerocoinMintTransaction(const CAmount nValue,
        CTxIn& txin = txNew.vin[nIn];
        assert(txin.prevout.n < coin.first->vout.size());
        const CTxOut& txout = coin.first->vout[txin.prevout.n];
-       if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+
+       ///TODO:initialize provider with keystore(CKeyStore)
+       SigningProvider provider = DUMMY_SIGNING_PROVIDER;
+       if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
        {
           strFailReason = _("Signing transaction failed");
           return false;
        } else {
-          BTC::UpdateTransaction(txNew, nIn, sigdata);
+          UpdateInput(txin, sigdata);
        }
        nIn++;
     }

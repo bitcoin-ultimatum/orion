@@ -29,6 +29,7 @@ namespace
         bool operator()(const CScriptID& id) const { return addr->Set(id); }
         bool operator()(const WitnessV0ScriptHash& id) const { return addr->Set(id); }
         bool operator()(const WitnessV0KeyHash& id) const { return addr->Set(id); }
+        bool operator()(const WitnessV1Taproot& id) const { return addr->Set(id); }
         bool operator()(const WitnessUnknown& id) const { return addr->Set(id); }
         bool operator()(const CNoDestination& no) const { addr->Clear(); return false; }
     };
@@ -89,6 +90,13 @@ bool CBTCUAddress::Set(const WitnessV0KeyHash& id)
     data_type = DataType::Bech32;
     bech32.SetData(0, &id, id.size());
     return true;
+}
+
+bool CBTCUAddress::Set(const WitnessV1Taproot& id)
+{
+   data_type = DataType::Bech32;
+   bech32.SetData(0, &id, id.size());
+   return true;
 }
 
 bool CBTCUAddress::Set(const WitnessUnknown& id)

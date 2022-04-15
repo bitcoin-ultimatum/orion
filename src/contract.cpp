@@ -9,6 +9,7 @@
 #include "chain.h"
 
 #include "libdevcore/ABI.h"
+#include "policy/policy.h"
 
 std::unique_ptr<QtumState> globalState;
 std::shared_ptr<dev::eth::SealEngineFace> globalSealEngine;
@@ -141,7 +142,7 @@ bool CheckSenderScript(const CCoinsViewCache& view, const CTransaction& tx, cons
 
             // Get the signature stack
             std::vector <std::vector<unsigned char> > stack;
-            if (!BTC::EvalScript(stack, senderSig, SCRIPT_VERIFY_NONE, BTC::BaseSignatureChecker(), SigVersion::BASE))
+            if (!EvalScript(stack, senderSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker(), SigVersion::BASE))
                 return false;
 
             // Check that the items size is no more than 80 bytes
@@ -545,7 +546,7 @@ bool QtumTxConverter::extractionQtumTransactions(ExtractQtumTX& qtumtx){
 bool QtumTxConverter::receiveStack(const CScript& scriptPubKey){
     sender = false;
     // FIX: hardcoded flag value
-    BTC::EvalScript(stack, scriptPubKey, 1610612736, BTC::BaseSignatureChecker(), SigVersion::BASE);
+    EvalScript(stack, scriptPubKey, 1610612736, BaseSignatureChecker(), SigVersion::BASE);
     if (stack.empty())
         return false;
 

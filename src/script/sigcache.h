@@ -13,7 +13,7 @@
 class CPubKey;
 
 
-namespace BTC {
+
 
    class SignatureCacheHasher
    {
@@ -28,16 +28,17 @@ namespace BTC {
       }
    };
 
-class CachingTransactionSignatureChecker : public BTC::TransactionSignatureChecker
+class CachingTransactionSignatureChecker : public TransactionSignatureChecker
    {
    private:
       bool store;
 
    public:
-      CachingTransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, bool storeIn, PrecomputedTransactionData& txdataIn) : TransactionSignatureChecker(txToIn, nInIn, amountIn, txdataIn), store(storeIn) {}
+      CachingTransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, bool storeIn, PrecomputedTransactionData& txdataIn) : TransactionSignatureChecker(txToIn, nInIn, amountIn, txdataIn, MissingDataBehavior::ASSERT_FAIL), store(storeIn) {}
 
-      bool VerifySignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const override;
+   bool VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const override;
+   bool VerifySchnorrSignature(Span<const unsigned char> sig, const XOnlyPubKey& pubkey, const uint256& sighash) const override;
    };
-}
+
 
 #endif // BITCOIN_SCRIPT_SIGCACHE_H

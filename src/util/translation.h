@@ -19,6 +19,9 @@ struct bilingual_str {
     std::string translated;
 };
 
+/** Mark a bilingual_str as untranslated */
+inline bilingual_str Untranslated(std::string original) { return {original, original}; }
+
 namespace tinyformat {
 template <typename... Args>
 bilingual_str format(const bilingual_str& fmt, const Args&... args)
