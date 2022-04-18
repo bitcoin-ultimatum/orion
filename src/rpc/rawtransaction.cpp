@@ -27,6 +27,7 @@
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #include "policy/policy.h"
+#include "key_io.h"
 
 #endif
 
@@ -312,7 +313,7 @@ UniValue listunspent(const UniValue& params, bool fHelp)
         if (pk.IsPayToScriptHash()) {
             CTxDestination address;
             if (ExtractDestination(pk, address)) {
-                const CScriptID& hash = boost::get<CScriptID>(address);
+                const CScriptID& hash = (CScriptID)*std::get_if<ScriptHash>(&address);
                 CScript redeemScript;
                 if (pwalletMain->CCryptoKeyStore::GetCScript(hash, redeemScript))
                     entry.push_back(Pair("redeemScript", HexStr(redeemScript.begin(), redeemScript.end())));
@@ -532,7 +533,7 @@ UniValue decodescript(const UniValue& params, bool fHelp)
     }
     ScriptPubKeyToJSON(script, r, false);
 
-    r.push_back(Pair("p2sh", CBTCUAddress(CScriptID(script)).ToString()));
+    r.push_back(Pair("p2sh", EncodeDestination(ScriptHash(script))));
     return r;
 }
 

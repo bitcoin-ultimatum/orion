@@ -31,8 +31,8 @@ class CBTCUAddress
 
 public:
     bool SetString(const std::string& strAddress);
-    bool Set(const CKeyID& id, const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
-    bool Set(const CScriptID& id);
+    bool Set(const PKHash& id);
+    bool Set(const ScriptHash& id);
     bool Set(const WitnessV0ScriptHash& id);
     bool Set(const WitnessV0KeyHash& id);
     bool Set(const WitnessV1Taproot& id);

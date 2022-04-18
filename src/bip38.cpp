@@ -273,7 +273,7 @@ bool BIP38_Decrypt(std::string strPassphrase, std::string strEncryptedKey, uint2
     CKey k;
     k.Set(privKey.begin(), privKey.end(), fCompressed);
     CPubKey pubkey = k.GetPubKey();
-    std::string address = CBTCUAddress(pubkey.GetID()).ToString();
+    std::string address = CBTCUAddress(PKHash(pubkey.GetID())).ToString();
 
     return strAddressHash == AddressToBip38Hash(address);
 }

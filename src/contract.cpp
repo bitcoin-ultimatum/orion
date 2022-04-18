@@ -315,9 +315,8 @@ valtype GetSenderAddress(const CTransaction& tx, const CCoinsViewCache* coinsVie
     CTxDestination addressBit;
     txnouttype txType=TX_NONSTANDARD;
     if(ExtractDestination(script, addressBit, &txType)){
-        if ((txType == TX_PUBKEY || txType == TX_PUBKEYHASH) &&
-            addressBit.type() == typeid(CKeyID)){
-            CKeyID senderAddress(boost::get<CKeyID>(addressBit));
+        if ((txType == TX_PUBKEY || txType == TX_PUBKEYHASH)){
+            PKHash senderAddress(*std::get_if<PKHash>(&addressBit));
             return valtype(senderAddress.begin(), senderAddress.end());
         }
     }
@@ -506,9 +505,8 @@ dev::Address ByteCodeExec::EthAddrFromScript(const CScript& script){
     CTxDestination addressBit;
     txnouttype txType=TX_NONSTANDARD;
     if(ExtractDestination(script, addressBit, &txType)){
-        if ((txType == TX_PUBKEY || txType == TX_PUBKEYHASH) &&
-            addressBit.type() == typeid(CKeyID)){
-            CKeyID addressKey(boost::get<CKeyID>(addressBit));
+        if ((txType == TX_PUBKEY || txType == TX_PUBKEYHASH)){
+            PKHash addressKey(*std::get_if<PKHash>(&addressBit));
             std::vector<unsigned char> addr(addressKey.begin(), addressKey.end());
             return dev::Address(addr);
         }

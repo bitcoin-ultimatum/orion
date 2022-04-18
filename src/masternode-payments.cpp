@@ -356,7 +356,7 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
         //no masternode detected
         CMasternode* winningNode = mnodeman.GetCurrentMasterNode(1);
         if (winningNode) {
-            payee = GetScriptForDestination(winningNode->pubKeyCollateralAddress.GetID());
+            payee = GetScriptForDestination(PKHash(winningNode->pubKeyCollateralAddress.GetID()));
         } else {
             LogPrint("masternode","CreateNewBlock: Failed to detect masternode to pay\n");
             hasPayment = false;
@@ -531,7 +531,7 @@ bool CMasternodePayments::IsScheduled(CMasternode& mn, int nNotBlockHeight)
     }
 
     CScript mnpayee;
-    mnpayee = GetScriptForDestination(mn.pubKeyCollateralAddress.GetID());
+    mnpayee = GetScriptForDestination(PKHash(mn.pubKeyCollateralAddress.GetID()));
 
     CScript payee;
     for (int64_t h = nHeight; h <= nHeight + 8; h++) {
@@ -746,7 +746,7 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 
             newWinner.nBlockHeight = nBlockHeight;
 
-            CScript payee = GetScriptForDestination(pmn->pubKeyCollateralAddress.GetID());
+            CScript payee = GetScriptForDestination(PKHash(pmn->pubKeyCollateralAddress.GetID()));
             newWinner.AddPayee(payee);
 
             CTxDestination address1;

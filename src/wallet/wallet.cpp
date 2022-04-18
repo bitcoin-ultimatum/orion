@@ -120,10 +120,10 @@ PairResult CWallet::getNewAddress(CBTCUAddress& ret, const std::string addressLa
     }
     CKeyID keyID = newKey.GetID();
 
-    if (!SetAddressBook(keyID, addressLabel, purpose))
+    if (!SetAddressBook(PKHash(keyID), addressLabel, purpose))
         throw std::runtime_error("CWallet::getNewAddress() : SetAddressBook failed");
 
-    ret = CBTCUAddress(keyID, addrType);
+    ret = CBTCUAddress(PKHash(keyID), addrType);
     return PairResult(true);
 }
 
@@ -178,7 +178,7 @@ bool CWallet::AddKeyPubKey(const CKey& secret, const CPubKey& pubkey)
 
     // check if we need to remove from watch-only
     CScript script;
-    script = GetScriptForDestination(pubkey.GetID());
+    script = GetScriptForDestination(PKHash(pubkey.GetID()));
     if (HaveWatchOnly(script))
         RemoveWatchOnly(script);
 
@@ -239,7 +239,7 @@ bool CWallet::LoadCScript(const CScript& redeemScript)
      * that never can be redeemed. However, old wallets may still contain
      * these. Do not add them to the wallet and warn. */
     if (redeemScript.size() > MAX_SCRIPT_ELEMENT_SIZE) {
-        std::string strAddr = CBTCUAddress(CScriptID(redeemScript)).ToString();
+        std::string strAddr = CBTCUAddress(ScriptHash(redeemScript)).ToString();
         LogPrintf("%s: Warning: This wallet contains a redeemScript of size %i which exceeds maximum size %i thus can never be redeemed. Do not use address %s.\n",
             __func__, redeemScript.size(), MAX_SCRIPT_ELEMENT_SIZE, strAddr);
         return true;
@@ -2108,7 +2108,7 @@ bool CWallet::GetMaxP2LCoins(CPubKey& pubKeyRet, CKey& keyRet, CAmount& amount) 
         CTxDestination dest;
         ExtractDestination(coins.tx->vout[coins.i].scriptPubKey, dest, false, true);
 
-        CKeyID key = boost::get<CKeyID>(dest);
+        CKeyID key = ToKeyID(*(std::get_if<PKHash>(&dest)));
 
         auto itr = mapKeys.emplace(key, 0);
         itr.first->second += coins.Value();
@@ -2754,7 +2754,7 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                   bool combineChange = false;
 
                   // coin control: send change to custom address
-                  if (coinControl && !boost::get<CNoDestination>(&coinControl->destChange))
+                  if (coinControl && !std::get_if<CNoDestination>(&coinControl->destChange))
                   {
                      scriptChange = GetScriptForDestination(coinControl->destChange);
 
@@ -2789,7 +2789,7 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                      ret = reservekey.GetReservedKey(vchPubKey);
                      assert(ret); // should never fail, as we just unlocked
 
-                     scriptChange = GetScriptForDestination(vchPubKey.GetID());
+                     scriptChange = GetScriptForDestination(PKHash(vchPubKey.GetID()));
                   }
 
                   if (!combineChange)
@@ -3117,14 +3117,14 @@ bool CWallet::CreateLeasingRewards(
     auto lastOut = COutPoint(coinStake.GetHash(), coinStake.vout.size() - 1);
 
     if (GetMaxP2LCoins(pubKeySelf, keySelf, amount)) {
-        LeasingLogPrint("Get leasing reward for validator %s", CBTCUAddress(pubKeySelf.GetID()).ToString());
+        LeasingLogPrint("Get leasing reward for validator %s", CBTCUAddress(PKHash(pubKeySelf.GetID())).ToString());
         pLeasingManager->GetLeasingRewards(LeaserType::ValidatorNode, pubKeySelf.GetID(), Params().GetMaxLeasingRewards(), tx.vout);
     }
     // validator can't sign leasing reward without reward to itself
     if (tx.vout.size() > 1 && lastOut.IsMasternodeReward(&coinStake)) {
         auto mnnode = mnodeman.Find(coinStake.vout[lastOut.n].scriptPubKey);
         if (mnnode) {
-            LeasingLogPrint("Get leasing reward for masternode %s", CBTCUAddress(mnnode->pubKeyLeasing.GetID()).ToString());
+            LeasingLogPrint("Get leasing reward for masternode %s", CBTCUAddress(PKHash(mnnode->pubKeyLeasing.GetID())).ToString());
             pLeasingManager->GetLeasingRewards(LeaserType::MasterNode, mnnode->pubKeyLeasing.GetID(), Params().GetMaxLeasingRewards(), tx.vout);
         }
     }
@@ -3135,7 +3135,7 @@ bool CWallet::CreateLeasingRewards(
         return true;
     }
 
-   const CScript& scriptPubKey = GetScriptForDestination(pubKeySelf.GetID());
+   const CScript& scriptPubKey = GetScriptForDestination(PKHash(pubKeySelf.GetID()));
    SignatureData sigdata;
 
    ///TODO:initialize provider with keystore(CKeyStore)
@@ -3770,26 +3770,27 @@ public:
         int nRequired;
         if (ExtractDestinations(script, type, vDest, nRequired)) {
             for (const CTxDestination& dest : vDest)
-                boost::apply_visitor(*this, dest);
+                std::visit(*this, dest);
         }
     }
 
-    void operator()(const CKeyID& keyId)
+    void operator()(const PKHash& keyId)
     {
-        if (keystore.HaveKey(keyId))
-            vKeys.push_back(keyId);
+        if (keystore.HaveKey(ToKeyID(keyId)))
+            vKeys.push_back(ToKeyID(keyId));
     }
 
-    void operator()(const CScriptID& scriptId)
+    void operator()(const ScriptHash& scripthash)
     {
         CScript script;
-        if (keystore.GetCScript(scriptId, script))
+        CScriptID scriptID(scripthash);
+        if (keystore.GetCScript(scriptID, script))
             Process(script);
     }
 
     void operator()(const WitnessV0KeyHash& id)
     {
-        CKeyID keyId(id);
+        CKeyID keyId(ToKeyID(id));
         if (keystore.HaveKey(keyId))
             vKeys.push_back(keyId);
     }
@@ -3803,6 +3804,7 @@ public:
             Process(script);
     }
 
+    void operator()(const WitnessV1Taproot& id) {}
     void operator()(const WitnessUnknown& id) {}
 
     void operator()(const CNoDestination& none) {}
@@ -3907,7 +3909,7 @@ unsigned int CWallet::ComputeTimeSmart(const CWalletTx& wtx) const
 
 bool CWallet::AddDestData(const CTxDestination& dest, const std::string& key, const std::string& value)
 {
-    if (boost::get<CNoDestination>(&dest))
+    if (std::get_if<CNoDestination>(&dest))
         return false;
 
     mapAddressBook[dest].destdata.insert(std::make_pair(key, value));
@@ -4700,9 +4702,9 @@ std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
    CKeyID keyid = key.GetID();
    if (key.IsCompressed()) {
       CTxDestination segwit = WitnessV0KeyHash(keyid);
-      CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
-      return std::vector<CTxDestination>{std::move(keyid), std::move(p2sh), std::move(segwit)};
+      CTxDestination p2sh = ScriptHash(GetScriptForDestination(segwit));
+      return std::vector<CTxDestination>{std::move(PKHash(keyid)), std::move(p2sh), std::move(segwit)};
    } else {
-      return std::vector<CTxDestination>{std::move(keyid)};
+      return std::vector<CTxDestination>{std::move(PKHash(keyid))};
    }
 }

@@ -1970,6 +1970,13 @@ bool TransactionSignatureChecker::CheckColdStake(const CScript& script) const
    return txTo->CheckColdStake(script);
 }
 
+
+template<>
+bool MutableTransactionSignatureChecker::CheckColdStake(const CScript& script) const
+{
+   return true;
+}
+
 // explicit instantiation
 template class GenericTransactionSignatureChecker<CTransaction>;
 template class GenericTransactionSignatureChecker<CMutableTransaction>;

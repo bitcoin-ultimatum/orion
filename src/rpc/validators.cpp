@@ -23,6 +23,7 @@
 #include <leasing/leasing_tx_verify.h>
 
 #include "leasing/leasingmanager.h"
+#include "key_io.h"
 
 void SendMoney(const CTxDestination& address, CAmount nValue, CWalletTx& wtxNew, bool fUseIX = false,
         const std::vector<CValidatorRegister> &validatorRegister = std::vector<CValidatorRegister>(),
@@ -287,7 +288,7 @@ UniValue CreateAndSendTransaction(const boost::optional<CValidatorRegister> &val
       CReserveKey reservekey(pwalletMain);
       CPubKey vchPubKey;
       assert(reservekey.GetReservedKey(vchPubKey));
-      CTxDestination myAddress = vchPubKey.GetID();
+      CTxDestination myAddress = PKHash(vchPubKey.GetID());
 
       CAmount nAmount = AmountFromValue(
       UniValue((double) /*38*/100000000 / COIN)); // send 38 satoshi (min tx fee per kb is 100 satoshi)
@@ -456,7 +457,7 @@ UniValue mnregvalidatorlist(const UniValue& params, bool fHelp)
     UniValue ret(UniValue::VARR);
     for(auto &valReg : validatorsRegistrationList) {
        UniValue obj(UniValue::VOBJ);
-       obj.push_back(Pair("addr", CBTCUAddress(valReg.pubKey.GetID()).ToString()));
+       obj.push_back(Pair("addr", CBTCUAddress(PKHash(valReg.pubKey.GetID())).ToString()));
        obj.push_back(Pair("pubkey", HexStr(valReg.pubKey)));
        ret.push_back(obj);
     }
@@ -472,7 +473,7 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
     for(auto &valVote : validatorsVotesList)
     {
        UniValue validator(UniValue::VOBJ);
-       validator.push_back(Pair("validator", CBTCUAddress(valVote.pubKey.GetID()).ToString()));
+       validator.push_back(Pair("validator", CBTCUAddress(PKHash(valVote.pubKey.GetID())).ToString()));
        //valVoteStr += "Voting address: " + CBTCUAddress(valVote.pubKey.GetID()).ToString() + "\n";
        //valVoteStr +="\tVotes:\n";
        for(auto &vote:valVote.votes)
@@ -503,7 +504,7 @@ UniValue mnvalidatorlist(const UniValue& params, bool fHelp)
    auto validatorsList = g_ValidatorsState.get_validators();
    for(auto &val : validatorsList) {
       UniValue obj(UniValue::VOBJ);
-      obj.push_back(Pair("addr", CBTCUAddress(val.pubKey.GetID()).ToString()));
+      obj.push_back(Pair("addr", EncodeDestination(PKHash(val.pubKey.GetID()))));
       obj.push_back(Pair("pubkey", HexStr(val.pubKey)));
       ret.push_back(obj);
    }

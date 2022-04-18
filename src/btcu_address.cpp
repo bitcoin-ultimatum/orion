@@ -10,7 +10,7 @@
 
 namespace
 {
-    class CBTCUAddressVisitor : public boost::static_visitor<bool>
+    class CBTCUAddressVisitor
     {
     private:
         CBTCUAddress* addr;
@@ -25,8 +25,8 @@ namespace
             type(addrType)
         {}
 
-        bool operator()(const CKeyID& id) const { return addr->Set(id, type); }
-        bool operator()(const CScriptID& id) const { return addr->Set(id); }
+        bool operator()(const PKHash& id) const { return addr->Set(id); }
+        bool operator()(const ScriptHash& id) const { return addr->Set(id); }
         bool operator()(const WitnessV0ScriptHash& id) const { return addr->Set(id); }
         bool operator()(const WitnessV0KeyHash& id) const { return addr->Set(id); }
         bool operator()(const WitnessV1Taproot& id) const { return addr->Set(id); }
@@ -64,18 +64,18 @@ bool CBTCUAddress::SetString(const std::string& strAddress)
     return true;
 }
 
-bool CBTCUAddress::Set(const CKeyID& id, const CChainParams::Base58Type addrType)
+bool CBTCUAddress::Set(const PKHash& id)
 {
-    data_type = DataType::Base58;
-    base58.SetData(Params().Base58Prefix(addrType), &id, 20);
-    return true;
+   data_type = DataType::Base58;
+   base58.SetData(Params().Base58Prefix(CChainParams::PUBKEY_ADDRESS), &id, 20);
+   return true;
 }
 
-bool CBTCUAddress::Set(const CScriptID& id)
+bool CBTCUAddress::Set(const ScriptHash& id)
 {
-    data_type = DataType::Base58;
-    base58.SetData(Params().Base58Prefix(CChainParams::SCRIPT_ADDRESS), &id, 20);
-    return true;
+   data_type = DataType::Base58;
+   base58.SetData(Params().Base58Prefix(CChainParams::SCRIPT_ADDRESS), &id, 20);
+   return true;
 }
 
 bool CBTCUAddress::Set(const WitnessV0ScriptHash& id)
@@ -108,7 +108,7 @@ bool CBTCUAddress::Set(const WitnessUnknown& id)
 
 bool CBTCUAddress::Set(const CTxDestination& dest, const CChainParams::Base58Type addrType)
 {
-    return boost::apply_visitor(CBTCUAddressVisitor(this, addrType), dest);
+    return std::visit(CBTCUAddressVisitor(this, addrType), dest);
 }
 
 bool CBTCUAddress::IsValidBech32Size() const
@@ -191,9 +191,9 @@ CTxDestination CBTCUAddress::Get() const
 
         if (base58.vchVersion == Params().Base58Prefix(CChainParams::PUBKEY_ADDRESS) ||
             base58.vchVersion == Params().Base58Prefix(CChainParams::STAKING_ADDRESS)) {
-            return CKeyID(id);
+            return PKHash(id);
         } else if (base58.vchVersion == Params().Base58Prefix(CChainParams::SCRIPT_ADDRESS)) {
-            return CScriptID(id);
+            return ScriptHash(id);
         }
     } else if (data_type == DataType::Bech32) {
 

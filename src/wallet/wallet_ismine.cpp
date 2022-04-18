@@ -91,7 +91,7 @@ isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey, IsMine
             // This also applies to the P2WSH case.
             break;
         }
-        return IsMine(keystore, GetScriptForDestination(CKeyID(uint160(vSolutions[0]))), IsMineSigVersion::WITNESS_V0);
+        return IsMine(keystore, GetScriptForDestination(PKHash(uint160(vSolutions[0]))), IsMineSigVersion::WITNESS_V0);
     }
     case TX_PUBKEYHASH: {
         keyID = CKeyID(uint160(vSolutions[0]));

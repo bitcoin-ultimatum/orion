@@ -21,6 +21,8 @@
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
+#include "key_io.h"
+
 #endif
 
 #include <stdint.h>
@@ -238,7 +240,7 @@ UniValue mnsync(const UniValue& params, bool fHelp)
 }
 
 #ifdef ENABLE_WALLET
-class DescribeAddressVisitor : public boost::static_visitor<UniValue>
+class DescribeAddressVisitor
 {
 private:
     isminetype mine;
@@ -283,23 +285,23 @@ public:
 
     UniValue operator()(const CNoDestination &dest) const { return UniValue(UniValue::VOBJ); }
 
-    UniValue operator()(const CKeyID &keyID) const {
+    UniValue operator()(const PKHash &keyID) const {
         UniValue obj(UniValue::VOBJ);
         CPubKey vchPubKey;
         obj.push_back(Pair("isscript", false));
         if (bool(mine & ISMINE_ALL)) {
-            pwalletMain->CCryptoKeyStore::GetPubKey(keyID, vchPubKey);
+            pwalletMain->CCryptoKeyStore::GetPubKey(ToKeyID(keyID), vchPubKey);
             obj.push_back(Pair("pubkey", HexStr(vchPubKey)));
             obj.push_back(Pair("iscompressed", vchPubKey.IsCompressed()));
         }
         return obj;
     }
 
-    UniValue operator()(const CScriptID &scriptID) const {
+    UniValue operator()(const ScriptHash &scriptID) const {
         UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("isscript", true));
         CScript subscript;
-        pwalletMain->CCryptoKeyStore::GetCScript(scriptID, subscript);
+        pwalletMain->CCryptoKeyStore::GetCScript(CScriptID(scriptID), subscript);
         std::vector<CTxDestination> addresses;
         txnouttype whichType;
         int nRequired;
@@ -334,6 +336,16 @@ public:
       obj.pushKV("witness_program", HexStr(id.begin(), id.end()));
       return obj;
     }
+
+   UniValue operator()(const WitnessV1Taproot& tap) const
+   {
+      UniValue obj(UniValue::VOBJ);
+      obj.pushKV("isscript", true);
+      obj.pushKV("iswitness", true);
+      obj.pushKV("witness_version", 1);
+      obj.pushKV("witness_program", HexStr(tap));
+      return obj;
+   }
 
     UniValue operator()(const WitnessUnknown& id) const
     {
@@ -461,7 +473,7 @@ UniValue validateaddress(const UniValue& params, bool fHelp)
         ret.push_back(Pair("isstaking", address.IsStakingAddress()));
         ret.push_back(Pair("isleasing", address.IsLeasingAddress()));
         ret.push_back(Pair("iswatchonly", bool(mine & ISMINE_WATCH_ONLY)));
-        UniValue detail = boost::apply_visitor(DescribeAddressVisitor(mine), dest);
+        UniValue detail = std::visit(DescribeAddressVisitor(mine), dest);
         ret.pushKVs(detail);
         if (pwalletMain && pwalletMain->mapAddressBook.count(dest))
             ret.push_back(Pair("account", pwalletMain->mapAddressBook[dest].name));
@@ -561,10 +573,9 @@ UniValue createmultisig(const UniValue& params, bool fHelp)
     // Construct using pay-to-script-hash:
     CScript inner = _createmultisig_redeemScript(params);
     CScriptID innerID(inner);
-    CBTCUAddress address(innerID);
-
+    
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("address", address.ToString()));
+    result.push_back(Pair("address", EncodeDestination(ScriptHash(innerID))));
     result.push_back(Pair("redeemScript", HexStr(inner.begin(), inner.end())));
 
     return result;

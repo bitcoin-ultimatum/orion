@@ -105,7 +105,7 @@ CBTCUAddress GetNewAddressFromAccount(const std::string purpose, const UniValue 
 
 bool IsValidContractSenderAddressKey(const CTxDestination &dest)
 {
-    const CKeyID *keyID = boost::get<CKeyID>(&dest);
+    const PKHash *keyID = std::get_if<PKHash>(&dest);
     return keyID != 0;
 }
 bool SetDefaultSignSenderAddress(CWallet* const pwallet, CTxDestination& destAdress)
@@ -127,7 +127,7 @@ bool SetDefaultSignSenderAddress(CWallet* const pwallet, CTxDestination& destAdr
         break;
     }
 
-    return !boost::get<CNoDestination>(&destAdress);
+    return !std::get_if<CNoDestination>(&destAdress);
 }
 bool SetDefaultPayForContractAddress(CWallet* const pwallet, CCoinControl & coinControl)
 {
@@ -155,7 +155,7 @@ bool SetDefaultPayForContractAddress(CWallet* const pwallet, CCoinControl & coin
     return coinControl.HasSelected();
 }
 bool IsValidDestinationKey(const CTxDestination& dest) {
-    return dest.which() != 0;
+    return dest.index() != 0;
 }
 
 bool GetSenderDest(CWallet * const pwallet, const CTransaction& tx, CTxDestination& txSenderDest)
@@ -190,19 +190,19 @@ CKeyID GetKeyForDestination(const CCryptoKeyStore& store, const CTxDestination& 
 {
     // Only supports destinations which map to single public keys, i.e. P2PKH,
     // P2WPKH, and P2SH-P2WPKH.
-    if (auto id = boost::get<CKeyID>(&dest)) {
-        return CKeyID(*id);
+    if (auto id = std::get_if<PKHash>(&dest)) {
+        return ToKeyID(*id);
     }
-    if (auto witness_id = boost::get<WitnessV0KeyHash>(&dest)) {
-        return CKeyID(*witness_id);
+    if (auto witness_id = std::get_if<WitnessV0KeyHash>(&dest)) {
+        return ToKeyID(*witness_id);
     }
-    if (auto script_hash = boost::get<CScriptID>(&dest)) {
+    if (auto script_hash = std::get_if<ScriptHash>(&dest)) {
         CScript script;
         CScriptID script_id(*script_hash);
         CTxDestination inner_dest;
         if (store.GetCScript(script_id, script) && ExtractDestination(script, inner_dest)) {
-            if (auto inner_witness_id = boost::get<WitnessV0KeyHash>(&inner_dest)) {
-                return CKeyID(*inner_witness_id);
+            if (auto inner_witness_id = std::get_if<WitnessV0KeyHash>(&inner_dest)) {
+                return ToKeyID(*inner_witness_id);
             }
         }
     }
@@ -312,7 +312,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
             const CScript scriptPubKey = out.tx->vout[out.i].scriptPubKey;
             bool fValidAddress = ExtractDestination(scriptPubKey, destAdress);
 
-            if (!fValidAddress || senderAddress != destAdress)
+            if (!fValidAddress || !(senderAddress == destAdress))
                 continue;
 
             coinControl->Select(COutPoint(out.tx->GetHash(),out.i));
@@ -584,7 +584,7 @@ UniValue sendtocontract(const UniValue& params, bool fHelp){
             const CScript& scriptPubKey = out.tx->vout[out.i].scriptPubKey;
             bool fValidAddress = ExtractDestination(scriptPubKey, destAdress);
 
-            if (!fValidAddress || senderAddress != destAdress)
+            if (!fValidAddress || !(senderAddress == destAdress))
                 continue;
 
             coinControl.Select(COutPoint(out.tx->GetHash(),out.i));
@@ -860,7 +860,7 @@ UniValue callcontract(const UniValue& params, bool fHelp)
     if(params.size() >= 3){
         CTxDestination qtumSenderAddress = CBTCUAddress(params[2].get_str()).Get();
         if (IsValidDestination(qtumSenderAddress)) {
-            const CKeyID *keyid = boost::get<CKeyID>(&qtumSenderAddress);
+            const PKHash *keyid = std::get_if<PKHash>(&qtumSenderAddress);
             senderAddress = dev::Address(HexStr(valtype(keyid->begin(),keyid->end())));
         }else{
             senderAddress = dev::Address(params[2].get_str());
@@ -975,7 +975,7 @@ UniValue delegatoradd(const UniValue& params, bool fHelp)
     if (!address.GetKeyID(keyID))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unable to get KeyID from BTCU address");
 
-    return pwalletMain->SetAddressBook(keyID, strLabel, AddressBook::AddressBookPurpose::DELEGATOR);
+    return pwalletMain->SetAddressBook(PKHash(keyID), strLabel, AddressBook::AddressBookPurpose::DELEGATOR);
 }
 
 UniValue delegatorremove(const UniValue& params, bool fHelp)
@@ -1004,7 +1004,7 @@ UniValue delegatorremove(const UniValue& params, bool fHelp)
     if (!address.GetKeyID(keyID))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unable to get KeyID from BTCU address");
 
-    if (!pwalletMain->HasAddressBook(keyID))
+    if (!pwalletMain->HasAddressBook(PKHash(keyID)))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unable to get BTCU address from addressBook");
 
     std::string label = "";
@@ -1016,7 +1016,7 @@ UniValue delegatorremove(const UniValue& params, bool fHelp)
         }
     }
 
-    return pwalletMain->SetAddressBook(keyID, label, AddressBook::AddressBookPurpose::DELEGABLE);
+    return pwalletMain->SetAddressBook(PKHash(keyID), label, AddressBook::AddressBookPurpose::DELEGABLE);
 }
 
 UniValue ListaddressesForPurpose(const std::string strPurpose)
@@ -1162,7 +1162,7 @@ CBTCUAddress GetAccountAddress(std::string strAccount, bool bForceNew = false)
 
     // Check if the current key has been used
     if (account.vchPubKey.IsValid()) {
-        CScript scriptPubKey = GetScriptForDestination(account.vchPubKey.GetID());
+        CScript scriptPubKey = GetScriptForDestination(PKHash(account.vchPubKey.GetID()));
         for (std::map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin();
              it != pwalletMain->mapWallet.end() && account.vchPubKey.IsValid();
              ++it) {
@@ -1178,11 +1178,11 @@ CBTCUAddress GetAccountAddress(std::string strAccount, bool bForceNew = false)
         if (!pwalletMain->GetKeyFromPool(account.vchPubKey))
             throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
 
-        pwalletMain->SetAddressBook(account.vchPubKey.GetID(), strAccount, AddressBook::AddressBookPurpose::RECEIVE);
+        pwalletMain->SetAddressBook(PKHash(account.vchPubKey.GetID()), strAccount, AddressBook::AddressBookPurpose::RECEIVE);
         walletdb.WriteAccount(strAccount, account);
     }
 
-    return CBTCUAddress(account.vchPubKey.GetID());
+    return CBTCUAddress(PKHash(account.vchPubKey.GetID()));
 }
 
 UniValue getaccountaddress(const UniValue& params, bool fHelp)
@@ -1242,7 +1242,7 @@ UniValue getrawchangeaddress(const UniValue& params, bool fHelp)
 
     CKeyID keyID = vchPubKey.GetID();
 
-    return CBTCUAddress(keyID).ToString();
+    return CBTCUAddress(PKHash(keyID)).ToString();
 }
 
 
@@ -2570,8 +2570,8 @@ UniValue addmultisigaddress(const UniValue& params, bool fHelp)
     CScriptID innerID(inner);
     pwalletMain->AddCScript(inner);
 
-    pwalletMain->SetAddressBook(innerID, strAccount, AddressBook::AddressBookPurpose::SEND);
-    return CBTCUAddress(innerID).ToString();
+    pwalletMain->SetAddressBook(ScriptHash(innerID), strAccount, AddressBook::AddressBookPurpose::SEND);
+    return CBTCUAddress(ScriptHash(innerID)).ToString();
 }
 
 

@@ -159,61 +159,71 @@ bool N_DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vch
 
 //namespace
 //{
-class DestinationEncoder : public boost::static_visitor<std::string>
+class DestinationEncoder
 {
 private:
-    const CChainParams& m_params;
+   const CChainParams& m_params;
 
 public:
-    explicit DestinationEncoder(const CChainParams& params) : m_params(params) {}
+   explicit DestinationEncoder(const CChainParams& params) : m_params(params) {}
 
-    //TO_FIX: set body this operator
-    std::string operator()(const CKeyID& id) const
-    {
-        std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
-        data.insert(data.end(), id.begin(), id.end());
-        return EncodeBase58Check(data);
-    }
+   std::string operator()(const CKeyID& id) const
+   {
+      std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
+      data.insert(data.end(), id.begin(), id.end());
+      return EncodeBase58Check(data);
+   }
 
-    //TO_FIX: set body this operator
-    std::string operator()(const CScriptID& id) const
-    {
-        std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
-        data.insert(data.end(), id.begin(), id.end());
-        return EncodeBase58Check(data);
-    }
+   std::string operator()(const PKHash& id) const
+   {
+      std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
+      data.insert(data.end(), id.begin(), id.end());
+      return EncodeBase58Check(data);
+   }
 
-    std::string operator()(const WitnessV0KeyHash& id) const
-    {
-        std::vector<unsigned char> data = {0};
-        data.reserve(33);
-        ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.begin(), id.end());
-        //TO_FIX: Link with body
-       // return bech32::Encode(m_params.Bech32HRP(), data);
-    }
+   std::string operator()(const ScriptHash& id) const
+   {
+      std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::SCRIPT_ADDRESS);
+      data.insert(data.end(), id.begin(), id.end());
+      return EncodeBase58Check(data);
+   }
 
-    std::string operator()(const WitnessV0ScriptHash& id) const
-    {
-        std::vector<unsigned char> data = {0};
-        data.reserve(53);
-        ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.begin(), id.end());
-        //TO_FIX: Link with body
-        //return bech32::Encode(m_params.Bech32HRP(), data);
-    }
+   std::string operator()(const WitnessV0KeyHash& id) const
+   {
+      std::vector<unsigned char> data = {0};
+      data.reserve(33);
+      ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.begin(), id.end());
+      return bech32::Encode(bech32::Encoding::BECH32, m_params.Bech32HRP(), data);
+   }
 
-    std::string operator()(const WitnessUnknown& id) const
-    {
-        if (id.version < 1 || id.version > 16 || id.length < 2 || id.length > 40) {
-            return {};
-        }
-        std::vector<unsigned char> data = {(unsigned char)id.version};
-        data.reserve(1 + (id.length * 8 + 4) / 5);
-        ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.program, id.program + id.length);
-        //TO_FIX: Link with body
-        //return bech32::Encode(m_params.Bech32HRP(), data);
-    }
+   std::string operator()(const WitnessV0ScriptHash& id) const
+   {
+      std::vector<unsigned char> data = {0};
+      data.reserve(53);
+      ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.begin(), id.end());
+      return bech32::Encode(bech32::Encoding::BECH32, m_params.Bech32HRP(), data);
+   }
 
-    std::string operator()(const CNoDestination& no) const { return {}; }
+   std::string operator()(const WitnessV1Taproot& tap) const
+   {
+      std::vector<unsigned char> data = {1};
+      data.reserve(53);
+      ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, tap.begin(), tap.end());
+      return bech32::Encode(bech32::Encoding::BECH32M, m_params.Bech32HRP(), data);
+   }
+
+   std::string operator()(const WitnessUnknown& id) const
+   {
+      if (id.version < 1 || id.version > 16 || id.length < 2 || id.length > 40) {
+         return {};
+      }
+      std::vector<unsigned char> data = {(unsigned char)id.version};
+      data.reserve(1 + (id.length * 8 + 4) / 5);
+      ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.program, id.program + id.length);
+      return bech32::Encode(bech32::Encoding::BECH32M, m_params.Bech32HRP(), data);
+   }
+
+   std::string operator()(const CNoDestination& no) const { return {}; }
 };
 
 CTxDestination DecodeDestination(const std::string& str, const CChainParams& params)
@@ -227,24 +237,24 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
         const std::vector<unsigned char>& pubkey_prefix = params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
         if (data.size() == hash.size() + pubkey_prefix.size() && std::equal(pubkey_prefix.begin(), pubkey_prefix.end(), data.begin())) {
             std::copy(data.begin() + pubkey_prefix.size(), data.end(), hash.begin());
-            return CKeyID(hash);
+            return PKHash(hash);
         }
         // Script-hash-addresses have version 5 (or 196 testnet).
         // The data vector contains RIPEMD160(SHA256(cscript)), where cscript is the serialized redemption script.
         const std::vector<unsigned char>& script_prefix = params.Base58Prefix(CChainParams::SCRIPT_ADDRESS);
         if (data.size() == hash.size() + script_prefix.size() && std::equal(script_prefix.begin(), script_prefix.end(), data.begin())) {
             std::copy(data.begin() + script_prefix.size(), data.end(), hash.begin());
-            return CScriptID(hash);
+            return ScriptHash(hash);
         }
     }
     data.clear();
     auto bech = bech32::Decode(str);
-    if (bech.second.size() > 0 /*&& bech.first == params.Bech32HRP()*/) {
+    if (bech.data.size() > 0 /*&& bech.first == params.Bech32HRP()*/) {
         // Bech32 decoding
-        int version = bech.second[0]; // The first 5 bit symbol is the witness version (0-16)
+        int version = bech.data[0]; // The first 5 bit symbol is the witness version (0-16)
         // The rest of the symbols are converted witness program bytes.
-        data.reserve(((bech.second.size() - 1) * 5) / 8);
-        if (ConvertBits<5, 8, false>([&](unsigned char c) { data.push_back(c); }, bech.second.begin() + 1, bech.second.end())) {
+        data.reserve(((bech.data.size() - 1) * 5) / 8);
+        if (ConvertBits<5, 8, false>([&](unsigned char c) { data.push_back(c); }, bech.data.begin() + 1, bech.data.end())) {
             if (version == 0) {
                 {
                     WitnessV0KeyHash keyid;
@@ -309,7 +319,7 @@ std::string EncodeSecret(const CKey& key)
 
 std::string EncodeDestination(const CTxDestination& dest)
 {
-    return boost::apply_visitor(DestinationEncoder(Params()), dest);
+    return std::visit(DestinationEncoder(Params()), dest);
 }
 
 CTxDestination DecodeDestination(const std::string& str)
