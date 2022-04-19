@@ -90,7 +90,7 @@ namespace {
    static CSignatureCache signatureCache;
 } // namespace
 
-// To be called once in AppInitMain/BasicTestingSetup to initialize the
+// To be called once in AppInit/BasicTestingSetup to initialize the
 // signatureCache.
 void InitSignatureCache()
 {

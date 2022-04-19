@@ -47,5 +47,5 @@ class CachingTransactionSignatureChecker : public TransactionSignatureChecker
    bool VerifySchnorrSignature(Span<const unsigned char> sig, const XOnlyPubKey& pubkey, const uint256& sighash) const override;
    };
 
-
+void InitSignatureCache();
 #endif // BITCOIN_SCRIPT_SIGCACHE_H
