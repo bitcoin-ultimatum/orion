@@ -1507,6 +1507,10 @@ namespace {
             SerializeOutput(s, nOutput, nType, nVersion);
          // Serialize nLockTime
          ::Serialize(s, txTo.nLockTime, nType, nVersion);
+         if (txTo.nVersion >= CTransaction::BTCU_START_VERSION && txTo.nVersion <= CTransaction::CURRENT_VERSION) {
+            s << txTo.validatorRegister;
+            s << txTo.validatorVote;
+         }
       }
    };
 
