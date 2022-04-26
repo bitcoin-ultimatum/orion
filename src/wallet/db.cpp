@@ -32,6 +32,32 @@ unsigned int nWalletDBUpdated;
 // CDB
 //
 
+CCriticalSection cs_db;
+std::map<std::string, BerkeleyEnvironment> g_dbenvs; //!< Map from directory name to open db environment.
+
+BerkeleyEnvironment* GetWalletEnv(const fs::path& wallet_path, std::string& database_filename)
+{
+    fs::path env_directory;
+    if (fs::is_regular_file(wallet_path)) {
+        // Special case for backwards compatibility: if wallet path points to an
+        // existing file, treat it as the path to a BDB data file in a parent
+        // directory that also contains BDB log files.
+        env_directory = wallet_path.parent_path();
+        database_filename = wallet_path.filename().string();
+    } else {
+        // Normal case: Interpret wallet path as a directory path containing
+        // data and log files.
+        env_directory = wallet_path;
+        database_filename = "wallet.dat";
+    }g_dbenvs;
+    LOCK(cs_db);
+    // Note: An ununsed temporary BerkeleyEnvironment object may be created inside the
+    // emplace function if the key already exists. This is a little inefficient,
+    // but not a big concern since the map will be changed in the future to hold
+    // pointers instead of objects, anyway.
+    return &g_dbenvs.emplace(std::piecewise_construct, std::forward_as_tuple(env_directory.string()), std::forward_as_tuple(env_directory)).first->second;
+}
+
 CDBEnv bitdb;
 
 void CDBEnv::EnvShutdown()

@@ -31,6 +31,19 @@ void UnregisterAllValidationInterfaces();
 /** Push an updated transaction to all registered wallets */
 void SyncWithWallets(const CTransaction& tx, const CBlock* pblock);
 
+/** Reason why a transaction was removed from the mempool,
+ * this is passed to the notification signal.
+ */
+enum class MemPoolRemovalReason {
+    UNKNOWN = 0, //! Manually removed or unknown reason
+    EXPIRY,      //! Expired from mempool
+    SIZELIMIT,   //! Removed in size limiting
+    REORG,       //! Removed for reorganization
+    BLOCK,       //! Removed for block
+    CONFLICT,    //! Removed for conflict with in-block transaction
+    REPLACED     //! Removed for replacement
+};
+
 class CValidationInterface {
 public:
     virtual ~CValidationInterface() = default;
@@ -46,7 +59,13 @@ protected:
 // XX42    virtual void ResendWalletTransactions(int64_t nBestBlockTime) {}
     virtual void ResendWalletTransactions() {}
     virtual void BlockChecked(const CBlock&, const CValidationState&) {}
-// XX42    virtual void GetScriptForMining(boost::shared_ptr<CReserveScript>&) {};
+
+    virtual void BlockConnected(const std::shared_ptr<const CBlock> &block, const CBlockIndex *pindex) {}
+    virtual void BlockDisconnected(const std::shared_ptr<const CBlock> &block, const uint256& blockHash, int nBlockHeight, int64_t blockTime) {}
+
+    virtual void TransactionRemovedFromMempool(const CTransaction &ptx, MemPoolRemovalReason reason) {}
+
+    // XX42    virtual void GetScriptForMining(boost::shared_ptr<CReserveScript>&) {};
     virtual void ResetRequestCount(const uint256 &hash) {};
     friend void ::RegisterValidationInterface(CValidationInterface*);
     friend void ::UnregisterValidationInterface(CValidationInterface*);
@@ -76,6 +95,10 @@ struct CMainSignals {
 // XX42    boost::signals2::signal<void (boost::shared_ptr<CReserveScript>&)> ScriptForMining;
     /** Notifies listeners that a block has been successfully mined */
     boost::signals2::signal<void (const uint256 &)> BlockFound;
+
+    void TransactionRemovedFromMempool(const CTransaction&, MemPoolRemovalReason);
+    void BlockConnected(const std::shared_ptr<const CBlock> &block, const CBlockIndex *pindex);
+    void BlockDisconnected(const std::shared_ptr<const CBlock> &block, const uint256& blockHash, int nBlockHeight, int64_t blockTime);
 };
 
 CMainSignals& GetMainSignals();
