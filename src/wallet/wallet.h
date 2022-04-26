@@ -258,6 +258,25 @@ private:
     /** Internal database handle. */
     std::unique_ptr<WalletDatabase> database;
 
+    /**
+     * The following is used to keep track of how far behind the wallet is
+     * from the chain sync, and to allow clients to block on us being caught up.
+     *
+     * Note that this is *not* how far we've processed, we may need some rescan
+     * to have seen all transactions in the chain, but is only used to track
+     * live BlockConnected callbacks.
+     *
+     * Protected by cs_main (see BlockUntilSyncedToCurrentChain)
+     */
+    uint256 m_last_block_processed GUARDED_BY(cs_wallet) = UINT256_ZERO;
+
+    /* Height of last block processed is used by wallet to know depth of transactions
+    * without relying on Chain interface beyond asynchronous updates. For safety, we
+    * initialize it to -1. Height is a pointer on node's tip and doesn't imply
+    * that the wallet has scanned sequentially all blocks up to this one.
+    */
+    int m_last_block_processed_height GUARDED_BY(cs_wallet) = -1;
+    int64_t m_last_block_processed_time GUARDED_BY(cs_wallet) = 0;
     int64_t nNextResend;
     int64_t nLastResend;
 
@@ -267,7 +286,6 @@ private:
     std::unique_ptr<ScriptPubKeyMan> m_spk_man = std::make_unique<ScriptPubKeyMan>(this);
     std::unique_ptr<SaplingScriptPubKeyMan> m_sspk_man = std::make_unique<SaplingScriptPubKeyMan>(this);
 
-    int m_last_block_processed_height GUARDED_BY(cs_wallet) = -1;
     /**
      * Used to keep track of spent outpoints, and
      * detect and report conflicts (double-spends or
@@ -293,6 +311,9 @@ public:
 
     static const int STAKE_SPLIT_THRESHOLD = 2000;
 
+    //! Generates hd wallet //
+    bool SetupSPKM(bool newKeypool = true, bool memOnly = false);
+
     bool StakeableCoins(std::vector<COutput>* pCoins = nullptr);
     bool IsCollateralAmount(CAmount nInputAmount) const;
 
@@ -303,6 +324,15 @@ public:
     SaplingScriptPubKeyMan* GetSaplingScriptPubKeyMan() const { return m_sspk_man.get(); }
 
     bool HasSaplingSPKM() const;
+
+    /** Set last block processed height, currently only use in unit test */
+    void SetLastBlockProcessed(const CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet)
+    {
+        AssertLockHeld(cs_wallet);
+        m_last_block_processed_height = pindex->nHeight;
+        m_last_block_processed = pindex->GetBlockHash();
+        m_last_block_processed_time = pindex->GetBlockTime();
+    };
 
     /** Get database handle used by this wallet. Ideally this function would
  * not be necessary.
@@ -481,6 +511,9 @@ public:
     void UnlockAllCoins();
     void ListLockedCoins(std::vector<COutPoint>& vOutpts);
 
+    CAmount GetAvailableBalance(bool fIncludeDelegated = true, bool fIncludeShielded = true) const;
+    CAmount GetAvailableBalance(isminefilter& filter, bool useCache = false, int minDepth = 1) const;
+
     //  keystore implementation
     // Generate a new key
     CPubKey GenerateNewKey();
@@ -540,6 +573,7 @@ public:
     bool LoadCryptedSaplingZKey(const libzcash::SaplingExtendedFullViewingKey &extfvk,
                                 const std::vector<unsigned char> &vchCryptedSecret);
 
+
     //////////// End Sapling //////////////
 
     //! Adds a key to the store, and saves it to disk.
@@ -581,6 +615,9 @@ public:
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
 
+    // Force balance recomputation if any transaction got conflicted
+    void MarkAffectedTransactionsDirty(const CTransaction& tx); // only public for testing purposes, must never be called directly in any other situation
+
     std::vector<CKeyID> GetAffectedKeys(const CScript& spk);
 
     void GetKeyBirthTimes(std::map<CKeyID, int64_t>& mapKeyBirth) const;
@@ -600,6 +637,11 @@ public:
     int ScanForWalletTransactions(std::unique_ptr<CCoinsViewIterator> pCoins, CBlockIndex* pindexStart, bool fUpdate = false, bool fromStartup = false);
     void ReacceptWalletTransactions(bool fFirstLoad = false);
     void ResendWalletTransactions();
+    bool LoadToWallet(CWalletTx& wtxIn);
+    void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindex) override;
+    void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const uint256& blockHash, int nBlockHeight, int64_t blockTime) override;
+
+    bool ActivateSaplingWallet(bool memOnly = false);
 
     CAmount loopTxsBalance(std::function<void(const uint256&, const CWalletTx&, CAmount&)>method) const;
     CAmount GetBalance(int filter = ISMINE_SPENDABLE_ALL) const;
@@ -1173,7 +1215,18 @@ public:
     bool IsTrusted() const;
     bool IsTrusted(int& nDepth, bool& fConflicted) const;
 
+    bool isConflicted() const { return m_confirm.status == CWalletTx::CONFLICTED; }
+    void setConflicted() { m_confirm.status = CWalletTx::CONFLICTED; }
+    bool isUnconfirmed() const { return m_confirm.status == CWalletTx::UNCONFIRMED; }
+    void setUnconfirmed() { m_confirm.status = CWalletTx::UNCONFIRMED; }
+    bool isConfirmed() const { return m_confirm.status == CWalletTx::CONFIRMED; }
+    void setConfirmed() { m_confirm.status = CWalletTx::CONFIRMED; }
     bool WriteToDisk(CWalletDB *pwalletdb);
+
+    // memory only
+    enum AmountType { DEBIT, CREDIT, IMMATURE_CREDIT, AVAILABLE_CREDIT, AMOUNTTYPE_ENUM_ELEMENTS };
+    mutable CachableAmount m_amounts[AMOUNTTYPE_ENUM_ELEMENTS];
+    bool IsAmountCached(AmountType type, const isminefilter& filter) const; // Only used in unit tests
 
     int64_t GetTxTime() const;
     int64_t GetComputedTxTime() const;

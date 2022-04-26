@@ -25,6 +25,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 #include <key_io.h>
+#include "script/ismine.h"
 
 #include "keystore.h"
 
@@ -87,6 +88,29 @@ const CWalletTx* CWallet::GetWalletTx(const uint256& hash) const
     return &(it->second);
 }
 
+bool CWallet::SetupSPKM(bool newKeypool, bool memOnly)
+{
+    if (m_spk_man->SetupGeneration(newKeypool, true, memOnly)) {
+        LogPrintf("%s : spkm setup completed\n", __func__);
+        return ActivateSaplingWallet(memOnly);
+    }
+    return false;
+}
+
+bool CWallet::ActivateSaplingWallet(bool memOnly)
+{
+    if (m_sspk_man->SetupGeneration(m_spk_man->GetHDChain().GetID(), true, memOnly)) {
+        LogPrintf("%s : sapling spkm setup completed\n", __func__);
+        // Just to be triple sure, if the version isn't updated, set it.
+        if (!SetMinVersion(WalletFeature::FEATURE_SAPLING)) {
+            LogPrintf("%s : ERROR: wallet cannot upgrade to sapling features. Try to upgrade using the 'upgradewallet' RPC command\n", __func__);
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 std::vector<CWalletTx> CWallet::getWalletTxs()
 {
     LOCK(cs_wallet);
@@ -108,6 +132,88 @@ PairResult CWallet::getNewStakingAddress(CBTCUAddress& ret, std::string label){
 
 PairResult CWallet::getNewLeasingAddress(CBTCUAddress& ret, std::string label){
     return getNewAddress(ret, label, AddressBook::AddressBookPurpose::LEASING, CChainParams::Base58Type::PUBKEY_ADDRESS);
+}
+
+CAmount CWallet::GetAvailableBalance(isminefilter& filter, bool useCache, int minDepth) const
+{
+    return loopTxsBalance([filter, useCache, minDepth](const uint256& id, const CWalletTx& pcoin, CAmount& nTotal){
+        bool fConflicted;
+        int depth;
+        if (pcoin.IsTrusted(depth, fConflicted) && depth >= minDepth) {
+            nTotal += pcoin.GetAvailableCredit(useCache, filter);
+        }
+    });
+}
+
+CAmount CWallet::GetAvailableBalance(bool fIncludeDelegated, bool fIncludeShielded) const
+{
+    isminefilter filter;
+    if (fIncludeDelegated && fIncludeShielded) {
+        filter = ISMINE_SPENDABLE_ALL;
+    } else if (fIncludeDelegated) {
+        filter = ISMINE_SPENDABLE_TRANSPARENT;
+    } else if (fIncludeShielded) {
+        filter = ISMINE_SPENDABLE_NO_DELEGATED;
+    } else {
+        filter = ISMINE_SPENDABLE;
+    }
+    return GetAvailableBalance(filter, true, 0);
+}
+
+// Internal function for now, this will be part of a chain interface class in the future.
+static Optional<int> getTipBlockHeight(const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+{
+    AssertLockHeld(cs_main);
+
+    CBlockIndex* pindex = LookupBlockIndex(hash);
+    if (pindex && chainActive.Contains(pindex)) {
+        return Optional<int>(pindex->nHeight);
+    }
+    return nullopt;
+}
+
+bool CWallet::LoadToWallet(CWalletTx& wtxIn)
+{
+    LOCK2(cs_main, cs_wallet);
+    // If tx hasn't been reorged out of chain while wallet being shutdown
+    // change tx status to UNCONFIRMED and reset hashBlock/nIndex.
+    if (!wtxIn.m_confirm.hashBlock.IsNull()) {
+        Optional<int> block_height = getTipBlockHeight(wtxIn.m_confirm.hashBlock);
+        if (block_height) {
+            // Update cached block height variable since it not stored in the
+            // serialized transaction.
+            wtxIn.m_confirm.block_height = *block_height;
+        } else if (wtxIn.isConflicted() || wtxIn.isConfirmed()) {
+            // If tx block (or conflicting block) was reorged out of chain
+            // while the wallet was shutdown, change tx status to UNCONFIRMED
+            // and reset block height, hash, and index. ABANDONED tx don't have
+            // associated blocks and don't need to be updated. The case where a
+            // transaction was reorged out while online and then reconfirmed
+            // while offline is covered by the rescan logic.
+            wtxIn.setUnconfirmed();
+            wtxIn.m_confirm.hashBlock = UINT256_ZERO;
+            wtxIn.m_confirm.block_height = 0;
+            wtxIn.m_confirm.nIndex = 0;
+        }
+    }
+    const uint256& hash = wtxIn.GetHash();
+    CWalletTx& wtx = mapWallet.emplace(hash, wtxIn).first->second;
+    wtx.BindWallet(this);
+    // Sapling
+    m_sspk_man->UpdateNullifierNoteMapWithTx(wtx);
+
+    //wtxOrdered.emplace(wtx.nOrderPos, &wtx);
+    AddToSpends(hash);
+    for (const CTxIn& txin : wtx.tx->vin) {
+        auto it = mapWallet.find(txin.prevout.hash);
+        if (it != mapWallet.end()) {
+            CWalletTx& prevtx = it->second;
+            if (prevtx.isConflicted()) {
+                MarkConflicted(prevtx.m_confirm.hashBlock, wtx.GetHash());
+            }
+        }
+    }
+    return true;
 }
 
 PairResult CWallet::getNewAddress(CBTCUAddress& ret, const std::string addressLabel, const std::string purpose,
@@ -466,6 +572,71 @@ void CWallet::SetBestChain(const CBlockLocator& loc)
 {
     CWalletDB walletdb(strWalletFile);
     walletdb.WriteBestBlock(loc);
+}
+
+void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindex)
+{
+    {
+        LOCK(cs_wallet);
+
+        m_last_block_processed = pindex->GetBlockHash();
+        m_last_block_processed_time = pindex->GetBlockTime();
+        m_last_block_processed_height = pindex->nHeight;
+        for (size_t index = 0; index < pblock->vtx.size(); index++) {
+            CWalletTx::Confirmation confirm(CWalletTx::Status::CONFIRMED, m_last_block_processed_height,
+                                            m_last_block_processed, index);
+            SyncTransaction(pblock->vtx[index], pblock.get());
+            TransactionRemovedFromMempool(pblock->vtx[index], MemPoolRemovalReason::BLOCK);
+        }
+
+        // Sapling: notify about the connected block
+        // Get prev block tree anchor
+        CBlockIndex* pprev = pindex->pprev;
+        SaplingMerkleTree oldSaplingTree;
+        bool isSaplingActive = (pprev) != nullptr &&
+                               Params().GetConsensus().NetworkUpgradeActive(pprev->nHeight,
+                                                                            Consensus::UPGRADE_V5_0);
+        if (isSaplingActive) {
+            assert(pcoinsTip->GetSaplingAnchorAt(pprev->hashFinalSaplingRoot, oldSaplingTree));
+        } else {
+            assert(pcoinsTip->GetSaplingAnchorAt(SaplingMerkleTree::empty_root(), oldSaplingTree));
+        }
+
+        // Sapling: Update cached incremental witnesses
+        ChainTipAdded(pindex, pblock.get(), oldSaplingTree);
+    } // cs_wallet lock end
+
+    // Auto-combine functionality
+    // If turned on Auto Combine will scan wallet for dust to combine
+    // Outside of the cs_wallet lock because requires cs_main for now
+    // due CreateTransaction/CommitTransaction dependency.
+    /*if (fCombineDust) {
+        AutoCombineDust(g_connman.get());
+    }*/
+}
+
+
+void CWallet::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const uint256& blockHash, int nBlockHeight, int64_t blockTime)
+{
+    LOCK(cs_wallet);
+
+    // At block disconnection, this will change an abandoned transaction to
+    // be unconfirmed, whether or not the transaction is added back to the mempool.
+    // User may have to call abandontransaction again. It may be addressed in the
+    // future with a stickier abandoned state or even removing abandontransaction call.
+    m_last_block_processed_height = nBlockHeight - 1;
+    m_last_block_processed_time = blockTime;
+    m_last_block_processed = blockHash;
+    for (const CTransaction& ptx : pblock->vtx) {
+        CWalletTx::Confirmation confirm(CWalletTx::Status::UNCONFIRMED, /* block_height */ 0, {}, /* nIndex */ 0);
+        SyncTransaction(ptx, pblock.get());
+    }
+
+    if (Params().GetConsensus().NetworkUpgradeActive(nBlockHeight, Consensus::UPGRADE_V5_0)) {
+        // Update Sapling cached incremental witnesses
+        m_sspk_man->DecrementNoteWitnesses(nBlockHeight);
+        m_sspk_man->UpdateSaplingNullifierNoteMapForBlock(pblock.get());
+    }
 }
 
 bool CWallet::SetMinVersion(enum WalletFeature nVersion, CWalletDB* pwalletdbIn, bool fExplicit)
@@ -4680,6 +4851,35 @@ bool CWallet::IsFromMe(const CTransaction& tx) const
     return (GetDebit(tx, ISMINE_ALL) > 0);
 }
 
+void CWallet::MarkAffectedTransactionsDirty(const CTransaction& tx)
+{
+    // If a transaction changes 'conflicted' state, that changes the balance
+    // available of the outputs it spends. So force those to be
+    // recomputed, also:
+    for (const CTxIn& txin : tx.vin) {
+        if (!txin.IsZerocoinSpend()) {
+            auto it = mapWallet.find(txin.prevout.hash);
+            if (it != mapWallet.end()) {
+                it->second.MarkDirty();
+            }
+        }
+    }
+
+    // Sapling
+    if (HasSaplingSPKM() && tx.IsShieldedTx()) {
+        for (const SpendDescription &spend : tx.sapData->vShieldedSpend) {
+            const uint256& nullifier = spend.nullifier;
+            auto nit = m_sspk_man->mapSaplingNullifiersToNotes.find(nullifier);
+            if (nit != m_sspk_man->mapSaplingNullifiersToNotes.end()) {
+                auto it = mapWallet.find(nit->second.hash);
+                if (it != mapWallet.end()) {
+                    it->second.MarkDirty();
+                }
+            }
+        }
+    }
+}
+
 CAmount CWallet::GetDebit(const CTransaction& tx, const isminefilter& filter) const
 {
     CAmount nDebit = 0;
@@ -4938,6 +5138,11 @@ int CWalletTx::GetDepthAndMempool(bool& fConflicted, bool enableIX) const
     int ret = GetDepthInMainChain(enableIX);
     fConflicted = (ret == 0 && !InMempool());  // not in chain nor in mempool
     return ret;
+}
+
+bool CWalletTx::IsAmountCached(AmountType type, const isminefilter& filter) const
+{
+    return m_amounts[type].m_cached[filter];
 }
 
 bool CWalletTx::IsEquivalentTo(const CWalletTx& _tx) const
