@@ -293,7 +293,17 @@ public:
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
         base58Prefixes[STAKING_ADDRESS] = std::vector<unsigned char>(1,66);
 
-        bech32_hrp = "bc";
+        //bech32_hrp = "bc";
+
+        // Sapling
+        bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ps";
+        bech32_hrp[SAPLING_FULL_VIEWING_KEY]     = "pviews";
+        bech32_hrp[SAPLING_INCOMING_VIEWING_KEY] = "pivks";
+        bech32_hrp[SAPLING_EXTENDED_SPEND_KEY]   = "p-secret-spending-key-main";
+        bech32_hrp[SAPLING_EXTENDED_FVK]         = "pxviews";
+
+        bech32_hrp[BLS_SECRET_KEY]               = "bls-sk";
+        bech32_hrp[BLS_PUBLIC_KEY]               = "bls-pk";
 
         convertSeed6(vFixedSeeds, pnSeed6_main, ARRAYLEN(pnSeed6_main));
 
@@ -446,7 +456,16 @@ public:
         base58Prefixes[STAKING_ADDRESS] = std::vector<unsigned char>(1,53);  // starting with 'N'
         base58Prefixes[SECRET_KEY] = std::vector<unsigned char>(1, 239);     // Testnet private keys start with '9' or 'c' (Bitcoin defaults)
 
-        bech32_hrp = "tb";
+        //bech32_hrp = "tb";
+
+        bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ptestsapling";
+        bech32_hrp[SAPLING_FULL_VIEWING_KEY]     = "pviewtestsapling";
+        bech32_hrp[SAPLING_INCOMING_VIEWING_KEY] = "pivktestsapling";
+        bech32_hrp[SAPLING_EXTENDED_SPEND_KEY]   = "p-secret-spending-key-test";
+        bech32_hrp[SAPLING_EXTENDED_FVK]         = "pxviewtestsapling";
+
+        bech32_hrp[BLS_SECRET_KEY]               = "bls-sk-test";
+        bech32_hrp[BLS_PUBLIC_KEY]               = "bls-pk-test";
 
         convertSeed6(vFixedSeeds, pnSeed6_test, ARRAYLEN(pnSeed6_test));
 
@@ -573,7 +592,16 @@ public:
         */
         strSporkPubKey = "043969b1b0e6f327de37f297a015d37e2235eaaeeb3933deecd8162c075cee0207b13537618bde640879606001a8136091c62ec272dd0133424a178704e6e75bb7";
 
-        bech32_hrp = "bcrt";
+        //bech32_hrp = "bcrt";
+        // Sapling
+        bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ptestsapling";
+        bech32_hrp[SAPLING_FULL_VIEWING_KEY]     = "pviewtestsapling";
+        bech32_hrp[SAPLING_INCOMING_VIEWING_KEY] = "pivktestsapling";
+        bech32_hrp[SAPLING_EXTENDED_SPEND_KEY]   = "p-secret-spending-key-test";
+        bech32_hrp[SAPLING_EXTENDED_FVK]         = "pxviewtestsapling";
+
+        bech32_hrp[BLS_SECRET_KEY]               = "bls-sk-test";
+        bech32_hrp[BLS_PUBLIC_KEY]               = "bls-pk-test";
     }
     const Checkpoints::CCheckpointData& Checkpoints() const
     {
