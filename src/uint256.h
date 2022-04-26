@@ -300,6 +300,18 @@ public:
         return sizeof(pn);
     }
 
+    uint64_t GetUint64(int pos) const
+    {
+        const uint32_t* ptr = pn + pos * 8;
+        return ((uint64_t)ptr[0]) | \
+               ((uint64_t)ptr[1]) << 8 | \
+               ((uint64_t)ptr[2]) << 16 | \
+               ((uint64_t)ptr[3]) << 24 | \
+               ((uint64_t)ptr[4]) << 32 | \
+               ((uint64_t)ptr[5]) << 40 | \
+               ((uint64_t)ptr[6]) << 48 | \
+               ((uint64_t)ptr[7]) << 56;
+    }
     template <typename Stream>
     void Serialize(Stream& s, int nType, int nVersion) const
     {
