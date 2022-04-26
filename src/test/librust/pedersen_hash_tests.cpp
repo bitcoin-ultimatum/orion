@@ -3,7 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "test/test_pivx.h"
+#include "test/test_btcu.h"
 
 #include "arith_uint256.h"
 #include "uint256.h"
@@ -12,7 +12,7 @@
 #include <boost/test/unit_test.hpp>
 #include <librustzcash.h>
 
-BOOST_FIXTURE_TEST_SUITE(pedersen_hash_tests, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(pedersen_hash_tests, TestingSetup)
 
 BOOST_AUTO_TEST_CASE(pedersen_hash_testvectors)
 {

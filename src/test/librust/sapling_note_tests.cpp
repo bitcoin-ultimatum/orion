@@ -3,7 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "test/test_pivx.h"
+#include "test/test_btcu.h"
 
 #include "sapling/address.h"
 #include "sapling/note.h"
@@ -17,7 +17,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-BOOST_FIXTURE_TEST_SUITE(sapling_note_tests, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(sapling_note_tests, TestingSetup)
 
 // Test data from https://github.com/zcash-hackworks/zcash-test-vectors/blob/master/sapling_key_components.py
 BOOST_AUTO_TEST_CASE(testVectors) {

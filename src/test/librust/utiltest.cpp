@@ -8,6 +8,7 @@
 #include "key_io.h"
 #include "consensus/upgrades.h"
 #include "sapling/transaction_builder.h"
+#include "sapling/key_io_sapling.h"
 
 #include <array>
 
@@ -22,7 +23,7 @@ libzcash::SaplingExtendedSpendingKey GetTestMasterSaplingSpendingKey() {
 CKey CreateCkey(bool genNewKey) {
     CKey tsk;
     if (genNewKey) tsk.MakeNewKey(true);
-    else tsk = KeyIO::DecodeSecret(T_SECRET_REGTEST);
+    else tsk = DecodeSecret(T_SECRET_REGTEST);
     if (!tsk.IsValid()) throw std::runtime_error("CreateCkey:: Invalid priv key");
     return tsk;
 }
@@ -69,7 +70,7 @@ CWalletTx GetValidSaplingReceive(const Consensus::Params& consensusParams,
     }
 
     CTransaction tx = builder.Build().GetTxOrThrow();
-    CWalletTx wtx {pwalletIn, MakeTransactionRef(tx)};
+    CWalletTx wtx {pwalletIn, tx};
     return wtx;
 }
 

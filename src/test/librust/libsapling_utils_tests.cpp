@@ -3,13 +3,13 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "test/test_pivx.h"
+#include "test/test_btcu.h"
 
 #include "sapling/sapling_util.h"
 #include <boost/test/unit_test.hpp>
 
 
-BOOST_FIXTURE_TEST_SUITE(sapling_utils_tests, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(sapling_utils_tests, TestingSetup)
 
 BOOST_AUTO_TEST_CASE(saplingConvertBytesVectorToVector) {
     std::vector<unsigned char> bytes = {0x00, 0x01, 0x03, 0x12, 0xFF};
