@@ -455,6 +455,12 @@ extern uint256 g_hashChainstate;
 
 #define MN_ALIAS_NAME "MN"
 
+inline CBlockIndex* LookupBlockIndex(const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+{
+    AssertLockHeld(cs_main);
+    BlockMap::const_iterator it = mapBlockIndex.find(hash);
+    return it == mapBlockIndex.end() ? nullptr : it->second;
+}
 
 //Validator API
 boost::optional<std::pair<CTxIn, CKey>> GetGenesisVinKey();

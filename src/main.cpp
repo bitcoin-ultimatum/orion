@@ -1124,13 +1124,6 @@ CAmount GetMinRelayFee(unsigned int nBytes)
     return nMinFee;
 }
 
-CBlockIndex* LookupBlockIndex(const uint256& hash)
-{
-   AssertLockHeld(cs_main);
-   BlockMap::const_iterator it = mapBlockIndex.find(hash);
-   return it == mapBlockIndex.end() ? nullptr : it->second;
-}
-
 int GetSpendHeight(const CCoinsViewCache& inputs)
 {
    LOCK(cs_main);
