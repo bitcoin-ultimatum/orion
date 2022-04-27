@@ -241,6 +241,11 @@ PairResult CWallet::getNewAddress(CBTCUAddress& ret, const std::string addressLa
     return PairResult(true);
 }
 
+void CWallet::Flush(bool shutdown)
+{
+    database->Flush(shutdown);
+}
+
 class CAffectedKeysVisitor : public boost::static_visitor<void>
 {
 private:

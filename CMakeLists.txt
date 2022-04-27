@@ -2079,7 +2079,7 @@ if(ENABLE_TESTS)
             ./src/test/librust/sapling_wallet_tests.cpp
             #./src/test/librust/transaction_builder_tests.cpp
             #./src/test/librust/utiltest.cpp
-            #./src/test/librust/wallet_zkeys_tests.cpp
+            ./src/test/librust/wallet_zkeys_tests.cpp
             ./src/test/librust/zip32_tests.cpp
 
             ./src/test/librust/utiltest.cpp

@@ -583,6 +583,25 @@ void BerkeleyBatch::Flush()
     //env->dbenv->txn_checkpoint(nMinutes ? gArgs.GetArg("-dblogsize", 100) * 1024 : 0, nMinutes, 0);
 }
 
+void BerkeleyDatabase::Flush(bool shutdown)
+{
+    if (!IsDummy()) {
+        env->Flush(shutdown);
+        if (shutdown) {
+            LOCK(cs_db);
+            g_dbenvs.erase(env->Directory().string());
+            env = nullptr;
+        } else {
+            // TODO: To avoid g_dbenvs.erase erasing the environment prematurely after the
+            // first database shutdown when multiple databases are open in the same
+            // environment, should replace raw database `env` pointers with shared or weak
+            // pointers, or else separate the database and environment shutdowns so
+            // environments can be shut down after databases.
+            env->m_fileids.erase(strFile);
+        }
+    }
+}
+
 void BerkeleyDatabase::IncrementUpdateCounter()
 {
     ++nUpdateCounter;
@@ -605,6 +624,61 @@ void BerkeleyBatch::Close()
         --env->mapFileUseCount[strFile];
     }
     env->m_db_in_use.notify_all();
+}
+
+void BerkeleyEnvironment::Flush(bool fShutdown)
+{
+    int64_t nStart = GetTimeMillis();
+    // Flush log data to the actual data file on all files that are not in use
+    //LogPrint(BCLog::DB, "BerkeleyEnvironment::Flush : Flush(%s)%s\n", fShutdown ? "true" : "false", fDbEnvInit ? "" : " database not started");
+    if (!fDbEnvInit)
+        return;
+    {
+        LOCK(cs_db);
+        std::map<std::string, int>::iterator mi = mapFileUseCount.begin();
+        while (mi != mapFileUseCount.end()) {
+            std::string strFile = (*mi).first;
+            int nRefCount = (*mi).second;
+            //LogPrint(BCLog::DB, "BerkeleyEnvironment::Flush : Flushing %s (refcount = %d)...\n", strFile, nRefCount);
+            if (nRefCount == 0) {
+                // Move log data to the dat file
+                CloseDb(strFile);
+                //LogPrint(BCLog::DB, "BerkeleyEnvironment::Flush: %s checkpoint\n", strFile);
+                dbenv->txn_checkpoint(0, 0, 0);
+                //LogPrint(BCLog::DB, "BerkeleyEnvironment::Flush: %s detach\n", strFile);
+                if (!fMockDb)
+                    dbenv->lsn_reset(strFile.c_str(), 0);
+                //LogPrint(BCLog::DB, "BerkeleyEnvironment::Flush: %s closed\n", strFile);
+                mapFileUseCount.erase(mi++);
+            } else
+                mi++;
+        }
+        //LogPrint(BCLog::DB, "BerkeleyEnvironment::Flush : Flush(%s)%s took %15dms\n", fShutdown ? "true" : "false", fDbEnvInit ? "" : " database not started", GetTimeMillis() - nStart);
+        if (fShutdown) {
+            char** listp;
+            if (mapFileUseCount.empty()) {
+                dbenv->log_archive(&listp, DB_ARCH_REMOVE);
+                Close();
+                if (!fMockDb) {
+                    fs::remove_all(fs::path(strPath) / "database");
+                }
+            }
+        }
+    }
+}
+
+void BerkeleyEnvironment::CloseDb(const std::string& strFile)
+{
+    {
+        LOCK(cs_db);
+        if (mapDb[strFile] != NULL) {
+            // Close the database handle
+            Db* pdb = mapDb[strFile];
+            pdb->close(0);
+            delete pdb;
+            mapDb[strFile] = NULL;
+        }
+    }
 }
 
 void BerkeleyEnvironment::Close()
