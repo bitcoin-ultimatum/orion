@@ -291,6 +291,14 @@ extern UniValue getzbtcuseed(const UniValue& params, bool fHelp);
 extern UniValue generatemintlist(const UniValue& params, bool fHelp);
 extern UniValue searchdzbtcu(const UniValue& params, bool fHelp);
 extern UniValue dzbtcustate(const UniValue& params, bool fHelp);
+//salping
+extern UniValue getshieldbalance(const UniValue& params, bool fHelp);
+extern UniValue listreceivedbyshieldaddress(const UniValue& params, bool fHelp);
+extern UniValue importsaplingkey(const UniValue& params, bool fHelp);
+extern UniValue exportsaplingkey(const UniValue& params, bool fHelp);
+extern UniValue getnewshieldaddress(const UniValue& params, bool fHelp);
+extern UniValue shieldsendmany(const UniValue& params, bool fHelp);
+extern UniValue listshieldunspent(const UniValue& params, bool fHelp);
 
 extern UniValue getrawtransaction(const UniValue& params, bool fHelp); // in rpc/rawtransaction.cpp
 extern UniValue listunspent(const UniValue& params, bool fHelp);
