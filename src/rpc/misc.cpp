@@ -28,7 +28,7 @@
 #include <boost/assign/list_of.hpp>
 
 #include <univalue.h>
-#include "key_io.h"
+#include "sapling/key_io_sapling.h"
 
 extern std::vector<CSporkDef> sporkDefs;
 
@@ -412,6 +412,8 @@ UniValue spork(const UniValue& params, bool fHelp)
         HelpExampleCli("spork", "show") + HelpExampleRpc("spork", "show"));
 }
 
+typedef boost::variant<libzcash::InvalidEncoding, libzcash::SaplingPaymentAddress, CTxDestination, CBTCUAddress> PPaymentAddress;
+
 UniValue validateaddress(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -446,8 +448,17 @@ UniValue validateaddress(const UniValue& params, bool fHelp)
     LOCK(cs_main);
 #endif
 
-    CBTCUAddress address(params[0].get_str());
+    std::string strAddress = params[0].get_str();
+    CBTCUAddress address(strAddress);
     bool isValid = address.IsValid();
+
+    PPaymentAddress finalAddress;
+    if (!isValid) {
+        isValid = KeyIO::IsValidPaymentAddressString(strAddress);
+        if (isValid) finalAddress = KeyIO::DecodePaymentAddress(strAddress);
+    } else {
+        finalAddress = address;
+    }
 
     UniValue ret(UniValue::VOBJ);
     ret.push_back(Pair("isvalid", isValid));
