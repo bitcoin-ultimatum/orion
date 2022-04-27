@@ -329,6 +329,61 @@ DBErrors WalletBatch::ReorderTransactions(CWallet* pwallet)
 // CWalletDB
 //
 
+bool CWalletDB::ReadSaplingCommonOVK(uint256& ovkRet)
+{
+    return false; //m_batch.Read(std::string(DBKeys::SAP_COMMON_OVK), ovkRet);
+}
+
+bool CWalletDB::WriteSaplingPaymentAddress(const libzcash::SaplingPaymentAddress &addr,
+                                           const libzcash::SaplingIncomingViewingKey &ivk)
+{
+    return Write(std::make_pair(std::string(DBKeys::SAP_ADDR), addr), ivk, false);
+}
+
+bool CWalletDB::WriteSaplingZKey(const libzcash::SaplingIncomingViewingKey &ivk,
+                                 const libzcash::SaplingExtendedSpendingKey &key,
+                                 const CKeyMetadata &keyMeta)
+{
+    if (!Write(std::make_pair(std::string(DBKeys::SAP_KEYMETA), ivk), keyMeta)) {
+        return false;
+    }
+
+    return Write(std::make_pair(std::string(DBKeys::SAP_KEY), ivk), key, false);
+}
+
+bool CWalletDB::WriteHDChain(const CHDChain& chain)
+{
+    std::string key = chain.chainType == HDChain::ChainCounterType::Sapling ?
+                      DBKeys::SAP_HDCHAIN : DBKeys::HDCHAIN;
+    return Write(key, chain);
+}
+bool CWalletDB::WriteCryptedSaplingZKey(const libzcash::SaplingExtendedFullViewingKey &extfvk,
+                                          const std::vector<unsigned char>& vchCryptedSecret,
+                                          const CKeyMetadata &keyMeta)
+{
+    const bool fEraseUnencryptedKey = true;
+    auto ivk = extfvk.fvk.in_viewing_key();
+
+    if (!Write(std::make_pair(std::string(DBKeys::SAP_KEYMETA), ivk), keyMeta)) {
+        return false;
+    }
+
+    if (!Write(std::make_pair(std::string(DBKeys::SAP_KEY_CRIPTED), ivk),
+                 std::make_pair(extfvk, vchCryptedSecret), false)) {
+        return false;
+    }
+
+    if (fEraseUnencryptedKey) {
+        Erase(std::make_pair(std::string(DBKeys::SAP_KEY), ivk));
+    }
+    return true;
+}
+
+bool CWalletDB::WriteSaplingCommonOVK(const uint256& ovk)
+{
+    return Write(std::string(DBKeys::SAP_COMMON_OVK), ovk);
+}
+
 bool CWalletDB::WriteName(const std::string& strAddress, const std::string& strName)
 {
     nWalletDBUpdated++;

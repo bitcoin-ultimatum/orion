@@ -154,6 +154,12 @@ public:
     CAmount GetAccountCreditDebit(const std::string& strAccount);
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& acentries);
 
+    bool WriteHDChain(const CHDChain& chain);
+    bool WriteSaplingCommonOVK(const uint256& ovk);
+    bool WriteCryptedSaplingZKey(const libzcash::SaplingExtendedFullViewingKey &extfvk,
+                                            const std::vector<unsigned char>& vchCryptedSecret,
+                                            const CKeyMetadata &keyMeta);
+
     DBErrors ReorderTransactions(CWallet* pwallet);
     DBErrors LoadWallet(CWallet* pwallet);
     DBErrors FindWalletTx(CWallet* pwallet, std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx);
@@ -165,6 +171,12 @@ public:
     bool ReadDeterministicMint(const uint256& hashPubcoin, CDeterministicMint& dMint);
     bool EraseDeterministicMint(const uint256& hashPubcoin);
     bool WriteZerocoinMint(const CZerocoinMint& zerocoinMint);
+    bool WriteSaplingZKey(const libzcash::SaplingIncomingViewingKey &ivk,
+                                 const libzcash::SaplingExtendedSpendingKey &key,
+                                 const CKeyMetadata &keyMeta);
+    bool WriteSaplingPaymentAddress(const libzcash::SaplingPaymentAddress &addr,
+                                           const libzcash::SaplingIncomingViewingKey &ivk);
+    bool ReadSaplingCommonOVK(uint256& ovkRet);
 
     bool EraseZerocoinMint(const CZerocoinMint& zerocoinMint);
     bool ReadZerocoinMint(const CBigNum &bnPubcoinValue, CZerocoinMint& zerocoinMint);
@@ -200,6 +212,8 @@ private:
     void operator=(const CWalletDB&);
 
     bool WriteAccountingEntry(const uint64_t nAccEntryNum, const CAccountingEntry& acentry);
+
+    //BerkeleyBatch m_batch;
 };
 
 void NotifyBacked(const CWallet& wallet, bool fSuccess, std::string strMessage);
