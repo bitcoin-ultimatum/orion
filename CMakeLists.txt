@@ -1721,6 +1721,7 @@ set(UTIL_SOURCES
         ./src/utiltime.cpp
         ./src/support/cleanse.cpp
         ./src/util/string.cpp
+        ./src/arith_uint256.cpp
         )
 add_library(UTIL_A 
             ${BitcoinHeaders} 
@@ -2065,6 +2066,26 @@ if(ENABLE_TESTS)
             #./src/test/qtumtests/dgp_tests.cpp
             #./src/test/qtumtests/istanbulfork_tests.cpp
             #./src/test/qtumtests/qtumtxconverter_tests.cpp
+
+            #sapling tests
+            ./src/test/librust/noteencryption_tests.cpp
+            ./src/test/librust/libsapling_utils_tests.cpp #Works
+            ./src/test/librust/pedersen_hash_tests.cpp
+            ./src/test/librust/sapling_key_tests.cpp
+            ./src/test/librust/sapling_keystore_tests.cpp
+            ./src/test/librust/sapling_note_tests.cpp #Works
+            ./src/test/librust/sapling_rpc_wallet_tests.cpp
+            ./src/test/librust/sapling_test_fixture.cpp
+            ./src/test/librust/sapling_wallet_tests.cpp
+            #./src/test/librust/transaction_builder_tests.cpp
+            #./src/test/librust/utiltest.cpp
+            #./src/test/librust/wallet_zkeys_tests.cpp
+            ./src/test/librust/zip32_tests.cpp
+
+            ./src/test/librust/utiltest.cpp
+            ./src/wallet/test/wallet_test_fixture.cpp
+            ./src/wallet/walletutil.cpp
+            ./src/crypto/siphash.cpp
         )
 
     set(BTCU_JSON_TEST_FILES
