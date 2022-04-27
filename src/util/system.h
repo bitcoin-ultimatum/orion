@@ -53,7 +53,7 @@ bool SetupNetworking();
 template<typename... Args>
 bool error(const char* fmt, const Args&... args)
 {
-    LogPrintf("ERROR: %s\n", tfm::format(fmt, args...));
+    //ogPrintf("ERROR: %s\n", tfm::format(fmt, args...));
     return false;
 }
 
