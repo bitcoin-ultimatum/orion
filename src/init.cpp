@@ -86,6 +86,7 @@ int nWalletBackups = 10;
 #endif
 volatile bool fFeeEstimatesInitialized = false;
 volatile bool fRestartRequested = false; // true: restart false: shutdown
+//std::unique_ptr<CConnman> g_connman;
 
 #ifdef ENABLE_LEASING_MANAGER
 CLeasingManager* pleasingManagerMain = nullptr;
