@@ -682,7 +682,7 @@ void ScriptPubKeyMan::SetHDSeed(const CPubKey& seed, bool force, bool memOnly)
 void ScriptPubKeyMan::SetHDChain(CHDChain& chain, bool memonly)
 {
     LOCK(wallet->cs_wallet);
-    if (!memonly && !WalletBatch(wallet->GetDBHandle()).WriteHDChain(chain))
+    if (!memonly && !CWalletDB(wallet->strWalletFile).WriteHDChain(chain))
         throw std::runtime_error(std::string(__func__) + ": writing chain failed");
 
     hdChain = chain;
