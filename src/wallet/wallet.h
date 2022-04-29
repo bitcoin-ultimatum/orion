@@ -340,6 +340,8 @@ public:
     WalletDatabase* GetDBHandlePtr() const { return database.get(); }
     WalletDatabase& GetDBHandle() const { return *database; }
 
+    void Flush(bool shutdown);
+    
     /** Get last block processed height */
     int GetLastBlockHeight() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet)
     {
