@@ -54,6 +54,17 @@ public:
 
     //SERIALIZE_METHODS(SpendDescription, obj) { READWRITE(obj.cv, obj.anchor, obj.nullifier, obj.rk, obj.zkproof, obj.spendAuthSig); }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(cv);
+        READWRITE(nullifier);
+        READWRITE(rk);
+        READWRITE(zkproof);
+        READWRITE(spendAuthSig);
+    }
+
     friend bool operator==(const SpendDescription& a, const SpendDescription& b)
     {
         return (
@@ -89,6 +100,18 @@ public:
 
     //SERIALIZE_METHODS(OutputDescription, obj) { READWRITE(obj.cv, obj.cmu, obj.ephemeralKey, obj.encCiphertext, obj.outCiphertext, obj.zkproof); }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(cv);
+        READWRITE(cmu);
+        READWRITE(ephemeralKey);
+        READWRITE(encCiphertext);
+        READWRITE(outCiphertext);
+        READWRITE(zkproof);
+    }
+
     friend bool operator==(const OutputDescription& a, const OutputDescription& b)
     {
         return (
@@ -119,6 +142,15 @@ public:
 
     //SERIALIZE_METHODS(SaplingTxData, obj) { READWRITE(obj.valueBalance, obj.vShieldedSpend, obj.vShieldedOutput, obj.bindingSig); }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(valueBalance);
+        READWRITE(vShieldedSpend);
+        READWRITE(vShieldedOutput);
+        READWRITE(bindingSig);
+    }
     explicit SaplingTxData() : valueBalance(0), vShieldedSpend(), vShieldedOutput() { }
     explicit SaplingTxData(const SaplingTxData& from) : valueBalance(from.valueBalance), vShieldedSpend(from.vShieldedSpend), vShieldedOutput(from.vShieldedOutput), bindingSig(from.bindingSig) {}
 
