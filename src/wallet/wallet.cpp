@@ -5043,10 +5043,17 @@ CWalletTx::CWalletTx(const CWallet* pwalletIn, const CTransaction& txIn) : CMerk
     Init(pwalletIn);
 }
 
+CWalletTx::CWalletTx(const CWallet* pwalletIn, CTransactionRef arg)
+        : tx(std::move(arg))
+{
+    Init(pwalletIn);
+}
+
 void CWalletTx::Init(const CWallet* pwalletIn)
 {
     pwallet = pwalletIn;
     mapValue.clear();
+    mapSaplingNoteData.clear();
     vOrderForm.clear();
     fTimeReceivedIsTxTime = false;
     nTimeReceived = 0;

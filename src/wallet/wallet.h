@@ -1070,6 +1070,8 @@ public:
     CWalletTx(const CWallet* pwalletIn);
     CWalletTx(const CWallet* pwalletIn, const CMerkleTx& txIn);
     CWalletTx(const CWallet* pwalletIn, const CTransaction& txIn);
+    CWalletTx(const CWallet* pwalletIn, CTransactionRef arg);
+
     void Init(const CWallet* pwalletIn);
 
     CTransactionRef tx;
