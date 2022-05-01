@@ -27,6 +27,20 @@ bool IsValidDestinationString(const std::string& str);
 bool IsValidDestinationString(const std::string& str, const CChainParams& params);
 bool IsValidContractSenderAddressString(const std::string& str);
 
+namespace KeyIO {
+
+    CKey DecodeSecret(const std::string &str);
+
+    std::string EncodeSecret(const CKey &key);
+
+    CExtKey DecodeExtKey(const std::string &str);
+
+    std::string EncodeExtKey(const CExtKey &extkey);
+
+    CExtPubKey DecodeExtPubKey(const std::string& str);
+    std::string EncodeExtPubKey(const CExtPubKey& extpubkey);
+
+}
 #ifdef ENABLE_BITCORE_RPC
 bool DecodeIndexKey(const std::string& str, uint256& hashBytes, int& type);
 #endif
