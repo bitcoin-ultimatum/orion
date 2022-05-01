@@ -2077,7 +2077,7 @@ if(ENABLE_TESTS)
             ./src/test/librust/sapling_rpc_wallet_tests.cpp
             ./src/test/librust/sapling_test_fixture.cpp
             ./src/test/librust/sapling_wallet_tests.cpp
-            #./src/test/librust/transaction_builder_tests.cpp
+            ./src/test/librust/transaction_builder_tests.cpp
             #./src/test/librust/utiltest.cpp
             ./src/test/librust/wallet_zkeys_tests.cpp
             ./src/test/librust/zip32_tests.cpp
@@ -2086,6 +2086,7 @@ if(ENABLE_TESTS)
             ./src/wallet/test/wallet_test_fixture.cpp
             ./src/wallet/walletutil.cpp
             ./src/crypto/siphash.cpp
+            ./src/sapling/sapling_validation.cpp
         )
 
     set(BTCU_JSON_TEST_FILES
