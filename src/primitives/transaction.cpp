@@ -314,7 +314,33 @@ CAmount CTransaction::GetValueOut() const
 
         nValueOut += it->nValue;
     }
+    // Sapling
+    if (hasSaplingData() && sapData->valueBalance < 0) {
+        // NB: negative valueBalance "takes" money from the transparent value pool just as outputs do
+        nValueOut += -sapData->valueBalance;
+
+        // Verify Sapling version
+        if (!isSaplingVersion())
+            throw std::runtime_error("GetValueOut(): invalid tx version");
+    }
+
     return nValueOut;
+}
+
+CAmount CTransaction::GetShieldedValueIn() const
+{
+    CAmount nValue = 0;
+
+    if (hasSaplingData() && sapData->valueBalance > 0) {
+        // NB: positive valueBalance "gives" money to the transparent value pool just as inputs do
+        nValue += sapData->valueBalance;
+
+        // Verify Sapling
+        if (!isSaplingVersion())
+            throw std::runtime_error("GetValueOut(): invalid tx version");
+    }
+
+    return nValue;
 }
 
 CAmount CTransaction::GetZerocoinMinted() const
