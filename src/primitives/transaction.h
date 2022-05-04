@@ -300,6 +300,7 @@ struct CMutableTransaction
     std::vector<CTxOut> vout;
     uint32_t nLockTime;
     Optional<SaplingTxData> sapData{SaplingTxData()}; // Future: Don't initialize it by default
+    Optional<std::vector<uint8_t>> extraPayload{nullopt};
 
     std::vector<CValidatorRegister> validatorRegister;
     std::vector<CValidatorVote> validatorVote;
