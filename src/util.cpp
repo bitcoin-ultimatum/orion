@@ -85,7 +85,9 @@
 #include <openssl/conf.h>
 #include <openssl/crypto.h>
 #include <openssl/rand.h>
-
+#ifdef MAC_OSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 // BTCU only features
 // Masternode
