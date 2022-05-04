@@ -131,7 +131,7 @@ std::string CTxOut::ToString() const
 }
 
 CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nLockTime(0) {}
-CMutableTransaction::CMutableTransaction(const CTransaction& tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), validatorRegister(tx.validatorRegister), validatorVote(tx.validatorVote) {}
+CMutableTransaction::CMutableTransaction(const CTransaction& tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), sapData(tx.sapData), validatorRegister(tx.validatorRegister), validatorVote(tx.validatorVote) {}
 
 uint256 CMutableTransaction::GetHash() const
 {
@@ -159,7 +159,7 @@ void CTransaction::UpdateHash() const
 }
 
 CTransaction::CTransaction() : hash(), nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0), sapData(), validatorRegister(), validatorVote() { }
-CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), sapData(tx.sapData), validatorRegister(tx.validatorRegister), validatorVote(tx.validatorVote) {
+CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), sapData(tx.sapData), extraPayload(tx.extraPayload), validatorRegister(tx.validatorRegister), validatorVote(tx.validatorVote) {
     UpdateHash();
 }
 
