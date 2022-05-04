@@ -21,7 +21,7 @@ bool CCoinsViewDB::GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree
 
     return read;
 }
-
+/*
 bool CCoinsViewDB::GetNullifier(const uint256 &nf) const {
     bool spent = false;
     return db.Read(std::make_pair(DB_SAPLING_NULLIFIER, nf), spent);
@@ -87,3 +87,4 @@ bool CCoinsViewDB::BatchWriteSapling(const uint256& hashSaplingAnchor,
         batch.Write(DB_BEST_SAPLING_ANCHOR, hashSaplingAnchor);
     return true;
 }
+*/

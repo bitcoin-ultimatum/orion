@@ -1780,6 +1780,7 @@ set(SAPLING_SOURCES
         ./src/sapling/transaction_builder.cpp
         ./src/sapling/saplingscriptpubkeyman.cpp
         ./src/sapling/sapling_operation.cpp
+        ./src/sapling/sapling_txdb.cpp
         ./src/qtum/fs.cpp
         ./src/policy/fees.cpp
         ./src/policy/policy.cpp
