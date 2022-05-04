@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(FindMySaplingNotes)
     auto tx = builder.Build().GetTxOrThrow();
 
     // No Sapling notes can be found in tx which does not belong to the wallet
-    CWalletTx wtx {&wallet, tx};
+    CWalletTx wtx {&wallet, MakeTransactionRef(tx)};
     BOOST_CHECK(!wallet.HaveSaplingSpendingKey(extfvk));
     auto noteMap = wallet.GetSaplingScriptPubKeyMan()->FindMySaplingNotes(*wtx.tx).first;
     BOOST_CHECK_EQUAL(0, noteMap.size());
@@ -208,7 +208,8 @@ BOOST_AUTO_TEST_CASE(GetConflictedSaplingNotes)
     builder.AddSaplingOutput(extfvk.fvk.ovk, pk, 35000000, {});
     builder.SetFee(10000000);
     auto tx = builder.Build().GetTxOrThrow();
-    CWalletTx wtx {&wallet, tx};
+
+    CWalletTx wtx {&wallet, MakeTransactionRef(tx)};
 
     // Fake-mine the transaction
     BOOST_CHECK_EQUAL(0, chainActive.Height());
@@ -250,7 +251,8 @@ BOOST_AUTO_TEST_CASE(GetConflictedSaplingNotes)
     BOOST_CHECK(static_cast<bool>(maybe_note) == true);
     auto note2 = maybe_note.get();
 
-    SaplingOutPoint sop0(wtx.GetHash(), 0);
+    auto h = wtx.GetHash();
+    SaplingOutPoint sop0(h, 0);
     auto spend_note_witness =  wtx.mapSaplingNoteData[sop0].witnesses.front();
     auto maybe_nf = note2.nullifier(extfvk.fvk, spend_note_witness.position());
     BOOST_CHECK(static_cast<bool>(maybe_nf) == true);
@@ -271,8 +273,8 @@ BOOST_AUTO_TEST_CASE(GetConflictedSaplingNotes)
     builder3.AddSaplingOutput(extfvk.fvk.ovk, pk, 19999000, {});
     auto tx3 = builder3.Build().GetTxOrThrow();
 
-    CWalletTx wtx2 {&wallet, tx2};
-    CWalletTx wtx3 {&wallet, tx3};
+    CWalletTx wtx2 {&wallet, MakeTransactionRef(tx2)};
+    CWalletTx wtx3 {&wallet, MakeTransactionRef(tx3)};
 
     const auto& hash2 = wtx2.GetHash();
     const auto& hash3 = wtx3.GetHash();
@@ -319,7 +321,7 @@ BOOST_AUTO_TEST_CASE(SaplingNullifierIsSpent)
     builder.SetFee(10000000);
     auto tx = builder.Build().GetTxOrThrow();
 
-    CWalletTx wtx {&wallet, tx};
+    CWalletTx wtx {&wallet, MakeTransactionRef(tx)};
     BOOST_CHECK(wallet.AddSaplingZKey(sk));
     BOOST_CHECK(wallet.HaveSaplingSpendingKey(extfvk));
 
