@@ -116,8 +116,7 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(ivk);
         READWRITE(nullifier);
-        //TO_FIX
-        //READWRITE(witnesses);
+        READWRITE(witnesses);
         READWRITE(witnessHeight);
         READWRITE(amount);
         READWRITE(address);
@@ -437,4 +436,4 @@ private:
     TxNullifiers mapTxSaplingNullifiers;
 };
 
-#endif //PIVX_SAPLINGSCRIPTPUBKEYMAN_H
+#endif
