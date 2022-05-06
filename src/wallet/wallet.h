@@ -1232,6 +1232,7 @@ public:
     mutable CachableAmount m_amounts[AMOUNTTYPE_ENUM_ELEMENTS];
     bool IsAmountCached(AmountType type, const isminefilter& filter) const; // Only used in unit tests
 
+    const uint256& GetHash() const { return tx->GetHash(); }
     int64_t GetTxTime() const;
     int64_t GetComputedTxTime() const;
     int GetRequestCount() const;
