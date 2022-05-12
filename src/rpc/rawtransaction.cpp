@@ -803,15 +803,13 @@ UniValue signrawtransaction(const UniValue& params, bool fHelp)
 
         const CAmount& amount = coins->vout[txin.prevout.n].nValue;
         SignatureData sigdata;
-        SigningProvider provider;
-        ///TODO: copy/move from &keystore
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mergedTx.vout.size()))
-           ProduceSignature(provider, MutableTransactionSignatureCreator(&mergedTx, i, amount, nHashType), prevPubKey, sigdata, fColdStake, fLeasing, fForceLeaserSign);
+           ProduceSignature(keystore, MutableTransactionSignatureCreator(&mergedTx, i, amount, nHashType), prevPubKey, sigdata, fColdStake, fLeasing, fForceLeaserSign);
 
         // ... and merge in other signatures:
         for (const CMutableTransaction& txv : txVariants) {
-           sigdata = CombineSignatures(txv.vout[0], mergedTx, sigdata, DataFromTransaction(mergedTx, i, coins->vout[txin.prevout.n]));
+           sigdata = CombineSignatures(keystore, txv.vout[0], mergedTx, sigdata, DataFromTransaction(mergedTx, i, coins->vout[txin.prevout.n]));
            UpdateInput(txin, sigdata);
         }
 

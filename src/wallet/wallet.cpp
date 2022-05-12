@@ -2830,9 +2830,8 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                         const CScript& scriptPubKey = GetScriptForDestination(signSenderAddress);
                         SignatureData sigdata;
                         const CAmount& amount = output.nValue;
-                        ///TODO:initialize provider with keystore(CKeyStore)
-                        SigningProvider provider = DUMMY_SIGNING_PROVIDER;
-                        if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&txNew, nOut, amount, SIGHASH_ALL), scriptPubKey,sigdata))
+
+                        if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nOut, amount, SIGHASH_ALL), scriptPubKey,sigdata))
                         {
                            strFailReason = _("Signing transaction failed");
                            return false;
@@ -2856,8 +2855,7 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                   const CTxOut& txout = coin.first->vout[txin.prevout.n];
 
                   ///TODO:initialize provider with keystore(CKeyStore)
-                  SigningProvider provider = DUMMY_SIGNING_PROVIDER;
-                  if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+                  if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
                   {
                      strFailReason = _("Signing transaction failed");
                      return false;
@@ -3054,9 +3052,7 @@ bool CWallet::CreateCoinStake(
             assert(txin.prevout.n < wtx->vout.size());
             const CTxOut& txout = wtx->vout[txin.prevout.n];
 
-            ///TODO:initialize provider with keystore(CKeyStore)
-            SigningProvider provider = DUMMY_SIGNING_PROVIDER;
-            if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+            if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
             {
                return error("CreateCoinStake : failed to sign coinstake");
             } else {
@@ -3138,9 +3134,7 @@ bool CWallet::CreateLeasingRewards(
    const CScript& scriptPubKey = GetScriptForDestination(PKHash(pubKeySelf.GetID()));
    SignatureData sigdata;
 
-   ///TODO:initialize provider with keystore(CKeyStore)
-   SigningProvider provider = DUMMY_SIGNING_PROVIDER;
-   if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata, false, true))
+   if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata, false, true))
    {
       return false;
    } else {
@@ -4477,9 +4471,7 @@ void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
       CTxDestination witdest = WitnessV0KeyHash(key.GetID());
       CScript witprog = GetScriptForDestination(witdest);
       // Make sure the resulting program is solvable.
-      ///TODO:initialize provider with keystore(CKeyStore)
-      SigningProvider provider = DUMMY_SIGNING_PROVIDER;
-      assert(IsSolvable(provider, witprog));
+      assert(IsSolvable(*this, witprog));
       AddCScript(witprog);
    }
 }

@@ -210,8 +210,7 @@ bool CWallet::CreateZerocoinMintTransaction(const CAmount nValue,
        const CTxOut& txout = coin.first->vout[txin.prevout.n];
 
        ///TODO:initialize provider with keystore(CKeyStore)
-       SigningProvider provider = DUMMY_SIGNING_PROVIDER;
-       if (!ProduceSignature(provider, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+       if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
        {
           strFailReason = _("Signing transaction failed");
           return false;

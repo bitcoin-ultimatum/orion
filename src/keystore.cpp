@@ -159,6 +159,19 @@ bool CBasicKeyStore::GetKey(const CKeyID& address, CKey& keyOut) const
     return false;
 }
 
+bool CBasicKeyStore::GetKeyOrigin(const CKeyID& keyid, KeyOriginInfo& info) const
+{
+   std::pair<CPubKey, KeyOriginInfo> out;
+   //bool ret = LookupHelper(origins, keyid, out);
+   //if (ret) info = std::move(out.second);
+   return false;//ret;
+}
+
+bool CBasicKeyStore::GetTaprootSpendData(const XOnlyPubKey& output_key, TaprootSpendData& spenddata) const
+{
+   return false;//LookupHelper(tr_spenddata, output_key, spenddata);
+}
+
 CKeyID GetKeyForDestination(const CKeyStore& store, const CTxDestination& dest)
 {
    // Only supports destinations which map to single public keys, i.e. P2PKH,
