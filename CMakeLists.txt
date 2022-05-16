@@ -1471,6 +1471,7 @@ set(WALLET_SOURCES
         ./src/zbtcu/deterministicmint.cpp
         ./src/zbtcu/zerocoin.cpp
         ./src/wallet/rpcwallet.cpp
+        ./src/util/strencodings.cpp
         ./src/kernel.cpp
         ./src/key_io.cpp
         ./src/wallet/wallet.cpp

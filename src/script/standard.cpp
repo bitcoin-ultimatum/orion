@@ -820,7 +820,7 @@ bool ExtractSenderData(const CScript &outputPubKey, CScript *senderPubKey, CScri
 }
 
 bool IsValidDestination(const CTxDestination& dest) {
-   dest.index() != 0;
+   return dest.index() != 0;
 }
 
 bool IsValidContractSenderAddress(const CTxDestination &dest)
