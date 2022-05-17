@@ -890,15 +890,16 @@ UniValue callcontract(const UniValue& params, bool fHelp)
 
 UniValue getnewaddress(const UniValue& params, bool fHelp)
 {
-    if (fHelp || params.size() > 1)
+    if (fHelp || params.size() > 3)
         throw std::runtime_error(
-            "getnewaddress ( \"account\" )\n"
+            "getnewaddress ( \"label\" \"address_type\" )\n"
             "\nReturns a new BTCU address for receiving payments.\n"
-            "If 'account' is specified (DEPRECATED), it is added to the address book \n"
-            "so payments received with the address will be credited to 'account'.\n"
+            "If 'label' is specified, it is added to the address book \n"
+            "so payments received with the address will be associated with 'label'.\n"
 
             "\nArguments:\n"
-            "1. \"account\"        (string, optional) DEPRECATED. The account name for the address to be linked to. if not provided, the default account \"\" is used. It can also be set to the empty string \"\" to represent the default account. The account does not need to exist, it will be created if there is no account by the given name.\n"
+            "1. \"label\"        (string, optional) The label name for the address to be linked to. It can also be set to the empty string \"\" to represent the default label. The label does not need to exist, it will be created if there is no label by the given name. \n"
+            "2. \"address_type\" (string, optional) The address type to use. By default used legacy type. Options are \"legacy\", \"p2sh-segwit\", \"bech32\", and \"bech32m\". \n"
 
             "\nResult:\n"
             "\"btcuaddress\"    (string) The new btcu address\n"
@@ -906,7 +907,29 @@ UniValue getnewaddress(const UniValue& params, bool fHelp)
             "\nExamples:\n" +
             HelpExampleCli("getnewaddress", "") + HelpExampleRpc("getnewaddress", ""));
 
-    return GetNewAddressFromAccount(AddressBook::AddressBookPurpose::RECEIVE, params).ToString();
+   // Parse the label first so we don't generate a key if there's an error
+   std::string label;
+   if (!params[0].isNull())
+      label = LabelFromValue(params[0]);
+
+   OutputType output_type = pwalletMain->m_default_address_type;
+   if (!params[1].isNull()) {
+      std::optional<OutputType> parsed = ParseOutputType(params[1].get_str());
+      if (!parsed) {
+         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown address type '%s'", params[1].get_str()));
+      } else if (parsed.value() == OutputType::BECH32M /*&& pwalletMain->GetLegacyScriptPubKeyMan()*/) {
+         throw JSONRPCError(RPC_INVALID_PARAMETER, "Legacy wallets cannot provide bech32m addresses");
+      }
+      output_type = parsed.value();
+   }
+
+   CTxDestination dest;
+   bilingual_str error;
+   if (!pwalletMain->GetNewDestination(output_type, dest, error)) {
+      throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, error.original);
+   }
+   pwalletMain->SetAddressBook(dest, label, "receive");
+   return EncodeDestination(dest);
 }
 
 UniValue getnewstakingaddress(const UniValue& params, bool fHelp)

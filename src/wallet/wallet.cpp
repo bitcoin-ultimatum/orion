@@ -34,6 +34,7 @@
 /**
  * Settings
  */
+const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 CFeeRate payTxFee(DEFAULT_TRANSACTION_FEE);
 CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
 unsigned int nTxConfirmTarget = 1;
@@ -41,6 +42,11 @@ bool bSpendZeroConfChange = true;
 bool bdisableSystemnotifications = false; // Those bubbles can be annoying and slow down the UI when you get lots of trx
 bool fSendFreeTransactions = false;
 bool fPayAtLeastCustomFee = true;
+
+static const std::string OUTPUT_TYPE_STRING_LEGACY = "legacy";
+static const std::string OUTPUT_TYPE_STRING_P2SH_SEGWIT = "p2sh-segwit";
+static const std::string OUTPUT_TYPE_STRING_BECH32 = "bech32";
+static const std::string OUTPUT_TYPE_STRING_BECH32M = "bech32m";
 
 /**
  * Fees smaller than this (in ubtcu) are considered zero fee (for transaction creation)
@@ -4467,7 +4473,7 @@ int CWallet::GetVersion()
 
 void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
 {
-   if (key.IsCompressed() && (type == OUTPUT_TYPE_P2SH_SEGWIT || type == OUTPUT_TYPE_BECH32)) {
+   if (key.IsCompressed() && (type == OutputType::P2SH_SEGWIT || type == OutputType::BECH32)) {
       CTxDestination witdest = WitnessV0KeyHash(key.GetID());
       CScript witprog = GetScriptForDestination(witdest);
       // Make sure the resulting program is solvable.
@@ -4479,7 +4485,29 @@ void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
 void CWallet::LearnAllRelatedScripts(const CPubKey& key)
 {
    // OUTPUT_TYPE_P2SH_SEGWIT always adds all necessary scripts for all types.
-   LearnRelatedScripts(key, OUTPUT_TYPE_P2SH_SEGWIT);
+   LearnRelatedScripts(key, OutputType::P2SH_SEGWIT);
+}
+
+bool CWallet::GetNewDestination(const OutputType type, CTxDestination& dest, bilingual_str& error)
+{
+   if (LEGACY_OUTPUT_TYPES.count(type) == 0) {
+      error = __("Error: Legacy wallets only support the \"legacy\", \"p2sh-segwit\", and \"bech32\" address types");
+      return false;
+   }
+   assert(type != OutputType::BECH32M);
+
+   LOCK(cs_KeyStore);
+   error.clear();
+
+   // Generate a new key that is added to wallet
+   CPubKey new_key;
+   if (!GetKeyFromPool(new_key)) {
+      error = __("Error: Keypool ran out, please call keypoolrefill first");
+      return false;
+   }
+   LearnRelatedScripts(new_key, type);
+   dest = GetDestinationForKey(new_key, type);
+   return true;
 }
 
 
@@ -4687,6 +4715,40 @@ CAmount CWalletTx::GetChange() const
 bool CWalletTx::IsFromMe(const isminefilter& filter) const
 {
     return (GetDebit(filter) > 0);
+}
+
+std::optional<OutputType> ParseOutputType(const std::string& type)
+{
+   if (type == OUTPUT_TYPE_STRING_LEGACY) {
+      return OutputType::LEGACY;
+   } else if (type == OUTPUT_TYPE_STRING_P2SH_SEGWIT) {
+      return OutputType::P2SH_SEGWIT;
+   } else if (type == OUTPUT_TYPE_STRING_BECH32) {
+      return OutputType::BECH32;
+   } else if (type == OUTPUT_TYPE_STRING_BECH32M) {
+      return OutputType::BECH32M;
+   }
+   return std::nullopt;
+}
+
+CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
+{
+   switch (type) {
+      case OutputType::LEGACY: return PKHash(key);
+      case OutputType::P2SH_SEGWIT:
+      case OutputType::BECH32: {
+         if (!key.IsCompressed()) return PKHash(key);
+         CTxDestination witdest = WitnessV0KeyHash(key);
+         CScript witprog = GetScriptForDestination(witdest);
+         if (type == OutputType::P2SH_SEGWIT) {
+            return ScriptHash(witprog);
+         } else {
+            return witdest;
+         }
+      }
+      case OutputType::BECH32M: {} // This function should never be used with BECH32M, so let it assert
+   } // no default case, so the compiler can warn about missing cases
+   assert(false);
 }
 
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)

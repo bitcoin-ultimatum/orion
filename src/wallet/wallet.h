@@ -30,6 +30,7 @@
 #include "zbtcu/zbtcumodule.h"
 #include "zbtcu/zbtcuwallet.h"
 #include "zbtcu/zbtcutracker.h"
+#include "util/translation.h"
 
 #include <algorithm>
 #include <map>
@@ -39,6 +40,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 #include <interfaces/chain.h>
 #include <interfaces/node.h>
 /**
@@ -113,15 +115,21 @@ enum ZerocoinSpendStatus {
     ZBTCU_SPEND_V1_SEC_LEVEL                         // Spend is V1 and security level is not set to 100
 };
 
-enum OutputType : int
-{
-   OUTPUT_TYPE_NONE,
-   OUTPUT_TYPE_LEGACY,
-   OUTPUT_TYPE_P2SH_SEGWIT,
-   OUTPUT_TYPE_BECH32,
-
-   OUTPUT_TYPE_DEFAULT = OUTPUT_TYPE_P2SH_SEGWIT
+enum class OutputType {
+   LEGACY,
+   P2SH_SEGWIT,
+   BECH32,
+   BECH32M,
 };
+
+/** OutputTypes supported by the LegacyScriptPubKeyMan */
+static const std::unordered_set<OutputType> LEGACY_OUTPUT_TYPES {
+OutputType::LEGACY,
+OutputType::P2SH_SEGWIT,
+OutputType::BECH32,
+};
+
+constexpr OutputType DEFAULT_ADDRESS_TYPE{OutputType::LEGACY};
 
 struct CompactTallyItem {
     CBTCUAddress address;
@@ -286,6 +294,8 @@ public:
     std::set<COutPoint> setLockedCoins;
 
     int64_t nTimeFirstKey;
+
+    OutputType m_default_address_type{DEFAULT_ADDRESS_TYPE};
 
     const CWalletTx* GetWalletTx(const uint256& hash) const;
 
@@ -610,6 +620,8 @@ public:
     * be anything).
     */
    void LearnAllRelatedScripts(const CPubKey& key);
+
+   bool GetNewDestination(const OutputType type, CTxDestination& dest, bilingual_str& error);
 };
 
 struct CRecipient
@@ -1096,6 +1108,8 @@ private:
     std::vector<char> _ssExtra;
 };
 
+std::optional<OutputType> ParseOutputType(const std::string& str);
+CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type);
 /** Get all destinations (potentially) supported by the wallet for the given key. */
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key);
 
