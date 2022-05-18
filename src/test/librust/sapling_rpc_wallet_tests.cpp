@@ -444,7 +444,7 @@ BOOST_AUTO_TEST_CASE(rpc_shieldsendmany_taddr_to_sapling)
     BOOST_CHECK_EQUAL(0, chainActive.Height());
     CBlock block;
     block.hashPrevBlock = chainActive.Tip()->GetBlockHash();
-    block.vtx.emplace_back(*wtx.tx.get());
+    block.vtx.emplace_back(wtx);
     block.hashMerkleRoot = BlockMerkleRoot(block);
     auto blockHash = block.GetHash();
     CBlockIndex fakeIndex {block};

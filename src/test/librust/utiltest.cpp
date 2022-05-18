@@ -70,7 +70,7 @@ CWalletTx GetValidSaplingReceive(const Consensus::Params& consensusParams,
     }
 
     CTransaction tx = builder.Build().GetTxOrThrow();
-    CWalletTx wtx {pwalletIn, tx};
+    CWalletTx wtx {pwalletIn, MakeTransactionRef(tx)};
     return wtx;
 }
 

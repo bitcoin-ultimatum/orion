@@ -1074,8 +1074,6 @@ public:
 
     void Init(const CWallet* pwalletIn);
 
-    CTransactionRef tx;
-
     /* New transactions start as UNCONFIRMED. At BlockConnected,
 * they will transition to CONFIRMED. In case of reorg, at BlockDisconnected,
 * they roll back to UNCONFIRMED. If we detect a conflicting transaction at
@@ -1232,7 +1230,6 @@ public:
     mutable CachableAmount m_amounts[AMOUNTTYPE_ENUM_ELEMENTS];
     bool IsAmountCached(AmountType type, const isminefilter& filter) const; // Only used in unit tests
 
-    const uint256& GetHash() const { return tx->GetHash(); }
     int64_t GetTxTime() const;
     int64_t GetComputedTxTime() const;
     int GetRequestCount() const;

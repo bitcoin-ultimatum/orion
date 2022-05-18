@@ -82,7 +82,7 @@ void EnsureWalletIsUnlocked(bool fAllowAnonOnly)
 
 void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
 {
-    int confirms = wtx.GetDepthInMainChain(false);
+    int confirms = wtx.CMerkleTx::GetDepthInMainChain(false);
     int confirmsTotal = GetIXConfirmations(wtx.GetHash()) + confirms;
     entry.push_back(Pair("confirmations", confirmsTotal));
     entry.push_back(Pair("bcconfirmations", confirms));
@@ -207,7 +207,7 @@ bool GetSenderDest(CWallet * const pwallet, const CTransaction& tx, CTxDestinati
     else
     {
         // Get destination from the inputs
-        senderPubKey = pwallet->mapWallet.at(tx.vin[0].prevout.hash).tx->vout[tx.vin[0].prevout.n].scriptPubKey;
+        senderPubKey = pwallet->mapWallet.at(tx.vin[0].prevout.hash).vout[tx.vin[0].prevout.n].scriptPubKey;
     }
 
     // Extract destination from script
@@ -2630,7 +2630,7 @@ UniValue ListReceived(const UniValue& params, bool fByAccounts)
             continue;
 
         int nDepth = wtx.GetDepthInMainChain();
-        int nBCDepth = wtx.GetDepthInMainChain(false);
+        int nBCDepth = wtx.CMerkleTx::GetDepthInMainChain(false);
         if (nDepth < nMinDepth)
             continue;
 
@@ -2847,7 +2847,7 @@ UniValue listcoldutxos(const UniValue& params, bool fHelp)
             entry.push_back(Pair("txid", wtxid.GetHex()));
             entry.push_back(Pair("txidn", (int)i));
             entry.push_back(Pair("amount", ValueFromAmount(out.nValue)));
-            entry.push_back(Pair("confirmations", pcoin->GetDepthInMainChain(false)));
+            entry.push_back(Pair("confirmations", pcoin->CMerkleTx::GetDepthInMainChain(false)));
             entry.push_back(Pair("cold-staker", CBTCUAddress(addresses[0], CChainParams::STAKING_ADDRESS).ToString()));
             entry.push_back(Pair("coin-owner", CBTCUAddress(addresses[1]).ToString()));
             entry.push_back(Pair("whitelisted", fWhitelisted ? "true" : "false"));
@@ -2920,7 +2920,7 @@ UniValue listleasingutxos(const UniValue& params, bool fHelp)
             entry.push_back(Pair("txid", wtxid.GetHex()));
             entry.push_back(Pair("txidn", (int)i));
             entry.push_back(Pair("amount", ValueFromAmount(out.nValue)));
-            entry.push_back(Pair("confirmations", pcoin->GetDepthInMainChain(false)));
+            entry.push_back(Pair("confirmations", pcoin->CMerkleTx::GetDepthInMainChain(false)));
             entry.push_back(Pair("coin-leaser", CBTCUAddress(addresses[0], CChainParams::PUBKEY_ADDRESS).ToString()));
             entry.push_back(Pair("coin-owner", CBTCUAddress(addresses[1]).ToString()));
             entry.push_back(Pair("whitelisted", fWhitelisted ? "true" : "false"));
@@ -3296,7 +3296,7 @@ UniValue listsinceblock(const UniValue& params, bool fHelp)
     for (std::map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); it++) {
         CWalletTx tx = (*it).second;
 
-        if (depth == -1 || tx.GetDepthInMainChain(false) < depth)
+        if (depth == -1 || tx.CMerkleTx::GetDepthInMainChain(false) < depth)
             ListTransactions(tx, "*", 0, true, transactions, filter);
     }
 
@@ -6001,7 +6001,7 @@ UniValue viewshieldtransaction(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid or non-wallet transaction id");
     const CWalletTx& wtx = it->second;
 
-    if (!wtx.tx->IsShieldedTx()) {
+    if (!wtx.IsShieldedTx()) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid transaction, no shield data available");
     }
 
@@ -6040,8 +6040,8 @@ UniValue viewshieldtransaction(const UniValue& params, bool fHelp)
     ovks.insert(sspkm->getCommonOVK());
 
     // Sapling spends
-    for (size_t i = 0; i < wtx.tx->sapData->vShieldedSpend.size(); ++i) {
-        const auto& spend = wtx.tx->sapData->vShieldedSpend[i];
+    for (size_t i = 0; i < wtx.sapData->vShieldedSpend.size(); ++i) {
+        const auto& spend = wtx.sapData->vShieldedSpend[i];
 
         // Fetch the note that is being spent
         auto res = sspkm->mapSaplingNullifiersToNotes.find(spend.nullifier);
@@ -6078,7 +6078,7 @@ UniValue viewshieldtransaction(const UniValue& params, bool fHelp)
     }
 
     // Sapling outputs
-    for (uint32_t i = 0; i < wtx.tx->sapData->vShieldedOutput.size(); ++i) {
+    for (uint32_t i = 0; i < wtx.sapData->vShieldedOutput.size(); ++i) {
         auto op = SaplingOutPoint(hash, i);
         auto it = wtx.mapSaplingNoteData.find(op);
         if (it == wtx.mapSaplingNoteData.end()) continue;
@@ -6107,7 +6107,7 @@ UniValue viewshieldtransaction(const UniValue& params, bool fHelp)
         outputs.push_back(entry_);
     }
 
-    entry.pushKV("fee", FormatMoney(pcoinsTip->GetValueIn(*wtx.tx) - wtx.tx->GetValueOut()));
+    entry.pushKV("fee", FormatMoney(pcoinsTip->GetValueIn(wtx) - wtx.GetValueOut()));
     entry.pushKV("spends", spends);
     entry.pushKV("outputs", outputs);
 

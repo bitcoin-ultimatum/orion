@@ -204,7 +204,7 @@ bool CWallet::LoadToWallet(CWalletTx& wtxIn)
 
     //wtxOrdered.emplace(wtx.nOrderPos, &wtx);
     AddToSpends(hash);
-    for (const CTxIn& txin : wtx.tx->vin) {
+    for (const CTxIn& txin : wtx.vin) {
         auto it = mapWallet.find(txin.prevout.hash);
         if (it != mapWallet.end()) {
             CWalletTx& prevtx = it->second;
@@ -1121,11 +1121,11 @@ bool CWallet::FindNotesDataAndAddMissingIVKToKeystore(const CTransaction& tx, Op
 
 void CWallet::AddExternalNotesDataToTx(CWalletTx& wtx) const
 {
-    if (HasSaplingSPKM() && wtx.tx->IsShieldedTx()) {
+    if (HasSaplingSPKM() && wtx.IsShieldedTx()) {
         const uint256& txId = wtx.GetHash();
         // Add the external outputs.
         SaplingOutPoint op {txId, 0};
-        for (unsigned int i = 0; i < wtx.tx->sapData->vShieldedOutput.size(); i++) {
+        for (unsigned int i = 0; i < wtx.sapData->vShieldedOutput.size(); i++) {
             op.n = i;
             if (wtx.mapSaplingNoteData.count(op)) continue;     // internal output
             auto recovered = GetSaplingScriptPubKeyMan()->TryToRecoverNote(wtx, op);
@@ -1308,6 +1308,7 @@ void CWallet::SyncTransaction(const CTransaction& tx, const CBlock* pblock)
         if (!txin.IsZerocoinSpend() && mapWallet.count(txin.prevout.hash))
             mapWallet[txin.prevout.hash].MarkDirty();
     }
+    MarkAffectedTransactionsDirty(tx);
 }
 
 void CWallet::EraseFromWallet(const uint256& hash)
@@ -2649,7 +2650,7 @@ static bool CheckTXAvailabilityInternal(const CWalletTx* pcoin, bool fOnlySafe, 
 static bool CheckTXAvailability(const CWalletTx* pcoin, bool fOnlySafe, int& nDepth, bool& safeTx)
 {
     AssertLockHeld(cs_main);
-    if (!CheckFinalTx((*pcoin->tx.get()))) return false;
+    if (!CheckFinalTx((*pcoin))) return false;
     return CheckTXAvailabilityInternal(pcoin, fOnlySafe, nDepth, safeTx);
 }
 
@@ -2679,8 +2680,8 @@ bool CWallet::AvailableCoins(std::vector<COutput>* pCoins,      // --> populates
             // Check min depth filtering requirements
             if (nDepth < coinsFilter.minDepth) continue;
 
-            for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++) {
-                const auto& output = pcoin->tx->vout[i];
+            for (unsigned int i = 0; i < pcoin->vout.size(); i++) {
+                const auto& output = pcoin->vout[i];
 
                 // Filter by value if needed
                 if (coinsFilter.nMaxOutValue > 0 && output.nValue > coinsFilter.nMaxOutValue) {
@@ -5043,8 +5044,8 @@ CWalletTx::CWalletTx(const CWallet* pwalletIn, const CTransaction& txIn) : CMerk
     Init(pwalletIn);
 }
 
-CWalletTx::CWalletTx(const CWallet* pwalletIn, CTransactionRef arg)
-        : tx(std::move(arg))
+CWalletTx::CWalletTx(const CWallet* pwalletIn, CTransactionRef txIn): CMerkleTx(*txIn.get())
+        //: tx(std::move(arg))
 {
     Init(pwalletIn);
 }
@@ -5201,7 +5202,7 @@ void CWalletTx::SetSaplingNoteData(mapSaplingNoteData_t &noteData)
 {
     mapSaplingNoteData.clear();
     for (const std::pair<SaplingOutPoint, SaplingNoteData> nd : noteData) {
-        if (nd.first.n < tx->sapData->vShieldedOutput.size()) {
+        if (nd.first.n < sapData->vShieldedOutput.size()) {
             mapSaplingNoteData[nd.first] = nd.second;
         } else {
             throw std::logic_error("CWalletTx::SetSaplingNoteData(): Invalid note");
@@ -5219,7 +5220,7 @@ Optional<std::pair<
         return nullopt;
     }
 
-    auto output = this->tx->sapData->vShieldedOutput[op.n];
+    auto output = this->sapData->vShieldedOutput[op.n];
     auto nd = this->mapSaplingNoteData.at(op);
 
     auto maybe_pt = libzcash::SaplingNotePlaintext::decrypt(
@@ -5241,7 +5242,7 @@ Optional<std::pair<
         libzcash::SaplingNotePlaintext,
         libzcash::SaplingPaymentAddress>> CWalletTx::RecoverSaplingNote(const SaplingOutPoint& op, const std::set<uint256>& ovks) const
 {
-    auto output = this->tx->sapData->vShieldedOutput[op.n];
+    auto output = this->sapData->vShieldedOutput[op.n];
 
     for (const auto& ovk : ovks) {
         auto outPt = libzcash::SaplingOutgoingPlaintext::decrypt(

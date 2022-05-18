@@ -72,7 +72,7 @@ void SaplingScriptPubKeyMan::UpdateSaplingNullifierNoteMapWithTx(CWalletTx& wtx)
             const libzcash::SaplingIncomingViewingKey& ivk = *(nd.ivk);
             uint64_t position = nd.witnesses.front().position();
             auto extfvk = wallet->mapSaplingFullViewingKeys.at(ivk);
-            OutputDescription output = wtx.tx->sapData->vShieldedOutput[op.n];
+            OutputDescription output = wtx.sapData->vShieldedOutput[op.n];
             auto optPlaintext = libzcash::SaplingNotePlaintext::decrypt(output.encCiphertext, ivk, output.ephemeralKey, output.cmu);
             if (!optPlaintext) {
                 // An item in mapSaplingNoteData must have already been successfully decrypted,
@@ -496,7 +496,7 @@ void SaplingScriptPubKeyMan::GetFilteredNotes(
 
         // Filter the transactions before checking for notes
         const int depth = wtx.GetDepthInMainChain();
-        if (!IsFinalTx((*wtx.tx.get()), wallet->GetLastBlockHeight() + 1, GetAdjustedTime()) ||
+        if (!IsFinalTx(wtx, wallet->GetLastBlockHeight() + 1, GetAdjustedTime()) ||
             depth < minDepth || depth > maxDepth) {
             continue;
         }
@@ -566,9 +566,9 @@ SaplingScriptPubKeyMan::GetAddressFromInputIfPossible(const uint256& txHash, int
 Optional<libzcash::SaplingPaymentAddress>
         SaplingScriptPubKeyMan::GetAddressFromInputIfPossible(const CWalletTx* wtx, int index) const
 {
-    if (!wtx->tx->sapData || wtx->tx->sapData->vShieldedSpend.empty()) return nullopt;
+    if (!wtx->sapData || wtx->sapData->vShieldedSpend.empty()) return nullopt;
 
-    SpendDescription spendDesc = wtx->tx->sapData->vShieldedSpend.at(index);
+    SpendDescription spendDesc = wtx->sapData->vShieldedSpend.at(index);
     if (!IsSaplingNullifierFromMe(spendDesc.nullifier)) return nullopt;
 
     // Knowing that the spent note is from us, we can get the address from
@@ -666,7 +666,7 @@ Optional<std::pair<
     // wallet is currently locked). As the ovk is created when the wallet is unlocked for sending a t->shield
     // tx for the first time, a failure to decode can happen only if this note was sent (from a t-addr)
     // using this wallet.dat on another computer (and never sent t->shield txes from this computer).
-    if (!tx.tx->vin.empty()) {
+    if (!tx.vin.empty()) {
         try {
             ovks.emplace(getCommonOVK());
         } catch (...) {
@@ -674,7 +674,7 @@ Optional<std::pair<
                       "Unlock the wallet and call 'viewshieldtransaction %s' to fix.\n", txId.ToString());
         }
     } else {
-        for (const auto& spend : tx.tx->sapData->vShieldedSpend) {
+        for (const auto& spend : tx.sapData->vShieldedSpend) {
             const auto& it = mapSaplingNullifiersToNotes.find(spend.nullifier);
             if (it != mapSaplingNullifiersToNotes.end()) {
                 const SaplingOutPoint& prevOut = it->second;
@@ -708,11 +708,11 @@ isminetype SaplingScriptPubKeyMan::IsMine(const CWalletTx& wtx, const SaplingOut
 
 CAmount SaplingScriptPubKeyMan::GetCredit(const CWalletTx& tx, const isminefilter& filter, const bool fUnspent) const
 {
-    if (!tx.tx->IsShieldedTx() || tx.tx->sapData->vShieldedOutput.empty()) {
+    if (!tx.IsShieldedTx() || tx.sapData->vShieldedOutput.empty()) {
         return 0;
     }
     CAmount nCredit = 0;
-    for (int i = 0; i < (int) tx.tx->sapData->vShieldedOutput.size(); ++i) {
+    for (int i = 0; i < (int) tx.sapData->vShieldedOutput.size(); ++i) {
         SaplingOutPoint op(tx.GetHash(), i);
         if (tx.mapSaplingNoteData.find(op) == tx.mapSaplingNoteData.end()) {
             continue;
@@ -765,13 +765,13 @@ CAmount SaplingScriptPubKeyMan::GetDebit(const CTransaction& tx, const isminefil
 
 CAmount SaplingScriptPubKeyMan::GetShieldedChange(const CWalletTx& wtx) const
 {
-    if (!wtx.tx->IsShieldedTx() || wtx.tx->sapData->vShieldedOutput.empty()) {
+    if (!wtx.IsShieldedTx() || wtx.sapData->vShieldedOutput.empty()) {
         return 0;
     }
     const uint256& txHash = wtx.GetHash();
     CAmount nChange = 0;
     SaplingOutPoint op{txHash, 0};
-    for (uint32_t pos = 0; pos < (uint32_t) wtx.tx->sapData->vShieldedOutput.size(); ++pos) {
+    for (uint32_t pos = 0; pos < (uint32_t) wtx.sapData->vShieldedOutput.size(); ++pos) {
         op.n = pos;
         auto it = wtx.mapSaplingNoteData.find(op);
         if (it == wtx.mapSaplingNoteData.end()) continue;
@@ -805,8 +805,8 @@ bool SaplingScriptPubKeyMan::IsNoteSaplingChange(const std::set<std::pair<libzca
     //   shieldsendmany sends change to the originating shielded address).
     // - Notes sent from one address to itself.
     const auto& tx = wallet->mapWallet.at(op.hash);
-    if (tx.tx->sapData) {
-        for (const SpendDescription& spend : tx.tx->sapData->vShieldedSpend) {
+    if (tx.sapData) {
+        for (const SpendDescription& spend : tx.sapData->vShieldedSpend) {
             if (nullifierSet.count(std::make_pair(address, spend.nullifier))) {
                 return true;
             }
@@ -964,8 +964,8 @@ void SaplingScriptPubKeyMan::GetConflicts(const CWalletTx& wtx, std::set<uint256
     AssertLockHeld(wallet->cs_wallet);
     std::pair<TxNullifiers::const_iterator, TxNullifiers::const_iterator> range_o;
 
-    if (wtx.tx->IsShieldedTx()) {
-        for (const SpendDescription& spend : wtx.tx->sapData->vShieldedSpend) {
+    if (wtx.IsShieldedTx()) {
+        for (const SpendDescription& spend : wtx.sapData->vShieldedSpend) {
             const uint256& nullifier = spend.nullifier;
             if (mapTxSaplingNullifiers.count(nullifier) <= 1) {
                 continue;  // No conflict if zero or one spends
