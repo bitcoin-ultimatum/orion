@@ -1782,6 +1782,7 @@ bool AppInit2()
             }
 
             pwalletMain->SetBestChain(chainActive.GetLocator());
+            pwalletMain->SetupSPKM();
         }
 
         LogPrintf("Init errors: %s\n", strErrors.str());
