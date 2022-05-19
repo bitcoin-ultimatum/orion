@@ -1631,6 +1631,7 @@ set(COMMON_SOURCES
         ./src/cpp-ethereum/libethashseal/EthashProofOfWork.cpp
         ./src/cpp-ethereum/libethashseal/GenesisInfo.cpp
         ./src/uint256.cpp
+        ./src/crypto/siphash.cpp
         )
 
 add_library(COMMON_A STATIC ${BitcoinHeaders} ${COMMON_SOURCES})

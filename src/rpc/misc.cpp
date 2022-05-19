@@ -18,6 +18,8 @@
 #include "timedata.h"
 #include "rpc/util.h"
 #include "script/standard.h"
+#include "key_io.h"
+
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
@@ -449,7 +451,10 @@ UniValue validateaddress(const UniValue& params, bool fHelp)
 #endif
 
     std::string strAddress = params[0].get_str();
+    bool isStakingAddress = false;
+    CTxDestination addr = DecodeDestination(strAddress);
     CBTCUAddress address(strAddress);
+    address.Set(addr,CChainParams::PUBKEY_ADDRESS);
     bool isValid = address.IsValid();
 
     PPaymentAddress finalAddress;
