@@ -92,7 +92,7 @@ public:
     //! First wallet key time
     void UpdateTimeFirstKey(int64_t nCreateTime);
     //! Generate a new key
-    CPubKey GenerateNewKey(WalletBatch& batch, const uint8_t& type = HDChain::ChangeType::EXTERNAL);
+    CPubKey GenerateNewKey(const uint8_t& type = HDChain::ChangeType::EXTERNAL);
 
 
     //! Fetches a key from the keypool
@@ -129,9 +129,6 @@ private:
     /* the HD chain data model (external/internal chain counters) */
     CHDChain hdChain;
 
-    /* TODO: This has not been implemented yet.. */
-    WalletBatch *encrypted_batch = nullptr;
-
     // Key pool maps
     std::set<int64_t> setInternalKeyPool;
     std::set<int64_t> setExternalKeyPool;
@@ -145,13 +142,13 @@ private:
     bool AddKeyPubKeyInner(const CKey& key, const CPubKey &pubkey);
 
     //! Adds a key to the store, and saves it to disk.
-    bool AddKeyPubKeyWithDB(WalletBatch &batch,const CKey& key, const CPubKey &pubkey);
+    bool AddKeyPubKeyWithDB(const CKey& key, const CPubKey &pubkey);
     /* Complete me */
-    void AddKeypoolPubkeyWithDB(const CPubKey& pubkey, const uint8_t& type, WalletBatch& batch);
-    void GeneratePool(WalletBatch& batch, int64_t targetSize, const uint8_t& type);
+    void AddKeypoolPubkeyWithDB(const CPubKey& pubkey, const uint8_t& type);
+    void GeneratePool(int64_t targetSize, const uint8_t& type);
 
     /* HD derive new child key (on internal or external chain) */
-    void DeriveNewChildKey(WalletBatch &batch, CKeyMetadata& metadata, CKey& secret, const uint8_t& type = HDChain::ChangeType::EXTERNAL);
+    void DeriveNewChildKey(CKeyMetadata& metadata, CKey& secret, const uint8_t& type = HDChain::ChangeType::EXTERNAL);
 
     /**
      * Marks all keys in the keypool up to and including reserve_key as used.

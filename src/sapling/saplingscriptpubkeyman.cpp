@@ -1121,15 +1121,11 @@ bool SaplingScriptPubKeyMan::AddCryptedSaplingSpendingKeyDB(const libzcash::Sapl
         return false;
     {
         LOCK(wallet->cs_wallet);
-        if (wallet->encrypted_batch) {
-            return wallet->encrypted_batch->WriteCryptedSaplingZKey(extfvk,
-                                                                vchCryptedSecret,
-                                                                mapSaplingZKeyMetadata[extfvk.fvk.in_viewing_key()]);
-        } else {
-            return CWalletDB(wallet->strWalletFile).WriteCryptedSaplingZKey(extfvk,
+
+        return CWalletDB(wallet->strWalletFile).WriteCryptedSaplingZKey(extfvk,
                                                                     vchCryptedSecret,
                                                                     mapSaplingZKeyMetadata[extfvk.fvk.in_viewing_key()]);
-        }
+
     }
     return false;
 }
