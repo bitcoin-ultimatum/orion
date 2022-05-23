@@ -18,6 +18,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
+#include "policy/policy.h"
 
 #include <stdio.h>
 
@@ -431,16 +432,15 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
        SignatureData sigdata;
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mergedTx.vout.size()))
-           BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(&keystore, &mergedTx, i, amount, nHashType), prevPubKey, sigdata);
+           ProduceSignature(keystore, MutableTransactionSignatureCreator(&mergedTx, i, amount, nHashType), prevPubKey, sigdata);
 
         // ... and merge in other signatures:
         for (const CTransaction& txv : txVariants) {
-           sigdata = BTC::CombineSignatures(prevPubKey, BTC::TransactionSignatureChecker(&txConst, i, amount), sigdata, BTC::DataFromTransaction(mergedTx, i));
-           BTC::UpdateTransaction(mergedTx, i, sigdata);
-           //txin.scriptSig = CombineSignatures(prevPubKey, mergedTx, i, txin.scriptSig, txv.vin[i].scriptSig);
+           sigdata = CombineSignatures(keystore, txv.vout[0], mergedTx, sigdata, DataFromTransaction(mergedTx, i, coins->vout[txin.prevout.n]));
+           UpdateInput(txin, sigdata);
         }
        ScriptError serror = SCRIPT_ERR_OK;
-       if (!BTC::VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, BTC::TransactionSignatureChecker(&txConst, i, amount), &serror))
+       if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&txConst, i, amount, MissingDataBehavior::ASSERT_FAIL), &serror))
             fComplete = false;
     }
 
