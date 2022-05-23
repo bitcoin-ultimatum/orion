@@ -677,7 +677,7 @@ std::string ValidatorWidget::createAndSendTransaction(const boost::optional<CVal
         CReserveKey reservekey(pwalletMain);
         CPubKey vchPubKey;
         assert(reservekey.GetReservedKey(vchPubKey));
-        CTxDestination myAddress = vchPubKey.GetID();
+        CTxDestination myAddress = PKHash(vchPubKey.GetID());
 
         CAmount nAmount = AmountFromValue(
                 UniValue((double) 38 / COIN)); // send 38 satoshi (min tx fee per kb is 100 satoshi)

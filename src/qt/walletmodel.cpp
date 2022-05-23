@@ -1023,7 +1023,7 @@ bool WalletModel::updateAddressBookPurpose(const QString &addressStr, const std:
     CKeyID keyID;
     if (!getKeyId(address, keyID))
         return false;
-    return pwalletMain->SetAddressBook(keyID, getLabelForAddress(address), purpose);
+    return pwalletMain->SetAddressBook(PKHash(keyID), getLabelForAddress(address), purpose);
 }
 
 bool WalletModel::getKeyId(const CBTCUAddress& address, CKeyID& keyID) {
