@@ -457,7 +457,7 @@ UniValue mnregvalidatorlist(const UniValue& params, bool fHelp)
     UniValue ret(UniValue::VARR);
     for(auto &valReg : validatorsRegistrationList) {
        UniValue obj(UniValue::VOBJ);
-       obj.push_back(Pair("addr", CBTCUAddress(PKHash(valReg.pubKey.GetID())).ToString()));
+       obj.push_back(Pair("addr", EncodeDestination(PKHash(valReg.pubKey.GetID()))));
        obj.push_back(Pair("pubkey", HexStr(valReg.pubKey)));
        ret.push_back(obj);
     }
@@ -473,7 +473,7 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
     for(auto &valVote : validatorsVotesList)
     {
        UniValue validator(UniValue::VOBJ);
-       validator.push_back(Pair("validator", CBTCUAddress(PKHash(valVote.pubKey.GetID())).ToString()));
+       validator.push_back(Pair("validator", EncodeDestination(PKHash(valVote.pubKey.GetID()))));
        //valVoteStr += "Voting address: " + CBTCUAddress(valVote.pubKey.GetID()).ToString() + "\n";
        //valVoteStr +="\tVotes:\n";
        for(auto &vote:valVote.votes)
@@ -484,11 +484,10 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
              throw JSONRPCError(RPC_INTERNAL_ERROR, "public zerocoin spend prev output not found");
           }
           CTxDestination dest;
-          CBTCUAddress address;
-          if (ExtractDestination(prevOut.scriptPubKey, dest) && address.Set(dest))
+          if (ExtractDestination(prevOut.scriptPubKey, dest) && IsValidDestination(dest))
           {
              UniValue validator_vote(UniValue::VOBJ);
-             validator_vote.push_back(Pair("address", address.ToString()));
+             validator_vote.push_back(Pair("address", EncodeDestination(dest)));
              validator_vote.push_back(Pair("vote", (vote.vote == VoteYes ? "yes": "no") ));
              validator.push_back(Pair("voteto", validator_vote));
           }

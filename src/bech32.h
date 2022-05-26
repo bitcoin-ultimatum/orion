@@ -52,8 +52,6 @@ namespace bech32
 
 } // namespace bech32
 
-class CBTCUAddress;
-class CBTCUSecret;
 
 /**
  * Base class for all bech32-encoded data

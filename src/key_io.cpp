@@ -21,13 +21,14 @@ namespace {
    {
    private:
       const CChainParams& m_params;
+      const CChainParams::Base58Type m_addrType;
 
    public:
-      explicit DestinationEncoder(const CChainParams& params) : m_params(params) {}
+      explicit DestinationEncoder(const CChainParams& params, const CChainParams::Base58Type _addrType = CChainParams::PUBKEY_ADDRESS) : m_params(params), m_addrType(_addrType) {}
 
       std::string operator()(const PKHash& id) const
       {
-         std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
+         std::vector<unsigned char> data = m_params.Base58Prefix(m_addrType);
          data.insert(data.end(), id.begin(), id.end());
          return EncodeBase58Check(data);
       }
@@ -77,7 +78,7 @@ namespace {
       std::string operator()(const CNoDestination& no) const { return {}; }
    };
 
-   CTxDestination DecodeDestination(const std::string& str, const CChainParams& params, std::string& error_str, std::vector<int>* error_locations)
+   CTxDestination DecodeDestination(const std::string& str, const CChainParams& params, std::string& error_str, std::vector<int>* error_locations, bool* pIsStaking)
    {
       std::vector<unsigned char> data;
       uint160 hash;
@@ -93,6 +94,14 @@ namespace {
          const std::vector<unsigned char>& pubkey_prefix = params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
          if (data.size() == hash.size() + pubkey_prefix.size() && std::equal(pubkey_prefix.begin(), pubkey_prefix.end(), data.begin())) {
             std::copy(data.begin() + pubkey_prefix.size(), data.end(), hash.begin());
+            return PKHash(hash);
+         }
+         // Public-key-hash-coldstaking-addresses have version 63 (or 73 testnet).
+         const std::vector<unsigned char>& staking_prefix = params.Base58Prefix(CChainParams::STAKING_ADDRESS);
+         if (data.size() == hash.size() + staking_prefix.size() && std::equal(staking_prefix.begin(), staking_prefix.end(), data.begin())) {
+            if(pIsStaking)
+               *pIsStaking = true;
+            std::copy(data.begin() + staking_prefix.size(), data.end(), hash.begin());
             return PKHash(hash);
          }
          // Script-hash-addresses have version 5 (or 196 testnet).
@@ -274,26 +283,26 @@ std::string EncodeExtKey(const CExtKey& key)
    return ret;
 }
 
-std::string EncodeDestination(const CTxDestination& dest)
+std::string EncodeDestination(const CTxDestination& dest, const CChainParams::Base58Type addrType)
 {
-   return std::visit(DestinationEncoder(Params()), dest);
+   return std::visit(DestinationEncoder(Params(), addrType), dest);
 }
 
-CTxDestination DecodeDestination(const std::string& str, std::string& error_msg, std::vector<int>* error_locations)
+CTxDestination DecodeDestination(const std::string& str, std::string& error_msg, std::vector<int>* error_locations, bool* pIsStaking)
 {
-   return DecodeDestination(str, Params(), error_msg, error_locations);
+   return DecodeDestination(str, Params(), error_msg, error_locations, pIsStaking);
 }
 
-CTxDestination DecodeDestination(const std::string& str)
+CTxDestination DecodeDestination(const std::string& str, bool* pIsStaking)
 {
    std::string error_msg;
-   return DecodeDestination(str, error_msg);
+   return DecodeDestination(str, error_msg, nullptr, pIsStaking);
 }
 
 bool IsValidDestinationString(const std::string& str, const CChainParams& params)
 {
    std::string error_msg;
-   return IsValidDestination(DecodeDestination(str, params, error_msg, nullptr));
+   return IsValidDestination(DecodeDestination(str, params, error_msg, nullptr, nullptr));
 }
 
 bool IsValidDestinationString(const std::string& str)

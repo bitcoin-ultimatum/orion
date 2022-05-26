@@ -14,6 +14,7 @@
 #include "zbtcuchain.h"
 #include "zbtcu/deterministicmint.h"
 #include "script/signingprovider.h"
+#include "key_io.h"
 
 
 /*
@@ -226,7 +227,7 @@ bool CWallet::CreateZerocoinMintTransaction(const CAmount nValue,
 // - ZC PublicSpends
 
 bool CWallet::SpendZerocoin(CAmount nAmount, CWalletTx& wtxNew, CZerocoinSpendReceipt& receipt, std::vector<CZerocoinMint>& vMintsSelected,
-        std::list<std::pair<CBTCUAddress*,CAmount>> addressesTo, CBTCUAddress* changeAddress)
+        std::list<std::pair<CTxDestination *,CAmount>> addressesTo, CTxDestination* changeAddress)
 {
     // Default: assume something goes wrong. Depending on the problem this gets more specific below
     int nStatus = ZBTCU_SPEND_ERROR;
@@ -385,8 +386,8 @@ bool CWallet::CreateZCPublicSpendTransaction(
         CZerocoinSpendReceipt& receipt,
         std::vector<CZerocoinMint>& vSelectedMints,
         std::vector<CDeterministicMint>& vNewMints,
-        std::list<std::pair<CBTCUAddress*,CAmount>> addressesTo,
-        CBTCUAddress* changeAddress)
+        std::list<std::pair<CTxDestination *,CAmount>> addressesTo,
+        CTxDestination * changeAddress)
 {
     // Check available funds
     int nStatus = ZBTCU_TRX_FUNDS_PROBLEMS;
@@ -533,16 +534,16 @@ bool CWallet::CreateZCPublicSpendTransaction(
             }
 
             //if there are addresses to send to then use them, if not generate a new address to send to
-            CBTCUAddress destinationAddr;
+            CTxDestination destinationAddr;
             if (addressesTo.size() == 0) {
                 CPubKey pubkey;
                 assert(reserveKey.GetReservedKey(pubkey)); // should never fail
-                destinationAddr = CBTCUAddress(PKHash(pubkey.GetID()));
+                destinationAddr = PKHash(pubkey.GetID());
                 addressesTo.push_back(std::make_pair(&destinationAddr, nValue));
             }
 
-            for (std::pair<CBTCUAddress*,CAmount> pair : addressesTo){
-                CScript scriptZerocoinSpend = GetScriptForDestination(pair.first->Get());
+            for (std::pair<CTxDestination *,CAmount> pair : addressesTo){
+                CScript scriptZerocoinSpend = GetScriptForDestination(*pair.first);
                 //add output to btcu address to the transaction (the actual primary spend taking place)
                 // TODO: check value?
                 CTxOut txOutZerocoinSpend(pair.second, scriptZerocoinSpend);
@@ -554,7 +555,7 @@ bool CWallet::CreateZCPublicSpendTransaction(
                 CScript scriptChange;
                 // Change address
                 if(changeAddress){
-                    scriptChange = GetScriptForDestination(changeAddress->Get());
+                    scriptChange = GetScriptForDestination(*changeAddress);
                 } else {
                     // Reserve a new key pair from key pool
                     CPubKey vchPubKey;

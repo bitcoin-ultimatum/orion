@@ -78,16 +78,11 @@ inline bool DecodeBase58Check(const char* psz, std::vector<unsigned char>& vchRe
  */
 [[nodiscard]] bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet, int max_ret_len);
 
-class CBTCUAddress;
-class CBTCUSecret;
-
 /**
  * Base class for all base58-encoded data
  */
 class CBase58Data
 {
-    friend class CBTCUAddress;
-    friend class CBTCUSecret;
 
     //! the version byte(s)
     std::vector<unsigned char> vchVersion;

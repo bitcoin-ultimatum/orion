@@ -1582,7 +1582,6 @@ set(COMMON_SOURCES
         ./src/hash.cpp
         ./src/invalid.cpp
         ./src/key.cpp
-        ./src/btcu_address.cpp
         ./src/keystore.cpp
         ./src/netbase.cpp
         ./src/protocol.cpp

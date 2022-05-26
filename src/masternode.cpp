@@ -10,6 +10,7 @@
 #include "obfuscation.h"
 #include "sync.h"
 #include "util.h"
+#include "key_io.h"
 
 // keep track of the scanning errors I've seen
 std::map<uint256, int> mapSeenMasternodeScanningErrors;
@@ -440,8 +441,8 @@ bool CMasternodeBroadcast::Create(
     }
 
     LogPrint("masternode", "CMasternodeBroadcast::Create -- pubKeyCollateralAddressNew = %s, pubKeyLeasingAddressNew = %s, pubKeyMasternodeNew.GetID() = %s\n",
-        CBTCUAddress(PKHash(pubKeyCollateralAddressNew.GetID())).ToString(),
-        CBTCUAddress(PKHash(pubKeyLeasingNew.GetID())).ToString(),
+        EncodeDestination(PKHash(pubKeyCollateralAddressNew)),
+        EncodeDestination(PKHash(pubKeyLeasingNew)),
         pubKeyMasternodeNew.GetID().ToString());
 
     CMasternodePing mnp(txin);
