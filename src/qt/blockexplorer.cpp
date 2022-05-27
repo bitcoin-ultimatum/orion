@@ -17,7 +17,6 @@
 #include "guiinterface.h"
 #include "util.h"
 #include "utilstrencodings.h"
-#include "btcu_address.h"
 #include <QDateTime>
 #include <QKeyEvent>
 #include <QMessageBox>

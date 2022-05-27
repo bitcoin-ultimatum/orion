@@ -581,10 +581,11 @@ void PaymentServer::fetchPaymentACK(CWallet* wallet, SendCoinsRecipient recipien
     } else {
         CPubKey newKey;
         if (wallet->GetKeyFromPool(newKey)) {
-            CKeyID keyID = newKey.GetID();
-            wallet->SetAddressBook(keyID, strAccount, "refund");
 
-            CScript s = GetScriptForDestination(keyID);
+            CKeyID keyID = newKey.GetID();
+            wallet->SetAddressBook(PKHash(keyID), strAccount, "refund");
+
+            CScript s = GetScriptForDestination(PKHash(keyID));
             payments::Output* refund_to = payment.add_refund_to();
             refund_to->set_script(&s[0], s.size());
         } else {

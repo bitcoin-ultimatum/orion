@@ -4,8 +4,6 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcu_address.h"
-
 #include "data/base58_encode_decode.json.h"
 #include "data/base58_keys_invalid.json.h"
 #include "data/base58_keys_valid.json.h"
@@ -75,17 +73,17 @@ BOOST_AUTO_TEST_CASE(base58_DecodeBase58)
 }
 
 // Visitor to check address type
-class TestAddrTypeVisitor : public boost::static_visitor<bool>
+class TestAddrTypeVisitor
 {
 private:
     std::string exp_addrType;
 public:
     TestAddrTypeVisitor(const std::string &exp_addrType) : exp_addrType(exp_addrType) { }
-    bool operator()(const CKeyID &id) const
+    bool operator()(const PKHash &id) const
     {
         return (exp_addrType == "pubkey");
     }
-    bool operator()(const CScriptID &id) const
+    bool operator()(const ScriptHash &id) const
     {
         return (exp_addrType == "script");
     }
@@ -96,6 +94,10 @@ public:
     bool operator()(const WitnessV0KeyHash&) const
     {
         return (exp_addrType == "witness_v0_keyhash");
+    }
+    bool operator()(const WitnessV1Taproot&) const
+    {
+       return (exp_addrType == "witness_v1_taproot");
     }
     bool operator()(const WitnessUnknown&) const
     {
@@ -114,15 +116,15 @@ private:
     std::vector<unsigned char> exp_payload;
 public:
     TestPayloadVisitor(std::vector<unsigned char> &exp_payload) : exp_payload(exp_payload) { }
-    bool operator()(const CKeyID &id) const
+    bool operator()(const PKHash &id) const
     {
         uint160 exp_key(exp_payload);
-        return exp_key == id;
+        return exp_key == (uint160)id;
     }
     bool operator()(const CScriptID &id) const
     {
         uint160 exp_key(exp_payload);
-        return exp_key == id;
+        return exp_key == (uint160)id;
     }
     bool operator()(const CNoDestination &no) const
     {
@@ -179,7 +181,7 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_parse)
             BOOST_CHECK_MESSAGE(addr.IsValid(), "!IsValid:" + strTest);
             BOOST_CHECK_MESSAGE(addr.IsScript() == (exp_addrType == "script"), "isScript mismatch" + strTest);
             CTxDestination dest = addr.Get();
-            BOOST_CHECK_MESSAGE(boost::apply_visitor(TestAddrTypeVisitor(exp_addrType), dest), "addrType mismatch" + strTest);
+            BOOST_CHECK_MESSAGE(std::visit(TestAddrTypeVisitor(exp_addrType), dest), "addrType mismatch" + strTest);
 
             // Public key must be invalid private key
             secret.SetString(exp_base58string);
@@ -227,11 +229,11 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_gen)
             CTxDestination dest;
             if(exp_addrType == "pubkey")
             {
-                dest = CKeyID(uint160(exp_payload));
+                dest = PKHash(uint160(exp_payload));
             }
             else if(exp_addrType == "script")
             {
-                dest = CScriptID(uint160(exp_payload));
+                dest = ScriptHash(uint160(exp_payload));
             }
             else if(exp_addrType == "none")
             {

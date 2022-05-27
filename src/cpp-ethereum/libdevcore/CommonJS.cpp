@@ -52,7 +52,7 @@ bytes unpadLeft(bytes _b)
 	if (_b.size() == 0)
 		return _b;
 
-	while (i < _b.size() && _b[i] == byte(0))
+	while (i < _b.size() && _b[i] == ::byte(0))
 		i++;
 
 	if (i != 0)
