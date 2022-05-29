@@ -374,9 +374,19 @@ std::string EncodeDestination(const CTxDestination& dest)
     return boost::apply_visitor(DestinationEncoder(Params()), dest);
 }
 
+std::string EncodeDestination(const CTxDestination& dest, bool isStaking)
+{
+    return EncodeDestination(dest, isStaking ? CChainParams::STAKING_ADDRESS : CChainParams::PUBKEY_ADDRESS);
+}
+
 CTxDestination DecodeDestination(const std::string& str)
 {
     return DecodeDestination(str, Params());
+}
+
+CTxDestination DecodeDestination(const std::string& str, bool& isStaking)
+{
+    return DecodeDestination(str, Params(), isStaking);
 }
 
 bool IsValidDestinationString(const std::string& str, const CChainParams& params)
