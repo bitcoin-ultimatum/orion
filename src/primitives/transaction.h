@@ -88,6 +88,11 @@ public:
     /** Convert a CCoins into a CTransaction. For Bitcoin Genesis cases.*/
     CTransaction(const uint256& coinsHash, const CCoins& coins);
 
+    /** This deserializing constructor is provided instead of an Unserialize method.
+      *  Unserialize is not possible, since it would require overwriting const fields. */
+    template <typename Stream>
+    CTransaction(deserialize_type, Stream& s) : CTransaction(CMutableTransaction(deserialize, s)) {}
+
     CTransaction& operator=(const CTransaction& tx);
 
     ADD_SERIALIZE_METHODS;
@@ -308,6 +313,10 @@ struct CMutableTransaction
     CMutableTransaction();
     CMutableTransaction(const CTransaction& tx);
 
+    template <typename Stream>
+    CMutableTransaction(deserialize_type, Stream& s) {
+        Unserialize(s, 4, this->nVersion );
+    }
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -321,7 +330,16 @@ struct CMutableTransaction
             READWRITE(validatorRegister);
             READWRITE(validatorVote);
         }
+        if (this->isSaplingVersion()) {
+            READWRITE(this->sapData);
+            /*if (!this->IsNormalType()) {
+                s >> tx.extraPayload;
+            }*/
+        }
     }
+
+    bool isSaplingVersion() const { return nVersion >= CTransaction::SAPLING_VERSION; }
+    //bool IsNormalType() const { return nType == CTransaction::TL; }
 
     /** Compute the hash of this CMutableTransaction. This is computed on the
      * fly, as opposed to GetHash() in CTransaction, which uses a cached result.
