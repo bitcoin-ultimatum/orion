@@ -228,6 +228,7 @@ protected:
     int nStakeMinAge;
     int nFutureTimeDriftPoW;
     int nFutureTimeDriftPoS;
+    int nMaxMoneyOut;
     int nTimeSlotLength;
 
     int nModifierUpdateBlock;

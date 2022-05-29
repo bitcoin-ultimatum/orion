@@ -176,6 +176,7 @@ public:
         nStakeMinDepth = 9; //same as nMaturity
         nFutureTimeDriftPoW = 7200;
         nFutureTimeDriftPoS = 180;
+        consensus.nMaxMoneyOut = 21000000 * COIN;
         nMasternodeCountDrift = 20;
         nMinColdStakingAmount = 1 * COIN;
         nMinLeasingAmount = 1 * COIN;
@@ -383,6 +384,7 @@ public:
         nMaturity = 5; // 3 validators in testnet, for  activatin pos must be one more
         nStakeMinDepth = 20;
         nMasternodeCountDrift = 4;
+        consensus.nMaxMoneyOut = 21000000 * COIN;
         nModifierUpdateBlock = 51197; //approx Mon, 17 Apr 2017 04:00:00 GMT
         nZerocoinStartHeight = 1;
         nZerocoinStartTime = 1501776000;
@@ -523,6 +525,7 @@ public:
         nModifierUpdateBlock = 0;
         nZerocoinStartHeight = 300;
         nBlockZerocoinV2 = 300;
+        consensus.nMaxMoneyOut = 43199500 * COIN;
         nZerocoinStartTime = 1501776000;
         nBlockEnforceSerialRange = 1;               // Enforce serial range starting this block
         nBlockRecalculateAccumulators = 999999999;  // Trigger a recalculation of accumulators
