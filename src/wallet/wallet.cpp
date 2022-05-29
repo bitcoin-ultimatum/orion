@@ -122,15 +122,15 @@ std::vector<CWalletTx> CWallet::getWalletTxs()
     return result;
 }
 
-PairResult CWallet::getNewAddress(CBTCUAddress& ret, std::string label){
+PairResult CWallet::getNewAddress(CTxDestination& ret, std::string label){
     return getNewAddress(ret, label, AddressBook::AddressBookPurpose::RECEIVE);
 }
 
-PairResult CWallet::getNewStakingAddress(CBTCUAddress& ret, std::string label){
+PairResult CWallet::getNewStakingAddress(CTxDestination & ret, std::string label){
     return getNewAddress(ret, label, AddressBook::AddressBookPurpose::COLD_STAKING, CChainParams::Base58Type::STAKING_ADDRESS);
 }
 
-PairResult CWallet::getNewLeasingAddress(CBTCUAddress& ret, std::string label){
+PairResult CWallet::getNewLeasingAddress(CTxDestination& ret, std::string label){
     return getNewAddress(ret, label, AddressBook::AddressBookPurpose::LEASING, CChainParams::Base58Type::PUBKEY_ADDRESS);
 }
 
@@ -216,7 +216,7 @@ bool CWallet::LoadToWallet(CWalletTx& wtxIn)
     return true;
 }
 
-PairResult CWallet::getNewAddress(CBTCUAddress& ret, const std::string addressLabel, const std::string purpose,
+PairResult CWallet::getNewAddress(CTxDestination& ret, const std::string addressLabel, const std::string purpose,
                                          const CChainParams::Base58Type addrType)
 {
     LOCK2(cs_main, cs_wallet);
@@ -237,7 +237,7 @@ PairResult CWallet::getNewAddress(CBTCUAddress& ret, const std::string addressLa
     if (!SetAddressBook(keyID, addressLabel, purpose))
         throw std::runtime_error("CWallet::getNewAddress() : SetAddressBook failed");
 
-    ret = CBTCUAddress(keyID, addrType);
+    ret = CTxDestination(keyID);
     return PairResult(true);
 }
 

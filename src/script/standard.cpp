@@ -791,6 +791,17 @@ bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
 
+bool IsLeasingAddress(CTxDestination& dest)
+{
+
+    /*if (dest.type() != DataType::Base58 || !IsValidBase58Size()) {
+        return false;
+    }
+
+    return base58.vchVersion == Params().Base58Prefix(CChainParams::PUBKEY_ADDRESS);*/
+    return true;
+}
+
 bool IsValidContractSenderAddress(const CTxDestination &dest)
 {
     const CKeyID *keyID = boost::get<CKeyID>(&dest);

@@ -115,7 +115,7 @@ std::string AccountFromValue(const UniValue& value)
     return strAccount;
 }
 
-CBTCUAddress GetNewAddressFromAccount(const std::string purpose, const UniValue &params,
+CTxDestination GetNewAddressFromAccount(const std::string purpose, const UniValue &params,
         const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS)
 {
     LOCK2(cs_main, pwalletMain->cs_wallet);
@@ -124,7 +124,7 @@ CBTCUAddress GetNewAddressFromAccount(const std::string purpose, const UniValue 
     if (!params.isNull() && params.size() > 0)
         strAccount = AccountFromValue(params[0]);
 
-    CBTCUAddress address;
+    CTxDestination address;
     PairResult r = pwalletMain->getNewAddress(address, strAccount, purpose, addrType);
     if(!r.result)
         throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, *r.status);
@@ -410,8 +410,8 @@ UniValue createcontract(const UniValue& params, bool fHelp){
              }
           }
 
-          if(!bSCValidatorFound)
-             throw JSONRPCError(RPC_WALLET_CREATECONTRACT_DISABLED, "Create smart contract allowed only for validators");
+          //if(!bSCValidatorFound)
+          //   throw JSONRPCError(RPC_WALLET_CREATECONTRACT_DISABLED, "Create smart contract allowed only for validators");
        }
         std::vector<unsigned char> scriptSig;
         scriptSig.push_back(0);
@@ -933,7 +933,7 @@ UniValue getnewaddress(const UniValue& params, bool fHelp)
             "\nExamples:\n" +
             HelpExampleCli("getnewaddress", "") + HelpExampleRpc("getnewaddress", ""));
 
-    return GetNewAddressFromAccount(AddressBook::AddressBookPurpose::RECEIVE, params).ToString();
+    return EncodeDestination(GetNewAddressFromAccount(AddressBook::AddressBookPurpose::RECEIVE, params));
 }
 
 UniValue getnewstakingaddress(const UniValue& params, bool fHelp)
@@ -954,7 +954,7 @@ UniValue getnewstakingaddress(const UniValue& params, bool fHelp)
             "\nExamples:\n" +
             HelpExampleCli("getnewstakingaddress", "") + HelpExampleRpc("getnewstakingaddress", ""));
 
-    return GetNewAddressFromAccount(AddressBook::AddressBookPurpose::COLD_STAKING, params, CChainParams::STAKING_ADDRESS).ToString();
+    return EncodeDestination(GetNewAddressFromAccount(AddressBook::AddressBookPurpose::COLD_STAKING, params, CChainParams::STAKING_ADDRESS));
 }
 
 UniValue getnewleasingaddress(const UniValue& params, bool fHelp)
@@ -970,7 +970,7 @@ UniValue getnewleasingaddress(const UniValue& params, bool fHelp)
             "\nExamples:\n" +
             HelpExampleCli("getnewleasingaddress", "") + HelpExampleRpc("getnewleasingaddress", ""));
 
-    return GetNewAddressFromAccount(AddressBook::AddressBookPurpose::LEASING, params, CChainParams::PUBKEY_ADDRESS).ToString();
+    return EncodeDestination(GetNewAddressFromAccount(AddressBook::AddressBookPurpose::LEASING, params, CChainParams::PUBKEY_ADDRESS));
 }
 
 UniValue delegatoradd(const UniValue& params, bool fHelp)
@@ -1478,11 +1478,13 @@ UniValue CreateColdStakeDelegation(const UniValue& params, CWalletTx& wtxNew, CR
     }
 
     // Get Staking Address
-    CBTCUAddress stakeAddr(params[0].get_str());
-    CKeyID stakeKey;
-    if (!stakeAddr.IsValid() || !stakeAddr.IsStakingAddress())
+    bool isStaking = false;
+    CTxDestination stakeAddr = DecodeDestination(params[0].get_str(), isStaking);
+    if (!IsValidDestination(stakeAddr) || !isStaking)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU staking address");
-    if (!stakeAddr.GetKeyID(stakeKey))
+
+    CKeyID* stakeKey = boost::get<CKeyID>(&stakeAddr);
+    if (!stakeKey)
         throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get stake pubkey hash from stakingaddress");
 
     // Get Amount
@@ -1505,15 +1507,17 @@ UniValue CreateColdStakeDelegation(const UniValue& params, CWalletTx& wtxNew, CR
     EnsureWalletIsUnlocked();
 
     // Get Owner Address
-    CBTCUAddress ownerAddr;
+    std::string ownerAddressStr;
+    CTxDestination ownerAddr;
     CKeyID ownerKey;
     if (params.size() > 2 && !params[2].isNull() && !params[2].get_str().empty()) {
         // Address provided
-        ownerAddr.SetString(params[2].get_str());
-        if (!ownerAddr.IsValid() || ownerAddr.IsStakingAddress())
+        bool isStaking = false;
+        CTxDestination dest = DecodeDestination(params[2].get_str(), isStaking);
+        if (!IsValidDestination(dest) || isStaking)
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU spending address");
-        if (!ownerAddr.GetKeyID(ownerKey))
-            throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get spend pubkey hash from owneraddress");
+        //if (!ownerAddr.GetKeyID(ownerKey))
+        //    throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get spend pubkey hash from owneraddress");
         // Check that the owner address belongs to this wallet, or fForceExternalAddr is true
         bool fForceExternalAddr = params.size() > 3 && !params[3].isNull() ? params[3].get_bool() : false;
         if (!fForceExternalAddr && !pwalletMain->HaveKey(ownerKey)) {
@@ -1521,19 +1525,21 @@ UniValue CreateColdStakeDelegation(const UniValue& params, CWalletTx& wtxNew, CR
                     "Set 'fExternalOwner' argument to true, in order to force the stake delegation to an external owner address.\n"
                     "e.g. delegatestake stakingaddress amount owneraddress true.\n"
                     "WARNING: Only the owner of the key to owneraddress will be allowed to spend these coins after the delegation.",
-                    ownerAddr.ToString());
+                    params[2].get_str());
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, errMsg);
         }
 
     } else {
         // Get new owner address from keypool
         ownerAddr = GetNewAddressFromAccount("delegated", NullUniValue);
-        if (!ownerAddr.GetKeyID(ownerKey))
-            throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get spend pubkey hash from owneraddress");
+        CKeyID* pOwnerKey = boost::get<CKeyID>(&ownerAddr);
+        assert(pOwnerKey);
+        ownerKey = *pOwnerKey;
+        ownerAddressStr = EncodeDestination(ownerAddr);
     }
 
     // Get P2CS script for addresses
-    CScript scriptPubKey = GetScriptForStakeDelegation(stakeKey, ownerKey);
+    CScript scriptPubKey = GetScriptForStakeDelegation(*stakeKey, ownerKey);
 
     // Create the transaction
     CAmount nFeeRequired;
@@ -1545,8 +1551,8 @@ UniValue CreateColdStakeDelegation(const UniValue& params, CWalletTx& wtxNew, CR
     }
 
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("owner_address", ownerAddr.ToString()));
-    result.push_back(Pair("staker_address", stakeAddr.ToString()));
+    result.push_back(Pair("owner_address", ownerAddressStr));
+    result.push_back(Pair("staker_address", EncodeDestination(stakeAddr, true)));
     return result;
 }
 
@@ -1683,12 +1689,13 @@ UniValue CreateLeasingTransaction(const UniValue& params, CWalletTx& wtxNew, CRe
     }
 
     // Get Leasing Address
-    CBTCUAddress leaserAddr(params[0].get_str());
     CKeyID leaserKey;
-    if (!leaserAddr.IsValid() || !leaserAddr.IsLeasingAddress())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU leasing address");
-    if (!leaserAddr.GetKeyID(leaserKey))
-        throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get leaser pubkey hash from leasingaddress");
+    CTxDestination leaserAddr = DecodeDestination(params[2].get_str());
+    if (!IsValidDestination(leaserAddr) || IsLeasingAddress(leaserAddr))
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid PIVX spending address");
+
+    //if (!leaserAddr.GetKeyID(leaserKey))
+    //    throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get leaser pubkey hash from leasingaddress");
 
     // Get Amount
     CAmount nValue = AmountFromValue(params[1]);
@@ -1713,15 +1720,16 @@ UniValue CreateLeasingTransaction(const UniValue& params, CWalletTx& wtxNew, CRe
     }
 
     // Get Owner Address
-    CBTCUAddress ownerAddr;
+    std::string ownerAddressStr;
+    CTxDestination ownerAddr;
     CKeyID ownerKey;
     if (params.size() > 3 && !params[3].isNull() && !params[3].get_str().empty()) {
         // Address provided
-        ownerAddr.SetString(params[3].get_str());
-        if (!ownerAddr.IsValid())
+        CTxDestination dest = DecodeDestination(params[3].get_str());
+        if (!IsValidDestination(dest) )
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU spending address");
-        if (!ownerAddr.GetKeyID(ownerKey))
-            throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get spend pubkey hash from owneraddress");
+        //if (!ownerAddr.GetKeyID(ownerKey))
+        //    throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get spend pubkey hash from owneraddress");
         // Check that the owner address belongs to this wallet, or fForceExternalAddr is true
         bool fForceExternalAddr = params.size() > 4 && !params[4].isNull() ? params[4].get_bool() : false;
         if (!fForceExternalAddr && !pwalletMain->HaveKey(ownerKey)) {
@@ -1729,15 +1737,19 @@ UniValue CreateLeasingTransaction(const UniValue& params, CWalletTx& wtxNew, CRe
                                            "Set 'fExternalOwner' argument to true, in order to force the leasing to an external owner address.\n"
                                            "e.g. leasetoaddress leasingaddress amount owneraddress true.\n"
                                            "WARNING: Only the owner of the key to owneraddress will be allowed to spend these coins after the leasing.",
-                                           ownerAddr.ToString());
+                                           params[3].get_str());
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, errMsg);
         }
 
     } else {
         // Get new owner address from keypool
         ownerAddr = GetNewAddressFromAccount(AddressBook::AddressBookPurpose::LEASED, NullUniValue);
-        if (!ownerAddr.GetKeyID(ownerKey))
-            throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get spend pubkey hash from owneraddress");
+        CKeyID* pOwnerKey = boost::get<CKeyID>(&ownerAddr);
+        assert(pOwnerKey);
+        ownerKey = *pOwnerKey;
+        ownerAddressStr = EncodeDestination(ownerAddr);
+        //if (!ownerAddr.GetKeyID(ownerKey))
+        //    throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get spend pubkey hash from owneraddress");
     }
 
     // Get P2L script for addresses
@@ -1753,8 +1765,8 @@ UniValue CreateLeasingTransaction(const UniValue& params, CWalletTx& wtxNew, CRe
     }
 
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("owner_address", ownerAddr.ToString()));
-    result.push_back(Pair("leaser_address", leaserAddr.ToString()));
+    result.push_back(Pair("owner_address", ownerAddressStr));
+    result.push_back(Pair("leaser_address", EncodeDestination(leaserAddr)));
     return result;
 }
 

@@ -519,11 +519,11 @@ public:
     //  keystore implementation
     // Generate a new key
     CPubKey GenerateNewKey();
-    PairResult getNewAddress(CBTCUAddress& ret, const std::string addressLabel, const std::string purpose,
+    PairResult getNewAddress(CTxDestination& ret, const std::string addressLabel, const std::string purpose,
                                            const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
-    PairResult getNewAddress(CBTCUAddress& ret, std::string label);
-    PairResult getNewStakingAddress(CBTCUAddress& ret, std::string label);
-    PairResult getNewLeasingAddress(CBTCUAddress& ret, std::string label);
+    PairResult getNewAddress(CTxDestination& ret, std::string label);
+    PairResult getNewStakingAddress(CTxDestination& ret, std::string label);
+    PairResult getNewLeasingAddress(CTxDestination& ret, std::string label);
     int64_t GetKeyCreationTime(CPubKey pubkey);
     int64_t GetKeyCreationTime(const CBTCUAddress& address);
     int64_t GetKeyCreationTime(const libzcash::SaplingPaymentAddress& address);

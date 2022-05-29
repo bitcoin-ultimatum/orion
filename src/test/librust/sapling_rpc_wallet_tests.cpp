@@ -423,22 +423,24 @@ BOOST_AUTO_TEST_CASE(rpc_shieldsendmany_taddr_to_sapling)
     UniValue retValue;
 
     // add keys manually
-    CBTCUAddress taddr;
+    //CBTCUAddress taddr;
+    CTxDestination taddr;// = *res.getObjResult();
     m_wallet.getNewAddress(taddr, "");
-   // BOOST_CHECK(taddr.Get());
+    //BOOST_CHECK(taddr);
     //CTxDestination taddr = *res.getObjResult();
-    std::string taddr1 = EncodeDestination(taddr.Get());
+    std::string taddr1 = EncodeDestination(taddr);
     auto zaddr1 = m_wallet.GenerateNewSaplingZKey();
 
     auto consensusParams = Params().GetConsensus();
 
     // Add a fake transaction to the wallet
     CMutableTransaction mtx;
-    mtx.vout.emplace_back(5 * COIN, GetScriptForDestination(taddr.Get()));
+    mtx.vout.emplace_back(5 * COIN, GetScriptForDestination(taddr));
     // Add to wallet and get the updated wtx
-    CWalletTx wtxIn(&m_wallet);
+    CWalletTx wtxIn(&m_wallet,MakeTransactionRef(mtx));
     m_wallet.LoadToWallet(wtxIn);
-    CWalletTx& wtx = m_wallet.mapWallet.at(mtx.GetHash());
+    auto h = mtx.GetHash();
+    CWalletTx& wtx = m_wallet.mapWallet.at(h);
 
     // Fake-mine the transaction
     BOOST_CHECK_EQUAL(0, chainActive.Height());
@@ -459,7 +461,7 @@ BOOST_AUTO_TEST_CASE(rpc_shieldsendmany_taddr_to_sapling)
 
     std::vector<SendManyRecipient> recipients = { SendManyRecipient(zaddr1, 1 * COIN, "ABCD", false) };
     SaplingOperation operation(consensusParams, &m_wallet);
-    operation.setFromAddress(taddr.Get());
+    operation.setFromAddress(taddr);
     BOOST_CHECK(operation.setRecipients(recipients)
                          ->setMinDepth(0)
                          ->build());
@@ -476,8 +478,8 @@ BOOST_AUTO_TEST_CASE(rpc_shieldsendmany_taddr_to_sapling)
     // Test mode does not send the transaction to the network.
     auto hexTx = EncodeHexTx(operation.getFinalTx());
     CDataStream ss(ParseHex(hexTx), SER_NETWORK, PROTOCOL_VERSION);
-    CTransaction tx(CMutableTransaction(ss));
-    /*BOOST_ASSERT(!tx.sapData.vShieldedOutput.empty());
+    CTransaction tx(deserialize, ss);
+    BOOST_ASSERT(!tx.sapData->vShieldedOutput.empty());
 
     // We shouldn't be able to decrypt with the empty ovk
     BOOST_CHECK(!libzcash::AttemptSaplingOutDecryption(
@@ -497,7 +499,7 @@ BOOST_AUTO_TEST_CASE(rpc_shieldsendmany_taddr_to_sapling)
     // Tear down
     chainActive.SetTip(nullptr);
     mapBlockIndex.erase(blockHash);
-    vpwallets.erase(vpwallets.begin());*/
+    vpwallets.erase(vpwallets.begin());
 }
 
 BOOST_AUTO_TEST_CASE(rpc_listshieldunspent_parameters)

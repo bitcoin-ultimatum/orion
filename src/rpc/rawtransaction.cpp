@@ -26,6 +26,7 @@
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #endif
+#include "key_io.h"
 
 #include <stdint.h>
 
@@ -255,13 +256,13 @@ UniValue listunspent(const UniValue& params, bool fHelp)
     if (params.size() > 1)
         nMaxDepth = params[1].get_int();
 
-    std::set<CBTCUAddress> setAddress;
+    std::set<CTxDestination> setAddress;
     if (params.size() > 2) {
         UniValue inputs = params[2].get_array();
         for (unsigned int inx = 0; inx < inputs.size(); inx++) {
             const UniValue& input = inputs[inx];
-            CBTCUAddress address(input.get_str());
-            if (!address.IsValid())
+            CTxDestination address = DecodeDestination(input.get_str());
+            if (!IsValidDestination(address))
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid BTCU address: ") + input.get_str());
             if (setAddress.count(address))
                 throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ") + input.get_str());
@@ -290,7 +291,7 @@ UniValue listunspent(const UniValue& params, bool fHelp)
             if (!ExtractDestination(out.tx->vout[out.i].scriptPubKey, address))
                 continue;
 
-            if (!setAddress.count(CBTCUAddress(address)))
+            if (!setAddress.count(address))
                 continue;
         }
 

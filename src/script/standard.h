@@ -193,7 +193,7 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet,
 bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<CTxDestination>& addressRet, int& nRequiredRet);
 /** Check whether a CTxDestination is a CNoDestination. */
 bool IsValidDestination(const CTxDestination& dest);
-
+bool IsLeasingAddress(CTxDestination& dest);
 /** Check whether a CTxDestination can be used as contract sender address. */
 bool IsValidContractSenderAddress(const CTxDestination& dest);
 
