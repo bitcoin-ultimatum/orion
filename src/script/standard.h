@@ -11,7 +11,7 @@
 #include "script/interpreter.h"
 #include "uint256.h"
 #include <util/hash_type.h>
-
+#include "variant"
 #include <boost/variant.hpp>
 
 #include <stdint.h>
