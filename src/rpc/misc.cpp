@@ -23,6 +23,8 @@
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
+#include "key_io.h"
+
 #endif
 
 #include <stdint.h>
@@ -241,7 +243,7 @@ UniValue mnsync(const UniValue& params, bool fHelp)
 }
 
 #ifdef ENABLE_WALLET
-class DescribeAddressVisitor : public boost::static_visitor<UniValue>
+class DescribeAddressVisitor
 {
 private:
     isminetype mine;
@@ -291,20 +293,51 @@ public:
     UniValue operator()(const CKeyID &keyID) const {
         UniValue obj(UniValue::VOBJ);
         CPubKey vchPubKey;
-        obj.push_back(Pair("isscript", false));
-        if (bool(mine & ISMINE_ALL)) {
-            pwalletMain->CCryptoKeyStore::GetPubKey(keyID, vchPubKey);
-            obj.push_back(Pair("pubkey", HexStr(vchPubKey)));
-            obj.push_back(Pair("iscompressed", vchPubKey.IsCompressed()));
+        obj.pushKV("isscript", false);
+        if (pwalletMain && pwalletMain->GetPubKey(keyID, vchPubKey)) {
+            obj.pushKV("pubkey", HexStr(vchPubKey));
+            obj.pushKV("iscompressed", vchPubKey.IsCompressed());
         }
         return obj;
     }
 
     UniValue operator()(const CScriptID &scriptID) const {
         UniValue obj(UniValue::VOBJ);
+        obj.pushKV("isscript", true);
+        CScript subscript;
+        if (pwalletMain && pwalletMain->GetCScript(scriptID, subscript)) {
+            std::vector<CTxDestination> addresses;
+            txnouttype whichType;
+            int nRequired;
+            ExtractDestinations(subscript, whichType, addresses, nRequired);
+            obj.pushKV("script", GetTxnOutputType(whichType));
+            obj.pushKV("hex", HexStr(subscript));
+            UniValue a(UniValue::VARR);
+            for (const CTxDestination& addr : addresses)
+                a.push_back(EncodeDestination(addr));
+            obj.pushKV("addresses", a);
+            if (whichType == TX_MULTISIG)
+                obj.pushKV("sigsrequired", nRequired);
+        }
+        return obj;
+    }
+    UniValue operator()(const PKHash &keyID) const {
+        UniValue obj(UniValue::VOBJ);
+        CPubKey vchPubKey;
+        obj.push_back(Pair("isscript", false));
+        if (bool(mine & ISMINE_ALL)) {
+            pwalletMain->CCryptoKeyStore::GetPubKey(ToKeyID(keyID), vchPubKey);
+            obj.push_back(Pair("pubkey", HexStr(vchPubKey)));
+            obj.push_back(Pair("iscompressed", vchPubKey.IsCompressed()));
+        }
+        return obj;
+    }
+
+    UniValue operator()(const ScriptHash &scriptID) const {
+        UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("isscript", true));
         CScript subscript;
-        pwalletMain->CCryptoKeyStore::GetCScript(scriptID, subscript);
+        pwalletMain->CCryptoKeyStore::GetCScript(CScriptID(scriptID), subscript);
         std::vector<CTxDestination> addresses;
         txnouttype whichType;
         int nRequired;
@@ -313,7 +346,7 @@ public:
         obj.push_back(Pair("hex", HexStr(subscript.begin(), subscript.end())));
         UniValue a(UniValue::VARR);
         for (const CTxDestination& addr : addresses)
-            a.push_back(CBTCUAddress(addr).ToString());
+            a.push_back(EncodeDestination(addr));
         obj.push_back(Pair("addresses", a));
         if (whichType == TX_MULTISIG)
             obj.push_back(Pair("sigsrequired", nRequired));
@@ -339,6 +372,16 @@ public:
       obj.pushKV("witness_program", HexStr(id.begin(), id.end()));
       return obj;
     }
+
+   UniValue operator()(const WitnessV1Taproot& tap) const
+   {
+      UniValue obj(UniValue::VOBJ);
+      obj.pushKV("isscript", true);
+      obj.pushKV("iswitness", true);
+      obj.pushKV("witness_version", 1);
+      obj.pushKV("witness_program", HexStr(tap));
+      return obj;
+   }
 
     UniValue operator()(const WitnessUnknown& id) const
     {
@@ -414,7 +457,7 @@ UniValue spork(const UniValue& params, bool fHelp)
         HelpExampleCli("spork", "show") + HelpExampleRpc("spork", "show"));
 }
 
-typedef boost::variant<libzcash::InvalidEncoding, libzcash::SaplingPaymentAddress, CTxDestination, CBTCUAddress> PPaymentAddress;
+typedef boost::variant<libzcash::InvalidEncoding, libzcash::SaplingPaymentAddress, CTxDestination> PPaymentAddress;
 
 UniValue validateaddress(const UniValue& params, bool fHelp)
 {
@@ -451,36 +494,31 @@ UniValue validateaddress(const UniValue& params, bool fHelp)
 #endif
 
     std::string strAddress = params[0].get_str();
-    bool isStakingAddress = false;
-    CTxDestination addr = DecodeDestination(strAddress);
-    CBTCUAddress address(strAddress);
-    address.Set(addr,CChainParams::PUBKEY_ADDRESS);
-    bool isValid = address.IsValid();
+    bool isStaking = false;
+    CTxDestination dest = DecodeDestination(params[0].get_str(), isStaking);
+    bool isValid = IsValidDestination(dest);
 
     PPaymentAddress finalAddress;
     if (!isValid) {
         isValid = KeyIO::IsValidPaymentAddressString(strAddress);
         if (isValid) finalAddress = KeyIO::DecodePaymentAddress(strAddress);
     } else {
-        finalAddress = address;
+        finalAddress = dest;
     }
 
     UniValue ret(UniValue::VOBJ);
     ret.push_back(Pair("isvalid", isValid));
     if (isValid) {
-        CTxDestination dest = address.Get();
-        std::string currentAddress = address.ToString();
-        ret.push_back(Pair("address", currentAddress));
+        ret.push_back(Pair("address", params[0].get_str()));
         CScript scriptPubKey = GetScriptForDestination(dest);
         ret.push_back(Pair("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
 
 #ifdef ENABLE_WALLET
         isminetype mine = pwalletMain ? IsMine(*pwalletMain, dest) : ISMINE_NO;
         ret.push_back(Pair("ismine", bool(mine & (ISMINE_SPENDABLE_ALL | ISMINE_COLD | ISMINE_LEASING))));
-        ret.push_back(Pair("isstaking", address.IsStakingAddress()));
-        ret.push_back(Pair("isleasing", address.IsLeasingAddress()));
+        ret.push_back(Pair("isstaking", isStaking));
         ret.push_back(Pair("iswatchonly", bool(mine & ISMINE_WATCH_ONLY)));
-        UniValue detail = boost::apply_visitor(DescribeAddressVisitor(mine), dest);
+        UniValue detail = std::visit(DescribeAddressVisitor(mine), dest);
         ret.pushKVs(detail);
         if (pwalletMain && pwalletMain->mapAddressBook.count(dest))
             ret.push_back(Pair("account", pwalletMain->mapAddressBook[dest].name));
@@ -513,10 +551,10 @@ CScript _createmultisig_redeemScript(const UniValue& params)
         const std::string& ks = keys[i].get_str();
 #ifdef ENABLE_WALLET
         // Case 1: BTCU address and we have full public key:
-        CBTCUAddress address(ks);
-        if (pwalletMain && address.IsValid()) {
-            CKeyID keyID;
-            if (!address.GetKeyID(keyID))
+        CTxDestination address = DecodeDestination(ks);
+        if (pwalletMain && IsValidDestination(address)) {
+            CKeyID keyID = GetKeyForDestination(*pwalletMain, address);
+            if (keyID.IsNull())
                 throw std::runtime_error(
                     strprintf("%s does not refer to a key", ks));
             CPubKey vchPubKey;
@@ -580,10 +618,9 @@ UniValue createmultisig(const UniValue& params, bool fHelp)
     // Construct using pay-to-script-hash:
     CScript inner = _createmultisig_redeemScript(params);
     CScriptID innerID(inner);
-    CBTCUAddress address(innerID);
-
+    
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("address", address.ToString()));
+    result.push_back(Pair("address", EncodeDestination(ScriptHash(innerID))));
     result.push_back(Pair("redeemScript", HexStr(inner.begin(), inner.end())));
 
     return result;
@@ -620,12 +657,12 @@ UniValue verifymessage(const UniValue& params, bool fHelp)
     std::string strSign = params[1].get_str();
     std::string strMessage = params[2].get_str();
 
-    CBTCUAddress addr(strAddress);
-    if (!addr.IsValid())
+    CTxDestination addr = DecodeDestination(strAddress);
+    if (!IsValidDestination(addr))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
 
-    CKeyID keyID;
-    if (!addr.GetKeyID(keyID))
+    CKeyID keyID = GetKeyForDestination(*pwalletMain, addr);
+    if (keyID.IsNull())
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
 
     bool fInvalid = false;

@@ -5,8 +5,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "key.h"
-
-#include "btcu_address.h"
+#include "key_io.h"
 #include "script/script.h"
 #include "uint256.h"
 #include "util.h"
@@ -23,6 +22,10 @@ static const std::string strSecret1     ("5JJb2QcaFRFoQiibPw78CfFJn72mz97EW3CqmK
 static const std::string strSecret2     ("5Khom5rH11SV8yL3s48gzQm4a1vfeznPWikmbVPcsMAXCpDQx2C");
 static const std::string strSecret1C    ("KyNdBDE1ke4Kqh8apDp2nTp9U5cqZCnWbAjGEdqy6SFQ9kH9iYH3");
 static const std::string strSecret2C    ("L5Z7PaQVd2wVCBd5dvpwWPsUkj5sci3LNBJBqEJqKE12JkxXBtn1");
+static const std::string addr1 = "1J8Wz5gecX3Bh8VsQbe9KvQu8Ff3JHHTJZ";
+static const std::string addr2 = "1HCYAXkdTrzdCsuucxmGXpzdeujjcWc2ir";
+static const std::string addr1C = "196eHcVw3frkWbvrWSYseqf3a3MgwYgNMg";
+static const std::string addr2C = "1NwXuxAETu32zt6ZdXRRcVdFgvTLTf9Ud3";
 
 static const std::string strAddressBad("Xta1praZQjyELweyMByXyiREw1ZRsjXzVP");
 
@@ -58,26 +61,16 @@ BOOST_FIXTURE_TEST_SUITE(key_tests, TestingSetup)
 
 BOOST_AUTO_TEST_CASE(key_test1)
 {
-    const CBTCUAddress addr1 ("1J8Wz5gecX3Bh8VsQbe9KvQu8Ff3JHHTJZ");
-    const CBTCUAddress addr2 ("1HCYAXkdTrzdCsuucxmGXpzdeujjcWc2ir");
-    const CBTCUAddress addr1C("196eHcVw3frkWbvrWSYseqf3a3MgwYgNMg");
-    const CBTCUAddress addr2C("1NwXuxAETu32zt6ZdXRRcVdFgvTLTf9Ud3");
-
-    CBTCUSecret bsecret1, bsecret2, bsecret1C, bsecret2C, baddress1;
-    BOOST_CHECK( bsecret1.SetString (strSecret1));
-    BOOST_CHECK( bsecret2.SetString (strSecret2));
-    BOOST_CHECK( bsecret1C.SetString(strSecret1C));
-    BOOST_CHECK( bsecret2C.SetString(strSecret2C));
-    BOOST_CHECK(!baddress1.SetString(strAddressBad));
-
-    CKey key1  = bsecret1.GetKey();
-    BOOST_CHECK(key1.IsCompressed() == false);
-    CKey key2  = bsecret2.GetKey();
-    BOOST_CHECK(key2.IsCompressed() == false);
-    CKey key1C = bsecret1C.GetKey();
-    BOOST_CHECK(key1C.IsCompressed() == true);
-    CKey key2C = bsecret2C.GetKey();
-    BOOST_CHECK(key2C.IsCompressed() == true);
+    CKey key1  = DecodeSecret(strSecret1);
+    BOOST_CHECK(key1.IsValid() && !key1.IsCompressed());
+    CKey key2  = DecodeSecret(strSecret2);
+    BOOST_CHECK(key2.IsValid() && !key2.IsCompressed());
+    CKey key1C = DecodeSecret(strSecret1C);
+    BOOST_CHECK(key1C.IsValid() && key1C.IsCompressed());
+    CKey key2C = DecodeSecret(strSecret2C);
+    BOOST_CHECK(key2C.IsValid() && key2C.IsCompressed());
+    CKey bad_key = DecodeSecret(strAddressBad);
+    BOOST_CHECK(!bad_key.IsValid());
 
     CPubKey pubkey1  = key1. GetPubKey();
     CPubKey pubkey2  = key2. GetPubKey();
@@ -104,10 +97,10 @@ BOOST_AUTO_TEST_CASE(key_test1)
     BOOST_CHECK(!key2C.VerifyPubKey(pubkey2));
     BOOST_CHECK(key2C.VerifyPubKey(pubkey2C));
 
-    BOOST_CHECK(addr1.Get()  == CTxDestination(pubkey1.GetID()));
-    BOOST_CHECK(addr2.Get()  == CTxDestination(pubkey2.GetID()));
-    BOOST_CHECK(addr1C.Get() == CTxDestination(pubkey1C.GetID()));
-    BOOST_CHECK(addr2C.Get() == CTxDestination(pubkey2C.GetID()));
+    BOOST_CHECK(DecodeDestination(addr1)  == CTxDestination(pubkey1.GetID()));
+    BOOST_CHECK(DecodeDestination(addr2)  == CTxDestination(pubkey2.GetID()));
+    BOOST_CHECK(DecodeDestination(addr1C) == CTxDestination(pubkey1C.GetID()));
+    BOOST_CHECK(DecodeDestination(addr2C) == CTxDestination(pubkey2C.GetID()));
 
     for (int n=0; n<16; n++)
     {

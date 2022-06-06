@@ -51,6 +51,7 @@
 #include "libzerocoin/Denominations.h"
 #include "invalid.h"
 #include "validators_voting.h"
+#include "policy/policy.h"
 #include <sstream>
 
 #include <boost/filesystem.hpp>
@@ -839,7 +840,7 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
       } else if (whichType == TX_SCRIPTHASH) {
          std::vector<std::vector<unsigned char> > stack;
          // convert the scriptSig into a stack, so we can inspect the redeemScript
-         if (!BTC::EvalScript(stack, tx.vin[i].scriptSig, false, BTC::BaseSignatureChecker(), SigVersion::BASE))
+         if (!EvalScript(stack, tx.vin[i].scriptSig, false, BaseSignatureChecker(), SigVersion::BASE))
             return false;
          if (stack.empty())
             return false;
@@ -1284,6 +1285,17 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
             view.GetBestBlock();
 
             nValueIn = view.GetValueIn(tx);
+
+           //check validator transaction
+           std::vector<CTransaction> validatorTransactions;
+           for(auto &t: pool.mapTx){
+              const CTransaction &valTx = t.second.GetTx();
+              if(valTx.IsValidatorVote() || valTx.IsValidatorRegister())
+                 validatorTransactions.push_back(valTx);
+           }
+           // nHeight is +1 due to current transaction should be included at least into the next block
+           if(!CheckValidatorTransaction(tx, state, view, chainActive.Height() + 1, validatorTransactions))
+              return false;
 
             // we have all inputs cached now, so switch back to dummy, so we don't need to keep lock on mempool
             view.SetBackend(dummy);
@@ -2036,7 +2048,7 @@ void UpdateCoins(const CTransaction& tx, CValidationState& state, CCoinsViewCach
 bool CScriptCheck::operator()() {
    const CScript &scriptSig = ptxTo->vin[nIn].scriptSig;
    const CScriptWitness *witness = &ptxTo->vin[nIn].scriptWitness;
-   return BTC::VerifyScript(scriptSig, m_tx_out.scriptPubKey, witness, nFlags, BTC::CachingTransactionSignatureChecker(ptxTo, nIn, m_tx_out.nValue, cacheStore, *txdata), &error);
+   return VerifyScript(scriptSig, m_tx_out.scriptPubKey, witness, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, m_tx_out.nValue, cacheStore, *txdata), &error);
 }
 
 std::map<COutPoint, COutPoint> mapInvalidOutPoints;
@@ -2190,7 +2202,7 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
                 assert(coins);
 
                 // Verify signature
-                BTC::PrecomputedTransactionData txdata(tx);
+                PrecomputedTransactionData txdata(tx);
                 CScriptCheck check(coins->vout[prevout.n], tx, i, flags, cacheStore, &txdata);
 
                 if (pvChecks) {
@@ -3003,27 +3015,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                        CKeyID senderAddr = CKeyID(uint160(GetSenderAddress(tx, &view, NULL, nOut)));
 
                        //okay, seek trx pubkey in validators
-                       //genesis validators
-                       auto genesisValidators = Params().GenesisBlock().vtx[0].validatorRegister;
-                       for(auto &gv : genesisValidators){
-                          if(senderAddr == gv.pubKey.GetID()){
-                             bSCValidatorFound = true;
-                             break;
-                          }
-                       }
+                       bSCValidatorFound = isAddressValidator(senderAddr);
 
-                       //voted validators
-                       if(!bSCValidatorFound)
-                       {
-                          auto validatorsRegistrationList = g_ValidatorsState.get_validators();
-                          for (auto& rv: validatorsRegistrationList)
-                          {
-                             if(senderAddr == rv.pubKey.GetID()){
-                                bSCValidatorFound = true;
-                                break;
-                             }
-                          }
-                       }
                        //if key found - break;
                        if(bSCValidatorFound)
                           break;
@@ -3036,7 +3029,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  return state.DoS(100, error("ConnectBlock() : Non-validator create contract not allowed"),
                                   REJECT_INVALID, "sc-create-invalid");
 
-              if (!CheckSenderScript(view, tx)) {
+              if (!CheckSenderScript(view, tx, &block)) {
                  return state.Error("bad-txns-invalid-sender-script");
               }
 
@@ -6187,7 +6180,10 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
                               !pSporkDB->SporkExists(SPORK_16_ZEROCOIN_MAINTENANCE_MODE) ||
                               !pSporkDB->SporkExists(SPORK_17_COLDSTAKING_ENFORCEMENT) ||
                               !pSporkDB->SporkExists(SPORK_1017_LEASING_ENFORCEMENT) ||
-                              !pSporkDB->SporkExists(SPORK_18_ZEROCOIN_PUBLICSPEND_V4);
+                              !pSporkDB->SporkExists(SPORK_18_ZEROCOIN_PUBLICSPEND_V4) ||
+                              !pSporkDB->SporkExists(SPORK_1018_MAX_VALIDATORS) ||
+                              !pSporkDB->SporkExists(SPORK_1019_CREATECONTRACT_ANY_ALLOWED) ||
+                              !pSporkDB->SporkExists(SPORK_1020_VALIDATOR_ENFORCEMENT);
 
         if (fMissingSporks || !fRequestedSporksIDB){
             LogPrintf("asking peer for sporks\n");

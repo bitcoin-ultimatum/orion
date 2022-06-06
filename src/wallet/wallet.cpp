@@ -20,12 +20,15 @@
 
 #ifdef ENABLE_LEASING_MANAGER
 #include "leasing/leasingmanager.h"
+#include "script/signingprovider.h"
+
 #endif
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 #include <key_io.h>
 #include "script/ismine.h"
+#include <random>
 
 #include "keystore.h"
 
@@ -33,6 +36,7 @@ std::vector<CWalletRef> vpwallets;
 /**
  * Settings
  */
+const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 CFeeRate payTxFee(DEFAULT_TRANSACTION_FEE);
 CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
 unsigned int nTxConfirmTarget = 1;
@@ -40,6 +44,11 @@ bool bSpendZeroConfChange = true;
 bool bdisableSystemnotifications = false; // Those bubbles can be annoying and slow down the UI when you get lots of trx
 bool fSendFreeTransactions = false;
 bool fPayAtLeastCustomFee = true;
+
+static const std::string OUTPUT_TYPE_STRING_LEGACY = "legacy";
+static const std::string OUTPUT_TYPE_STRING_P2SH_SEGWIT = "p2sh-segwit";
+static const std::string OUTPUT_TYPE_STRING_BECH32 = "bech32";
+static const std::string OUTPUT_TYPE_STRING_BECH32M = "bech32m";
 
 /**
  * Fees smaller than this (in ubtcu) are considered zero fee (for transaction creation)
@@ -234,7 +243,7 @@ PairResult CWallet::getNewAddress(CTxDestination& ret, const std::string address
     }
     CKeyID keyID = newKey.GetID();
 
-    if (!SetAddressBook(keyID, addressLabel, purpose))
+    if (!SetAddressBook(PKHash(keyID), addressLabel, purpose))
         throw std::runtime_error("CWallet::getNewAddress() : SetAddressBook failed");
 
     ret = CTxDestination(keyID);
@@ -261,10 +270,13 @@ public:
         std::vector<CTxDestination> vDest;
         int nRequired;
         if (ExtractDestinations(script, type, vDest, nRequired)) {
-            for (const CTxDestination& dest : vDest)
-                boost::apply_visitor(*this, dest);
+            for (const CTxDestination& dest : vDest) {
+                //boost::apply_visitor(*this, dest);
+            }
         }
     }
+
+    void operator()(const CNoDestination& none) {}
 
     void operator()(const CKeyID& keyId)
     {
@@ -279,9 +291,23 @@ public:
             Process(script);
     }
 
+    void operator()(const PKHash& keyId)
+    {
+        if (keystore.HaveKey(ToKeyID(keyId)))
+            vKeys.push_back(ToKeyID(keyId));
+    }
+
+    void operator()(const ScriptHash& scripthash)
+    {
+        CScript script;
+        CScriptID scriptID(scripthash);
+        if (keystore.GetCScript(scriptID, script))
+            Process(script);
+    }
+
     void operator()(const WitnessV0KeyHash& id)
     {
-        CKeyID keyId(id);
+        CKeyID keyId(ToKeyID(id));
         if (keystore.HaveKey(keyId))
             vKeys.push_back(keyId);
     }
@@ -295,9 +321,10 @@ public:
             Process(script);
     }
 
+    void operator()(const WitnessV1Taproot& id) {}
+
     void operator()(const WitnessUnknown& id) {}
 
-    void operator()(const CNoDestination& none) {}
 };
 
 std::vector<CKeyID> CWallet::GetAffectedKeys(const CScript& spk)
@@ -342,10 +369,10 @@ int64_t CWallet::GetKeyCreationTime(CPubKey pubkey)
     return mapKeyMetadata[pubkey.GetID()].nCreateTime;
 }
 
-int64_t CWallet::GetKeyCreationTime(const CBTCUAddress& address)
+int64_t CWallet::GetKeyCreationTime(const CTxDestination & address)
 {
-    CKeyID keyID;
-    if (address.GetKeyID(keyID)) {
+    CKeyID keyID = GetKeyForDestination(*this, address);
+    if (!keyID.IsNull()) {
         CPubKey keyRet;
         if (GetPubKey(keyID, keyRet)) {
             return GetKeyCreationTime(keyRet);
@@ -369,7 +396,7 @@ bool CWallet::AddKeyPubKey(const CKey& secret, const CPubKey& pubkey)
 
     // check if we need to remove from watch-only
     CScript script;
-    script = GetScriptForDestination(pubkey.GetID());
+    script = GetScriptForDestination(PKHash(pubkey.GetID()));
     if (HaveWatchOnly(script))
         RemoveWatchOnly(script);
 
@@ -430,7 +457,7 @@ bool CWallet::LoadCScript(const CScript& redeemScript)
      * that never can be redeemed. However, old wallets may still contain
      * these. Do not add them to the wallet and warn. */
     if (redeemScript.size() > MAX_SCRIPT_ELEMENT_SIZE) {
-        std::string strAddr = CBTCUAddress(CScriptID(redeemScript)).ToString();
+        std::string strAddr = EncodeDestination(ScriptHash(redeemScript));
         LogPrintf("%s: Warning: This wallet contains a redeemScript of size %i which exceeds maximum size %i thus can never be redeemed. Do not use address %s.\n",
             __func__, redeemScript.size(), MAX_SCRIPT_ELEMENT_SIZE, strAddr);
         return true;
@@ -897,13 +924,12 @@ bool CWallet::GetVinAndKeysFromOutput(COutput out, CTxIn& txinRet, CPubKey& pubK
 
     CTxDestination address1;
     ExtractDestination(pubScript, address1, fColdStake, fLease);
-    CBTCUAddress address2(address1);
 
-    CKeyID keyID;
-    if (!address2.GetKeyID(keyID)) {
-        LogPrintf("CWallet::GetVinAndKeysFromOutput -- Address does not refer to a key\n");
-        return false;
-    }
+    if(!IsValidDestination(address1))
+       LogPrintf("CWallet::GetVinAndKeysFromOutput -- Invalid BTCU address\n");
+    const CKeyID keyID = ToKeyID(*std::get_if<PKHash>(&address1));
+    if (keyID.IsNull())
+       LogPrintf("CWallet::GetVinAndKeysFromOutput -- Address does not refer to a key\n");
 
     if (!GetKey(keyID, keyRet)) {
         LogPrintf("CWallet::GetVinAndKeysFromOutput -- Private key for address is not known\n");
@@ -1338,10 +1364,10 @@ isminetype CWallet::IsMine(const CTxIn& txin) const
     return ISMINE_NO;
 }
 
-bool CWallet::IsUsed(const CBTCUAddress address) const
+bool CWallet::IsUsed(const CTxDestination address) const
 {
     LOCK(cs_wallet);
-    CScript scriptPubKey = GetScriptForDestination(address.Get());
+    CScript scriptPubKey = GetScriptForDestination(address);
     if (!::IsMine(*this, scriptPubKey)) {
         return false;
     }
@@ -2462,7 +2488,7 @@ bool CWallet::GetMaxP2LCoins(CPubKey& pubKeyRet, CKey& keyRet, CAmount& amount) 
         CTxDestination dest;
         ExtractDestination(coins.tx->vout[coins.i].scriptPubKey, dest, false, true);
 
-        CKeyID key = boost::get<CKeyID>(dest);
+        CKeyID key = ToKeyID(*(std::get_if<PKHash>(&dest)));
 
         auto itr = mapKeys.emplace(key, 0);
         itr.first->second += coins.Value();
@@ -2581,6 +2607,9 @@ bool CWallet::AvailableCoins(
 
                     if (!Solver(scriptPubKeyKernel, whichType, vSolutions)) continue;
                     if (whichType != TX_PUBKEY && whichType != TX_PUBKEYHASH && whichType != TX_COLDSTAKE) continue;
+
+                    //check if leasing locktime has not yet come
+                    if (whichType == TX_LEASE_CLTV && CScriptNum::vch_to_uint64(vSolutions[0]) < chainActive.Tip()->GetBlockTime()) continue;
                 }
 
                 if (IsSpent(wtxid, i)) continue;
@@ -2780,13 +2809,13 @@ CWallet::OutputAvailabilityResult CWallet::CheckOutputAvailability(
     return res;
 }
 
-std::map<CBTCUAddress, std::vector<COutput> > CWallet::AvailableCoinsByAddress(bool fConfirmed, CAmount maxCoinValue)
+std::map<CTxDestination, std::vector<COutput> > CWallet::AvailableCoinsByAddress(bool fConfirmed, CAmount maxCoinValue)
 {
     std::vector<COutput> vCoins;
     // include cold and delegated coins
     AvailableCoins(&vCoins, fConfirmed, nullptr, false, ALL_COINS, false, 1, true, true, false, false, false);
 
-    std::map<CBTCUAddress, std::vector<COutput> > mapCoins;
+    std::map<CTxDestination, std::vector<COutput> > mapCoins;
     for (COutput out : vCoins) {
         if (maxCoinValue > 0 && out.tx->vout[out.i].nValue > maxCoinValue)
             continue;
@@ -2809,7 +2838,7 @@ std::map<CBTCUAddress, std::vector<COutput> > CWallet::AvailableCoinsByAddress(b
             }
         }
 
-        mapCoins[CBTCUAddress(address, addr_type)].push_back(out);
+        mapCoins[address].emplace_back(out);
     }
 
     return mapCoins;
@@ -2915,7 +2944,9 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, int nConfMine, int
     std::vector<std::pair<CAmount, std::pair<const CWalletTx*, unsigned int> > > vValue;
     CAmount nTotalLower = 0;
 
-    random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
+    std::random_device seed;
+    auto m_urng = std::mt19937_64(seed());
+    std::shuffle(vCoins.begin(), vCoins.end(), m_urng);
 
     // move denoms down on the list
     std::sort(vCoins.begin(), vCoins.end(), less_then_denom);
@@ -3254,7 +3285,7 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                   bool combineChange = false;
 
                   // coin control: send change to custom address
-                  if (coinControl && !boost::get<CNoDestination>(&coinControl->destChange))
+                  if (coinControl && !std::get_if<CNoDestination>(&coinControl->destChange))
                   {
                      scriptChange = GetScriptForDestination(coinControl->destChange);
 
@@ -3289,7 +3320,7 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                      ret = reservekey.GetReservedKey(vchPubKey);
                      assert(ret); // should never fail, as we just unlocked
 
-                     scriptChange = GetScriptForDestination(vchPubKey.GetID());
+                     scriptChange = GetScriptForDestination(PKHash(vchPubKey.GetID()));
                   }
 
                   if (!combineChange)
@@ -3330,14 +3361,15 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                         const CScript& scriptPubKey = GetScriptForDestination(signSenderAddress);
                         SignatureData sigdata;
                         const CAmount& amount = output.nValue;
-                        if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &txNew, nOut, amount, SIGHASH_ALL), scriptPubKey,sigdata))
+
+                        if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nOut, amount, SIGHASH_ALL), scriptPubKey,sigdata))
                         {
                            strFailReason = _("Signing transaction failed");
                            return false;
                         }
                         else
                         {
-                           BTC::UpdateTransaction(txNew, nOut, sigdata);
+                           UpdateInput(txNew.vin[nOut], sigdata);
                         }
                         nOut++;
                      }
@@ -3353,12 +3385,13 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                   assert(txin.prevout.n < coin.first->vout.size());
                   const CTxOut& txout = coin.first->vout[txin.prevout.n];
 
-                  if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+                  ///TODO:initialize provider with keystore(CKeyStore)
+                  if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
                   {
                      strFailReason = _("Signing transaction failed");
                      return false;
                   } else {
-                     BTC::UpdateTransaction(txNew, nIn, sigdata);
+                     UpdateInput(txin, sigdata);
                   }
                   nIn++;
                }
@@ -3550,11 +3583,11 @@ bool CWallet::CreateCoinStake(
             assert(txin.prevout.n < wtx->vout.size());
             const CTxOut& txout = wtx->vout[txin.prevout.n];
 
-            if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+            if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
             {
                return error("CreateCoinStake : failed to sign coinstake");
             } else {
-               BTC::UpdateTransaction(txNew, nIn, sigdata);
+               UpdateInput(txin, sigdata);
             }
             nIn++;
         }
@@ -3611,14 +3644,14 @@ bool CWallet::CreateLeasingRewards(
     auto lastOut = COutPoint(coinStake.GetHash(), coinStake.vout.size() - 1);
 
     if (GetMaxP2LCoins(pubKeySelf, keySelf, amount)) {
-        LeasingLogPrint("Get leasing reward for validator %s", CBTCUAddress(pubKeySelf.GetID()).ToString());
+        LeasingLogPrint("Get leasing reward for validator %s", EncodeDestination(PKHash(pubKeySelf.GetID())));
         pLeasingManager->GetLeasingRewards(LeaserType::ValidatorNode, pubKeySelf.GetID(), Params().GetMaxLeasingRewards(), tx.vout);
     }
     // validator can't sign leasing reward without reward to itself
     if (tx.vout.size() > 1 && lastOut.IsMasternodeReward(&coinStake)) {
         auto mnnode = mnodeman.Find(coinStake.vout[lastOut.n].scriptPubKey);
         if (mnnode) {
-            LeasingLogPrint("Get leasing reward for masternode %s", CBTCUAddress(mnnode->pubKeyLeasing.GetID()).ToString());
+            LeasingLogPrint("Get leasing reward for masternode %s", EncodeDestination(PKHash(mnnode->pubKeyLeasing.GetID())));
             pLeasingManager->GetLeasingRewards(LeaserType::MasterNode, mnnode->pubKeyLeasing.GetID(), Params().GetMaxLeasingRewards(), tx.vout);
         }
     }
@@ -3629,14 +3662,14 @@ bool CWallet::CreateLeasingRewards(
         return true;
     }
 
-   const CScript& scriptPubKey = GetScriptForDestination(pubKeySelf.GetID());
+   const CScript& scriptPubKey = GetScriptForDestination(PKHash(pubKeySelf.GetID()));
    SignatureData sigdata;
 
-   if (!BTC::ProduceSignature(BTC::MutableTransactionSignatureCreator(this, &tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata, false, true))
+   if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata, false, true))
    {
       return false;
    } else {
-      BTC::UpdateTransaction(tx, 0, sigdata);
+      UpdateInput(tx.vin[0], sigdata);
    }
 
 #endif
@@ -3780,16 +3813,11 @@ DBErrors CWallet::ZapWalletTx(std::vector<CWalletTx>& vWtx)
     return DB_LOAD_OK;
 }
 
-CBTCUAddress CWallet::ParseIntoAddress(const CTxDestination& dest, const std::string& purpose) {
-    const CChainParams::Base58Type addrType = [&]() -> CChainParams::Base58Type {
-        if (AddressBook::IsColdStakingPurpose(purpose)) {
-            return CChainParams::STAKING_ADDRESS;
-        } else if (AddressBook::IsLeasingPurpose(purpose)) {
-            return CChainParams::PUBKEY_ADDRESS;
-        }
-        return CChainParams::PUBKEY_ADDRESS;
-    }();
-    return CBTCUAddress(dest, addrType);
+std::string CWallet::ParseIntoAddress(const CTxDestination& dest, const std::string& purpose) {
+   const CChainParams::Base58Type addrType =
+   AddressBook::IsColdStakingPurpose(purpose) ?
+   CChainParams::STAKING_ADDRESS : CChainParams::PUBKEY_ADDRESS;
+   return EncodeDestination(dest, addrType);
 }
 
 bool CWallet::SetAddressBook(const CWDestination& address, const std::string& strName, const std::string& strPurpose)
@@ -3813,7 +3841,7 @@ bool CWallet::SetAddressBook(const CWDestination& address, const std::string& st
 
 bool CWallet::DelAddressBook(const CWDestination& address, const CChainParams::Base58Type addrType)
 {
-    std::string strAddress =  CBTCUAddress(address, addrType).ToString();
+    std::string strAddress = Standard::EncodeDestination(address, addrType);
     std::string purpose = purposeForAddress(address);
     {
         LOCK(cs_wallet); // mapAddressBook
@@ -4246,7 +4274,6 @@ void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts)
 
 /** @} */ // end of Actions
 
-
 void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t>& mapKeyBirth) const
 {
     AssertLockHeld(cs_wallet); // mapKeyMetadata
@@ -4346,13 +4373,13 @@ unsigned int CWallet::ComputeTimeSmart(const CWalletTx& wtx) const
 
 bool CWallet::AddDestData(const CTxDestination& dest, const std::string& key, const std::string& value)
 {
-    if (boost::get<CNoDestination>(&dest))
+    if (std::get_if<CNoDestination>(&dest))
         return false;
 
     mapAddressBook[dest].destdata.insert(std::make_pair(key, value));
     if (!fFileBacked)
         return true;
-    return CWalletDB(strWalletFile).WriteDestData(CBTCUAddress(dest).ToString(), key, value);
+    return CWalletDB(strWalletFile).WriteDestData(EncodeDestination(dest), key, value);
 }
 
 bool CWallet::EraseDestData(const CTxDestination& dest, const std::string& key)
@@ -4361,7 +4388,7 @@ bool CWallet::EraseDestData(const CTxDestination& dest, const std::string& key)
         return false;
     if (!fFileBacked)
         return true;
-    return CWalletDB(strWalletFile).EraseDestData(CBTCUAddress(dest).ToString(), key);
+    return CWalletDB(strWalletFile).EraseDestData(EncodeDestination(dest), key);
 }
 
 bool CWallet::LoadDestData(const CTxDestination& dest, const std::string& key, const std::string& value)
@@ -4378,10 +4405,10 @@ void CWallet::AutoCombineDust()
         return;
     }
 
-    std::map<CBTCUAddress, std::vector<COutput> > mapCoinsByAddress = AvailableCoinsByAddress(true, nAutoCombineThreshold * COIN);
+    std::map<CTxDestination , std::vector<COutput> > mapCoinsByAddress = AvailableCoinsByAddress(true, nAutoCombineThreshold * COIN);
 
     //coins are sectioned by address. This combination code only wants to combine inputs that belong to the same address
-    for (std::map<CBTCUAddress, std::vector<COutput> >::iterator it = mapCoinsByAddress.begin(); it != mapCoinsByAddress.end(); it++) {
+    for (std::map<CTxDestination , std::vector<COutput> >::iterator it = mapCoinsByAddress.begin(); it != mapCoinsByAddress.end(); it++) {
         std::vector<COutput> vCoins, vRewardCoins;
         bool maxSize = false;
         vCoins = it->second;
@@ -4430,7 +4457,7 @@ void CWallet::AutoCombineDust()
             continue;
 
         std::vector<std::pair<CScript, CAmount> > vecSend;
-        CScript scriptPubKey = GetScriptForDestination(it->first.Get());
+        CScript scriptPubKey = GetScriptForDestination(it->first);
         vecSend.push_back(std::make_pair(scriptPubKey, nTotalRewardsValue));
 
         //Send change to same address
@@ -4516,7 +4543,7 @@ bool CWallet::MultiSend()
         //Disabled Addresses won't send MultiSend transactions
         if (vDisabledAddresses.size() > 0) {
             for (unsigned int i = 0; i < vDisabledAddresses.size(); i++) {
-                if (vDisabledAddresses[i] == CBTCUAddress(destMyAddress).ToString()) {
+                if (vDisabledAddresses[i] == EncodeDestination(destMyAddress)) {
                     LogPrintf("Multisend: disabled address preventing multisend\n");
                     return false;
                 }
@@ -4540,9 +4567,8 @@ bool CWallet::MultiSend()
         for (unsigned int i = 0; i < vMultiSend.size(); i++) {
             // MultiSend vector is a pair of 1)Address as a std::string 2) Percent of stake to send as an int
             nAmount = ((out.tx->GetCredit(filter) - out.tx->GetDebit(filter)) * vMultiSend[i].second) / 100;
-            CBTCUAddress strAddSend(vMultiSend[i].first);
             CScript scriptPubKey;
-            scriptPubKey = GetScriptForDestination(strAddSend.Get());
+            scriptPubKey = GetScriptForDestination(DecodeDestination(vMultiSend[i].first));
             vecSend.push_back(std::make_pair(scriptPubKey, nAmount));
         }
 
@@ -4988,11 +5014,11 @@ bool CWallet::LoadSaplingPaymentAddress(
 
 void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
 {
-   if (key.IsCompressed() && (type == OUTPUT_TYPE_P2SH_SEGWIT || type == OUTPUT_TYPE_BECH32)) {
+   if (key.IsCompressed() && (type == OutputType::P2SH_SEGWIT || type == OutputType::BECH32)) {
       CTxDestination witdest = WitnessV0KeyHash(key.GetID());
       CScript witprog = GetScriptForDestination(witdest);
       // Make sure the resulting program is solvable.
-      assert(BTC::IsSolvable(*this, witprog));
+      assert(IsSolvable(*this, witprog));
       AddCScript(witprog);
    }
 }
@@ -5000,7 +5026,29 @@ void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
 void CWallet::LearnAllRelatedScripts(const CPubKey& key)
 {
    // OUTPUT_TYPE_P2SH_SEGWIT always adds all necessary scripts for all types.
-   LearnRelatedScripts(key, OUTPUT_TYPE_P2SH_SEGWIT);
+   LearnRelatedScripts(key, OutputType::P2SH_SEGWIT);
+}
+
+bool CWallet::GetNewDestination(const OutputType type, CTxDestination& dest, bilingual_str& error)
+{
+   if (LEGACY_OUTPUT_TYPES.count(type) == 0) {
+      error = __("Error: Legacy wallets only support the \"legacy\", \"p2sh-segwit\", and \"bech32\" address types");
+      return false;
+   }
+   assert(type != OutputType::BECH32M);
+
+   LOCK(cs_KeyStore);
+   error.clear();
+
+   // Generate a new key that is added to wallet
+   CPubKey new_key;
+   if (!GetKeyFromPool(new_key)) {
+      error = __("Error: Keypool ran out, please call keypoolrefill first");
+      return false;
+   }
+   LearnRelatedScripts(new_key, type);
+   dest = GetDestinationForKey(new_key, type);
+   return true;
 }
 
 
@@ -5300,15 +5348,49 @@ bool CWallet::HasEncryptionKeys() const
     return !mapMasterKeys.empty();
 }
 
+std::optional<OutputType> ParseOutputType(const std::string& type)
+{
+   if (type == OUTPUT_TYPE_STRING_LEGACY) {
+      return OutputType::LEGACY;
+   } else if (type == OUTPUT_TYPE_STRING_P2SH_SEGWIT) {
+      return OutputType::P2SH_SEGWIT;
+   } else if (type == OUTPUT_TYPE_STRING_BECH32) {
+      return OutputType::BECH32;
+   } else if (type == OUTPUT_TYPE_STRING_BECH32M) {
+      return OutputType::BECH32M;
+   }
+   return std::nullopt;
+}
+
+CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
+{
+   switch (type) {
+      case OutputType::LEGACY: return PKHash(key);
+      case OutputType::P2SH_SEGWIT:
+      case OutputType::BECH32: {
+         if (!key.IsCompressed()) return PKHash(key);
+         CTxDestination witdest = WitnessV0KeyHash(key);
+         CScript witprog = GetScriptForDestination(witdest);
+         if (type == OutputType::P2SH_SEGWIT) {
+            return ScriptHash(witprog);
+         } else {
+            return witdest;
+         }
+      }
+      case OutputType::BECH32M: {} // This function should never be used with BECH32M, so let it assert
+   } // no default case, so the compiler can warn about missing cases
+   assert(false);
+}
+
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
 {
    CKeyID keyid = key.GetID();
    if (key.IsCompressed()) {
       CTxDestination segwit = WitnessV0KeyHash(keyid);
-      CTxDestination p2sh = CScriptID(GetScriptForDestination(segwit));
-      return std::vector<CTxDestination>{std::move(keyid), std::move(p2sh), std::move(segwit)};
+      CTxDestination p2sh = ScriptHash(GetScriptForDestination(segwit));
+      return std::vector<CTxDestination>{std::move(PKHash(keyid)), std::move(p2sh), std::move(segwit)};
    } else {
-      return std::vector<CTxDestination>{std::move(keyid)};
+      return std::vector<CTxDestination>{std::move(PKHash(keyid))};
    }
 }
 

@@ -28,7 +28,7 @@ template <class S> S modWorkaround(S const& _a, S const& _b)
 // for decoding destinations of JUMPTO, JUMPV, JUMPSUB and JUMPSUBV
 //
 
-uint64_t LegacyVM::decodeJumpDest(const byte* const _code, uint64_t& _pc)
+uint64_t LegacyVM::decodeJumpDest(const ::byte* const _code, uint64_t& _pc)
 {
     // turn 2 MSB-first bytes in the code into a native-order integer
     uint64_t dest      = _code[_pc++];
@@ -36,15 +36,15 @@ uint64_t LegacyVM::decodeJumpDest(const byte* const _code, uint64_t& _pc)
     return dest;
 }
 
-uint64_t LegacyVM::decodeJumpvDest(const byte* const _code, uint64_t& _pc, byte _voff)
+uint64_t LegacyVM::decodeJumpvDest(const ::byte* const _code, uint64_t& _pc, ::byte _voff)
 {
     // Layout of jump table in bytecode...
-    //     byte opcode
-    //     byte n_jumps
-    //     byte table[n_jumps][2]
+    //     ::byte opcode
+    //     ::byte n_jumps
+    //     ::byte table[n_jumps][2]
     //
     uint64_t pc = _pc;
-    byte n = _code[++pc];           // byte after opcode is number of jumps
+    ::byte n = _code[++pc];           // ::byte after opcode is number of jumps
     if (_voff >= n) _voff = n - 1;  // if offset overflows use default jump
     pc += _voff * 2;                // adjust inout pc before index destination in table
 
@@ -383,7 +383,7 @@ void LegacyVM::interpretCases()
             updateMem(toInt63(m_SP[0]) + 1);
             updateIOGas();
 
-            m_mem[(unsigned)m_SP[0]] = (byte)(m_SP[1] & 0xff);
+            m_mem[(unsigned)m_SP[0]] = (::byte)(m_SP[1] & 0xff);
         }
         NEXT
 
@@ -771,7 +771,7 @@ void LegacyVM::interpretCases()
         {
             ON_OP();
             updateIOGas();
-            m_PC = decodeJumpvDest(m_code.data(), m_PC, byte(m_SP[0]));
+            m_PC = decodeJumpvDest(m_code.data(), m_PC, ::byte(m_SP[0]));
         }
         CONTINUE
 
@@ -789,7 +789,7 @@ void LegacyVM::interpretCases()
             ON_OP();
             updateIOGas();
             *m_RP++ = m_PC;
-            m_PC = decodeJumpvDest(m_code.data(), m_PC, byte(m_SP[0]));
+            m_PC = decodeJumpvDest(m_code.data(), m_PC, ::byte(m_SP[0]));
         }
         CONTINUE
 
@@ -1474,11 +1474,11 @@ void LegacyVM::interpretCases()
         CASE(PUSHC)
         {
 #if EVM_USE_CONSTANT_POOL
-            auto const originalOp = static_cast<byte>(Instruction::PUSH1) + m_code[m_PC + 3] + 1;
+            auto const originalOp = static_cast<::byte>(Instruction::PUSH1) + m_code[m_PC + 3] + 1;
             onOperation(static_cast<Instruction>(originalOp));
             updateIOGas();
 
-            // get val at two-byte offset into const pool and advance pc by one-byte remainder
+            // get val at two-::byte offset into const pool and advance pc by one-::byte remainder
             TRACE_OP(2, m_PC, m_OP);
             unsigned off;
             ++m_PC;

@@ -468,7 +468,7 @@ public:
     {
         std::array<uint32_t, 8> locs = compute_hashes(e);
         for (uint32_t loc : locs)
-            if (table[loc] == e) {
+            if ((table.size() > loc) && (table[loc] == e)) {
                 if (erase)
                     allow_erase(loc);
                 return true;

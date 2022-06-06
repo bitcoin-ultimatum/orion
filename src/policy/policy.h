@@ -28,6 +28,8 @@ static const unsigned int MAX_STANDARD_TX_WEIGHT = 400000;
 /** The minimum non-witness size for transactions we're willing to relay/mine (1 segwit input + 1 P2WPKH output = 82 bytes) */
 static const unsigned int MIN_STANDARD_TX_NONWITNESS_SIZE = 82;
 /** Maximum number of signature check operations in an IsStandard() P2SH script */
+static const unsigned int MAX_P2SH_SIGOPS = 15;
+/** Maximum number of signature check operations in an IsStandard() P2SH script */
 //static const unsigned int MAX_P2SH_SIGOPS = 15;
 /** The maximum number of sigops we're willing to relay/mine in a single tx */
 extern unsigned int dgpMaxTxSigOps;
@@ -45,6 +47,8 @@ static const unsigned int MAX_STANDARD_P2WSH_STACK_ITEMS = 100;
 static const unsigned int MAX_STANDARD_P2WSH_STACK_ITEM_SIZE = 80;
 /** The maximum size of a standard witnessScript */
 static const unsigned int MAX_STANDARD_P2WSH_SCRIPT_SIZE = 3600;
+/** The maximum size of each sender stack item in a standard sender signature script */
+static const unsigned int MAX_STANDARD_SENDER_STACK_ITEM_SIZE = 80;
 /** Min feerate for defining dust. Historically this has been based on the
  * minRelayTxFee, however changing the dust limit changes which transactions are
  * standard and should be done with care and ideally rarely. It makes sense to
@@ -75,11 +79,11 @@ static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VE
                                                              SCRIPT_VERIFY_CONST_SCRIPTCODE;*/
 
 /** For convenience, standard but not mandatory verify flags. */
-//static constexpr unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS = STANDARD_SCRIPT_VERIFY_FLAGS & ~MANDATORY_SCRIPT_VERIFY_FLAGS;
+static constexpr unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS = STANDARD_SCRIPT_VERIFY_FLAGS & ~MANDATORY_SCRIPT_VERIFY_FLAGS;
 
 /** Used as the flags parameter to sequence and nLocktime checks in non-consensus code. */
-//static constexpr unsigned int STANDARD_LOCKTIME_VERIFY_FLAGS = LOCKTIME_VERIFY_SEQUENCE |
-//                                                               LOCKTIME_MEDIAN_TIME_PAST;
+static constexpr unsigned int STANDARD_LOCKTIME_VERIFY_FLAGS = LOCKTIME_VERIFY_SEQUENCE |
+                                                               LOCKTIME_MEDIAN_TIME_PAST;
 
 /** The number of sender stack items in a standard sender signature script */
 //static const unsigned int STANDARD_SENDER_STACK_ITEMS = 2;

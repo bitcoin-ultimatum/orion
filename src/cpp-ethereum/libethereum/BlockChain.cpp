@@ -1314,7 +1314,7 @@ void BlockChain::checkConsistency()
     m_blocksDB->forEach([this](db::Slice const& _key, db::Slice const& /* _value */) {
         if (_key.size() == 32)
         {
-            h256 h((byte const*)_key.data(), h256::ConstructFromPointer);
+            h256 h((::byte const*)_key.data(), h256::ConstructFromPointer);
             auto dh = details(h);
             auto p = dh.parentHash;
             if (p != h256() && p != m_genesisHash)  // TODO: for some reason the genesis details

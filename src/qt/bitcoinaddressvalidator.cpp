@@ -7,7 +7,6 @@
 
 #include "bitcoinaddressvalidator.h"
 
-#include "btcu_address.h"
 
 /* Base58 characters are:
      "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"

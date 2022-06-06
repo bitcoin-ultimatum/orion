@@ -636,9 +636,9 @@ std::string ValidatorWidget::createAndSendTransaction(const boost::optional<CVal
             {
                 CAmount amount;
                 CPubKey pubkey = valRegOpt.value().pubKey;
-                pwalletMain->pLeasingManager->GetAllAmountsLeasedFrom(pubkey, amount);
+                pwalletMain->pLeasingManager->GetAllAmountsLeasedTo(pubkey, amount);
 
-                if(amount/100000000 < LEASED_TO_VALIDATOR_MIN_AMOUNT)
+                if(amount < LEASED_TO_VALIDATOR_MIN_AMOUNT * COIN)
                 {
                     ret = "Not enough leased to validator candidate coins, min=" +
                                         std::to_string(LEASED_TO_VALIDATOR_MIN_AMOUNT) +
@@ -677,7 +677,7 @@ std::string ValidatorWidget::createAndSendTransaction(const boost::optional<CVal
         CReserveKey reservekey(pwalletMain);
         CPubKey vchPubKey;
         assert(reservekey.GetReservedKey(vchPubKey));
-        CTxDestination myAddress = vchPubKey.GetID();
+        CTxDestination myAddress = PKHash(vchPubKey.GetID());
 
         CAmount nAmount = AmountFromValue(
                 UniValue((double) 38 / COIN)); // send 38 satoshi (min tx fee per kb is 100 satoshi)

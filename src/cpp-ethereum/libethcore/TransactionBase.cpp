@@ -40,14 +40,14 @@ TransactionBase::TransactionBase(bytesConstRef _rlpData, CheckTransaction _check
         m_gas = rlp[2].toInt<u256>();
         if (!rlp[3].isData())
             BOOST_THROW_EXCEPTION(InvalidTransactionFormat()
-                                  << errinfo_comment("recepient RLP must be a byte array"));
+                                  << errinfo_comment("recepient RLP must be a ::byte array"));
         m_type = rlp[3].isEmpty() ? ContractCreation : MessageCall;
         m_receiveAddress = rlp[3].isEmpty() ? Address() : rlp[3].toHash<Address>(RLP::VeryStrict);
         m_value = rlp[4].toInt<u256>();
 
         if (!rlp[5].isData())
             BOOST_THROW_EXCEPTION(InvalidTransactionFormat()
-                                  << errinfo_comment("transaction data RLP must be a byte array"));
+                                  << errinfo_comment("transaction data RLP must be a ::byte array"));
 
         m_data = rlp[5].toBytes();
 
@@ -74,7 +74,7 @@ TransactionBase::TransactionBase(bytesConstRef _rlpData, CheckTransaction _check
                 BOOST_THROW_EXCEPTION(InvalidSignature());
 
             auto const recoveryID =
-                o_has_value(m_chainId) ? byte{v - (u256{*m_chainId} * 2 + 35)} : byte{v - 27};
+                o_has_value(m_chainId) ? ::byte{v - (u256{*m_chainId} * 2 + 35)} : ::byte{v - 27};
             m_vrs = SignatureStruct{r, s, recoveryID};
 
             if (_checkSig >= CheckTransaction::Cheap && !m_vrs->isValid())

@@ -44,6 +44,7 @@ enum RPCErrorCode {
     RPC_INVALID_ADDRESS_OR_KEY          = -5, //! Invalid address or key
     RPC_OUT_OF_MEMORY                   = -7, //! Ran out of memory during operation
     RPC_INVALID_PARAMETER               = -8, //! Invalid, missing or duplicate parameter
+    RPC_WALLET_INVALID_LABEL_NAME   = -11, //!< Invalid label name
     RPC_DATABASE_ERROR                  = -20, //! Database error
     RPC_DESERIALIZATION_ERROR           = -22, //! Error parsing or validating structure in raw format
     RPC_VERIFY_ERROR                    = -25, //! General error during transaction or block submission
@@ -77,7 +78,6 @@ enum RPCErrorCode {
     RPC_WALLET_PASSPHRASE_NOT_SECURE    = -18,
     RPC_WALLET_CREATECONTRACT_DISABLED  = -19,  //! Wallet create contract allowed only for validators
     RPC_WALLET_NOT_SPECIFIED            = -20, //!< No wallet specified (error when there are multiple wallets loaded)
-    RPC_WALLET_INVALID_LABEL_NAME       = -21, //! Invalid label name
 };
 
 std::string JSONRPCRequest(const std::string& strMethod, const UniValue& params, const UniValue& id);

@@ -36,7 +36,7 @@ secp256k1_context const* getCtx()
 }
 
 template <std::size_t KeySize>
-bool toPublicKey(Secret const& _secret, unsigned _flags, array<byte, KeySize>& o_serializedPubkey)
+bool toPublicKey(Secret const& _secret, unsigned _flags, array<::byte, KeySize>& o_serializedPubkey)
 {
     auto* ctx = getCtx();
     secp256k1_pubkey rawPubkey;
@@ -61,11 +61,11 @@ bool dev::SignatureStruct::isValid() const noexcept
 
 Public dev::toPublic(Secret const& _secret)
 {
-    std::array<byte, 65> serializedPubkey;
+    std::array<::byte, 65> serializedPubkey;
     if (!toPublicKey(_secret, SECP256K1_EC_UNCOMPRESSED, serializedPubkey))
         return {};
 
-    // Expect single byte header of value 0x04 -- uncompressed public key.
+    // Expect single ::byte header of value 0x04 -- uncompressed public key.
     assert(serializedPubkey[0] == 0x04);
 
     // Create the Public skipping the header.
@@ -81,12 +81,12 @@ Public dev::toPublic(PublicCompressed const& _publicCompressed)
             ctx, &rawPubkey, _publicCompressed.data(), PublicCompressed::size))
         return {};
 
-    std::array<byte, 65> serializedPubkey;
+    std::array<::byte, 65> serializedPubkey;
     auto serializedPubkeySize = serializedPubkey.size();
     secp256k1_ec_pubkey_serialize(
         ctx, serializedPubkey.data(), &serializedPubkeySize, &rawPubkey, SECP256K1_EC_UNCOMPRESSED);
     assert(serializedPubkeySize == serializedPubkey.size());
-    // Expect single byte header of value 0x04 -- uncompressed public key.
+    // Expect single ::byte header of value 0x04 -- uncompressed public key.
     assert(serializedPubkey[0] == 0x04);
     // Create the Public skipping the header.
     return Public{&serializedPubkey[1], Public::ConstructFromPointer};
@@ -98,7 +98,7 @@ PublicCompressed dev::toPublicCompressed(Secret const& _secret)
     if (!toPublicKey(_secret, SECP256K1_EC_COMPRESSED, serializedPubkey.asArray()))
         return {};
 
-    // Expect single byte header of value 0x02 or 0x03 -- compressed public key.
+    // Expect single ::byte header of value 0x02 or 0x03 -- compressed public key.
     assert(serializedPubkey[0] == 0x02 || serializedPubkey[0] == 0x03);
 
     return serializedPubkey;
@@ -235,14 +235,14 @@ Public dev::recover(Signature const& _sig, h256 const& _message)
     if (!secp256k1_ecdsa_recover(ctx, &rawPubkey, &rawSig, _message.data()))
         return {};
 
-    std::array<byte, 65> serializedPubkey;
+    std::array<::byte, 65> serializedPubkey;
     size_t serializedPubkeySize = serializedPubkey.size();
     secp256k1_ec_pubkey_serialize(
             ctx, serializedPubkey.data(), &serializedPubkeySize,
             &rawPubkey, SECP256K1_EC_UNCOMPRESSED
     );
     assert(serializedPubkeySize == serializedPubkey.size());
-    // Expect single byte header of value 0x04 -- uncompressed public key.
+    // Expect single ::byte header of value 0x04 -- uncompressed public key.
     assert(serializedPubkey[0] == 0x04);
     // Create the Public skipping the header.
     return Public{&serializedPubkey[1], Public::ConstructFromPointer};
@@ -262,10 +262,10 @@ Signature dev::sign(Secret const& _k, h256 const& _hash)
     secp256k1_ecdsa_recoverable_signature_serialize_compact(ctx, s.data(), &v, &rawSig);
 
     SignatureStruct& ss = *reinterpret_cast<SignatureStruct*>(&s);
-    ss.v = static_cast<byte>(v);
+    ss.v = static_cast<::byte>(v);
     if (ss.s > c_secp256k1n / 2)
     {
-        ss.v = static_cast<byte>(ss.v ^ 1);
+        ss.v = static_cast<::byte>(ss.v ^ 1);
         ss.s = h256(c_secp256k1n - u256(ss.s));
     }
     assert(ss.s <= c_secp256k1n / 2);
@@ -302,7 +302,7 @@ bytesSec dev::pbkdf2(string const& _pass, bytes const& _salt, unsigned _iteratio
         ret.writable().data(),
         _dkLen,
         0,
-        reinterpret_cast<byte const*>(_pass.data()),
+        reinterpret_cast<::byte const*>(_pass.data()),
         _pass.size(),
         _salt.data(),
         _salt.size(),
@@ -385,13 +385,13 @@ bool ecdh::agree(Secret const& _s, Public const& _r, Secret& o_s) noexcept
     auto* ctx = getCtx();
     static_assert(sizeof(Secret) == 32, "Invalid Secret type size");
     secp256k1_pubkey rawPubkey;
-    std::array<byte, 65> serializedPubKey{{0x04}};
+    std::array<::byte, 65> serializedPubKey{{0x04}};
     std::copy(_r.asArray().begin(), _r.asArray().end(), serializedPubKey.begin() + 1);
     if (!secp256k1_ec_pubkey_parse(ctx, &rawPubkey, serializedPubKey.data(), serializedPubKey.size()))
         return false;  // Invalid public key.
     // FIXME: We should verify the public key when constructed, maybe even keep
     //        secp256k1_pubkey as the internal data of Public.
-    std::array<byte, 33> compressedPoint;
+    std::array<::byte, 33> compressedPoint;
     if (!secp256k1_ecdh(ctx, compressedPoint.data(), &rawPubkey, _s.data(), nullptr, nullptr))
         return false;  // Invalid secret key.
     std::copy(compressedPoint.begin() + 1, compressedPoint.end(), o_s.writable().data());
@@ -404,7 +404,7 @@ bytes ecies::kdf(Secret const& _z, bytes const& _s1, unsigned kdByteLen)
     // SEC/ISO/Shoup specify counter size SHOULD be equivalent
     // to size of hash output, however, it also notes that
     // the 4 bytes is okay. NIST specifies 4 bytes.
-    std::array<byte, 4> ctr{{0, 0, 0, 1}};
+    std::array<::byte, 4> ctr{{0, 0, 0, 1}};
     bytes k;
     secp256k1_sha256 ctx;
     for (unsigned i = 0; i <= reps; i++)
@@ -414,7 +414,7 @@ bytes ecies::kdf(Secret const& _z, bytes const& _s1, unsigned kdByteLen)
         secp256k1_sha256_write(&ctx, _z.data(), Secret::size);
         secp256k1_sha256_write(&ctx, _s1.data(), _s1.size());
         // append hash to k
-        std::array<byte, 32> digest;
+        std::array<::byte, 32> digest;
         secp256k1_sha256_finalize(&ctx, digest.data());
 
         k.reserve(k.size() + h256::size);

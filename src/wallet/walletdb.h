@@ -28,7 +28,6 @@
 
 class CAccount;
 class CAccountingEntry;
-class CBTCUAddress;
 struct CBlockLocator;
 class CKeyPool;
 class CMasterKey;

@@ -1426,6 +1426,10 @@ public:
         this->nSize += nSize;
         return *this;
     }
+    void write(Span<const std::byte> src)
+    {
+       this->nSize += src.size();
+    }
 
     /** Pretend _nSize bytes are written, without specifying them. */
     void seek(size_t _nSize)

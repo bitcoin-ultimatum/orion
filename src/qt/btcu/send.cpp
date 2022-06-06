@@ -20,6 +20,7 @@
 #include "zbtcu/deterministicmint.h"
 #include "openuridialog.h"
 #include "zbtcucontroldialog.h"
+#include "key_io.h"
 
 SendWidget::SendWidget(BTCUGUI* parent) :
     PWidget(parent),
@@ -457,8 +458,8 @@ bool SendWidget::sendZbtcu(QList<SendCoinsRecipient> recipients){
     CZerocoinSpendReceipt receipt;
 
     std::string changeAddress = "";
-    if(!boost::get<CNoDestination>(&CoinControlDialog::coinControl->destChange)){
-        changeAddress = CBTCUAddress(CoinControlDialog::coinControl->destChange).ToString();
+    if(!std::get_if<CNoDestination>(&CoinControlDialog::coinControl->destChange)){
+        changeAddress = EncodeDestination(CoinControlDialog::coinControl->destChange);
     }else{
         changeAddress = walletModel->getAddressTableModel()->getAddressToShow().toStdString();
     }
@@ -528,7 +529,7 @@ void SendWidget::updateEntryLabels(QList<SendCoinsRecipient> recipients){
 void SendWidget::onChangeAddressClicked(){
     showHideOp(true);
     SendChangeAddressDialog* dialog = new SendChangeAddressDialog(window);
-    if(!boost::get<CNoDestination>(&CoinControlDialog::coinControl->destChange)){
+    if(!std::get_if<CNoDestination>(&CoinControlDialog::coinControl->destChange)){
         dialog->setAddress(QString::fromStdString(CBTCUAddress(CoinControlDialog::coinControl->destChange).ToString()));
     }
     if(openDialogWithOpaqueBackgroundY(dialog, window, 3, 5)) {

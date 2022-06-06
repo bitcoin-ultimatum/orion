@@ -11,7 +11,6 @@
 
 #include "addressbook.h"
 #include "amount.h"
-#include "btcu_address.h"
 #include "consensus/tx_verify.h"
 #include "crypter.h"
 #include "kernel.h"
@@ -30,6 +29,7 @@
 #include "zbtcu/zbtcumodule.h"
 #include "zbtcu/zbtcuwallet.h"
 #include "zbtcu/zbtcutracker.h"
+#include "util/translation.h"
 #include "sapling/incrementalmerkletree.h"
 #include "wallet/scriptpubkeyman.h"
 #include "sapling/saplingscriptpubkeyman.h"
@@ -44,6 +44,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 #include <interfaces/chain.h>
 #include <interfaces/node.h>
 #include "script/ismine.h"
@@ -133,18 +134,24 @@ enum ZerocoinSpendStatus {
     ZBTCU_SPEND_V1_SEC_LEVEL                         // Spend is V1 and security level is not set to 100
 };
 
-enum OutputType : int
-{
-   OUTPUT_TYPE_NONE,
-   OUTPUT_TYPE_LEGACY,
-   OUTPUT_TYPE_P2SH_SEGWIT,
-   OUTPUT_TYPE_BECH32,
-
-   OUTPUT_TYPE_DEFAULT = OUTPUT_TYPE_P2SH_SEGWIT
+enum class OutputType {
+   LEGACY,
+   P2SH_SEGWIT,
+   BECH32,
+   BECH32M,
 };
 
+/** OutputTypes supported by the LegacyScriptPubKeyMan */
+static const std::unordered_set<OutputType> LEGACY_OUTPUT_TYPES {
+OutputType::LEGACY,
+OutputType::P2SH_SEGWIT,
+OutputType::BECH32,
+};
+
+constexpr OutputType DEFAULT_ADDRESS_TYPE{OutputType::LEGACY};
+
 struct CompactTallyItem {
-    CBTCUAddress address;
+    CTxDestination address;
     CAmount nAmount;
     std::vector<CTxIn> vecTxIn;
     CompactTallyItem()
@@ -413,6 +420,8 @@ public:
 
     int64_t nTimeFirstKey;
 
+    OutputType m_default_address_type{DEFAULT_ADDRESS_TYPE};
+
     // Public SyncMetadata interface used for the sapling spent nullifier map.
     void SyncMetaDataN(std::pair<TxSpendMap<uint256>::iterator, TxSpendMap<uint256>::iterator> range);
 
@@ -492,7 +501,7 @@ public:
     bool GetMaxP2LCoins(CPubKey& pubKeyRet, CKey& keyRet, CAmount& amount) const;
     void GetAvailableLeasingRewards(std::vector<COutput>& vCoins) const;
 
-    std::map<CBTCUAddress, std::vector<COutput> > AvailableCoinsByAddress(bool fConfirmed = true, CAmount maxCoinValue = 0);
+    std::map<CTxDestination, std::vector<COutput> > AvailableCoinsByAddress(bool fConfirmed = true, CAmount maxCoinValue = 0);
     bool SelectCoinsMinConf(const CAmount& nTargetValue, int nConfMine, int nConfTheirs, std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet) const;
 
     /**
@@ -525,7 +534,7 @@ public:
     PairResult getNewStakingAddress(CTxDestination& ret, std::string label);
     PairResult getNewLeasingAddress(CTxDestination& ret, std::string label);
     int64_t GetKeyCreationTime(CPubKey pubkey);
-    int64_t GetKeyCreationTime(const CBTCUAddress& address);
+    int64_t GetKeyCreationTime(const CTxDestination& address);
     int64_t GetKeyCreationTime(const libzcash::SaplingPaymentAddress& address);
 
     //////////// Sapling //////////////////
@@ -719,7 +728,7 @@ public:
 
     bool IsDenominatedAmount(CAmount nInputAmount) const;
 
-    bool IsUsed(const CBTCUAddress address) const;
+    bool IsUsed(const CTxDestination address) const;
 
     isminetype IsMine(const CTxIn& txin) const;
     CAmount GetDebit(const CTxIn& txin, const isminefilter& filter) const;
@@ -738,7 +747,7 @@ public:
     DBErrors LoadWallet(bool& fFirstRunRet);
     DBErrors ZapWalletTx(std::vector<CWalletTx>& vWtx);
 
-    static CBTCUAddress ParseIntoAddress(const CTxDestination& dest, const std::string& purpose);
+    static std::string ParseIntoAddress(const CTxDestination& dest, const std::string& purpose);
 
     bool SetAddressBook(const CWDestination& address, const std::string& strName, const std::string& purpose);
     bool DelAddressBook(const CWDestination& address, const CChainParams::Base58Type addrType = CChainParams::PUBKEY_ADDRESS);
@@ -811,7 +820,7 @@ public:
             const CCoinControl* coinControl = NULL);
 
     // - ZC PublicSpends
-    bool SpendZerocoin(CAmount nAmount, CWalletTx& wtxNew, CZerocoinSpendReceipt& receipt, std::vector<CZerocoinMint>& vMintsSelected, std::list<std::pair<CBTCUAddress*,CAmount>> addressesTo, CBTCUAddress* changeAddress = nullptr);
+    bool SpendZerocoin(CAmount nAmount, CWalletTx& wtxNew, CZerocoinSpendReceipt& receipt, std::vector<CZerocoinMint>& vMintsSelected, std::list<std::pair<CTxDestination *,CAmount>> addressesTo, CTxDestination* changeAddress = nullptr);
     bool MintsToInputVectorPublicSpend(std::map<CBigNum, CZerocoinMint>& mapMintsSelected, const uint256& hashTxOut, std::vector<CTxIn>& vin, CZerocoinSpendReceipt& receipt, libzerocoin::SpendType spendType, CBlockIndex* pindexCheckpoint = nullptr);
     bool CreateZCPublicSpendTransaction(
             CAmount nValue,
@@ -820,8 +829,8 @@ public:
             CZerocoinSpendReceipt& receipt,
             std::vector<CZerocoinMint>& vSelectedMints,
             std::vector<CDeterministicMint>& vNewMints,
-            std::list<std::pair<CBTCUAddress*,CAmount>> addressesTo,
-            CBTCUAddress* changeAddress = nullptr);
+            std::list<std::pair<CTxDestination *,CAmount>> addressesTo,
+            CTxDestination* changeAddress = nullptr);
 
     // - ZC Balances
     CAmount GetZerocoinBalance(bool fMatureOnly) const;
@@ -870,6 +879,8 @@ public:
     * be anything).
     */
    void LearnAllRelatedScripts(const CPubKey& key);
+
+   bool GetNewDestination(const OutputType type, CTxDestination& dest, bilingual_str& error);
 };
 
 struct CRecipient
@@ -1409,6 +1420,8 @@ private:
     std::vector<char> _ssExtra;
 };
 
+std::optional<OutputType> ParseOutputType(const std::string& str);
+CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type);
 /** Get all destinations (potentially) supported by the wallet for the given key. */
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key);
 

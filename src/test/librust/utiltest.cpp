@@ -23,7 +23,7 @@ libzcash::SaplingExtendedSpendingKey GetTestMasterSaplingSpendingKey() {
 CKey CreateCkey(bool genNewKey) {
     CKey tsk;
     if (genNewKey) tsk.MakeNewKey(true);
-    else tsk = KeyIO::DecodeSecret(T_SECRET_REGTEST);
+    else tsk = DecodeSecret(T_SECRET_REGTEST);
     if (!tsk.IsValid()) throw std::runtime_error("CreateCkey:: Invalid priv key");
     return tsk;
 }

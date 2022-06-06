@@ -15,6 +15,7 @@
 #include "init.h"
 #include "wallet/wallet.h"
 #include "askpassphrasedialog.h"
+#include "key_io.h"
 
 #include <string>
 #include <vector>
@@ -289,8 +290,7 @@ void SettingsBitToolWidget::onDecryptClicked(){
 
     key.Set(privKey.begin(), privKey.end(), fCompressed);
     CPubKey pubKey = key.GetPubKey();
-    CBTCUAddress address(pubKey.GetID());
-    ui->lineEditDecryptResult->setText(QString::fromStdString(address.ToString()));
+    ui->lineEditDecryptResult->setText(QString::fromStdString(EncodeDestination(PKHash(pubKey.GetID()))));
 }
 
 void SettingsBitToolWidget::importAddressFromDecKey(){
@@ -310,7 +310,7 @@ void SettingsBitToolWidget::importAddressFromDecKey(){
        }
     CPubKey pubkey = key.GetPubKey();
 
-    if (!address.IsValid() || !key.IsValid() || CBTCUAddress(pubkey.GetID()).ToString() != address.ToString()) {
+    if (!address.IsValid() || !key.IsValid() || EncodeDestination(PKHash(pubkey.GetID())) != address.ToString()) {
         ui->statusLabel_DEC->setStyleSheet("QLabel { color: red; }");
         ui->statusLabel_DEC->setText(tr("Data Not Valid.") + QString(" ") + tr("Please try again."));
         return;
@@ -322,7 +322,7 @@ void SettingsBitToolWidget::importAddressFromDecKey(){
         ui->statusLabel_DEC->setText(tr("Please wait while key is imported"));
 
         pwalletMain->MarkDirty();
-        pwalletMain->SetAddressBook(vchAddress, "", AddressBook::AddressBookPurpose::RECEIVE);
+        pwalletMain->SetAddressBook(PKHash(vchAddress), "", AddressBook::AddressBookPurpose::RECEIVE);
 
         // Don't throw error in case a key is already there
         if (pwalletMain->HaveKey(vchAddress)) {

@@ -77,7 +77,7 @@ Destination& Destination::operator=(const Destination& from)
 const CKeyID* Destination::getKeyID()
 {
     const CTxDestination* regDest = Standard::GetTransparentDestination(dest);
-    return (regDest) ? boost::get<CKeyID>(regDest) : nullptr;
+    return nullptr;//(regDest) ? boost::get<CKeyID>(regDest) : nullptr;
 }
 
 std::string Destination::ToString() const

@@ -12,7 +12,6 @@
 #include "paymentserver.h"
 #include "transactionrecord.h"
 
-#include "btcu_address.h"
 #include "db.h"
 #include "main.h"
 #include "script/script.h"

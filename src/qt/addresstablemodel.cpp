@@ -13,6 +13,7 @@
 
 #include "wallet/wallet.h"
 #include "askpassphrasedialog.h"
+#include "key_io.h"
 
 #include <QDebug>
 #include <QFont>
@@ -421,7 +422,7 @@ bool AddressTableModel::setData(const QModelIndex& index, const QVariant& value,
         } else if (index.column() == Address) {
             CTxDestination newAddress = CBTCUAddress(value.toString().toStdString()).Get();
             // Refuse to set invalid address, set error status and return false
-            if (boost::get<CNoDestination>(&newAddress)) {
+            if (std::get_if<CNoDestination>(&newAddress)) {
                 editStatus = INVALID_ADDRESS;
                 return false;
             }
@@ -540,7 +541,7 @@ QString AddressTableModel::addRow(const QString& type, const QString& label, con
                 return QString();
             }
         }
-        strAddress = CBTCUAddress(newKey.GetID()).ToString();
+        strAddress = EncodeDestination(PKHash(newKey.GetID()));
     } else {
         return QString();
     }
