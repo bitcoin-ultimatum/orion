@@ -472,7 +472,6 @@ boost::optional<CKey> ValidatorWidget::getCollateralKey(CMasternode *pmn)
     auto addr = pmn->pubKeyCollateralAddress.GetID(); // public key ID for MN's collateral address
     if (pwalletMain->GetKey(addr, key)) // get key (private and public parts) from wallet
     {
-//        auto addr_str = CBTCUAddress(key.GetPubKey().GetID()).ToString();
         keyOpt.emplace(key);
     }
     return keyOpt;
@@ -553,7 +552,7 @@ boost::optional<std::pair<CTxIn, CKey>> ValidatorWidget::getVinKey(const std::st
     GetTransaction(uHash, tr, uBlock, true);
 
     CKeyID keyID;
-    walletModel->getKeyId(CBTCUAddress(mnAddress), keyID);
+    walletModel->getKeyId(DecodeDestination(mnAddress), keyID);
     CPubKey pubKey;
     walletModel->getPubKey(keyID, pubKey);
 
@@ -578,7 +577,7 @@ boost::optional<std::pair<CTxIn, CKey>> ValidatorWidget::getVinKey(const std::st
 
                 if (pwalletMain->GetKey(addr, key)) // get key (private and public parts) from wallet
                 {
-                    //auto addr_str = CBTCUAddress(key.GetPubKey().GetID()).ToString();
+                    //auto addr_str = EncodeDestination(key.GetPubKey().GetID());
                     keyOpt.emplace(key);
                 }
                 vinKeyOpt.emplace(std::pair<CTxIn, CKey>(tr.vin[0], keyOpt.value()));

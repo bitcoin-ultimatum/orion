@@ -18,6 +18,7 @@
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
 #include "policy/policy.h"
+#include "key_io.h"
 
 #include <stdio.h>
 
@@ -221,12 +222,12 @@ static void MutateTxAddOutAddr(CMutableTransaction& tx, const std::string& strIn
 
     // extract and validate ADDRESS
     std::string strAddr = strInput.substr(pos + 1, std::string::npos);
-    CBTCUAddress addr(strAddr);
-    if (!addr.IsValid())
+    CTxDestination addr = DecodeDestination(strAddr);
+    if (!IsValidDestination(addr))
         throw std::runtime_error("invalid TX output address");
 
     // build standard output script via GetScriptForDestination()
-    CScript scriptPubKey = GetScriptForDestination(addr.Get());
+    CScript scriptPubKey = GetScriptForDestination(addr);
 
     // construct TxOut, append to transaction output list
     CTxOut txout(value, scriptPubKey);
@@ -353,12 +354,9 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
     for (unsigned int kidx = 0; kidx < keysObj.size(); kidx++) {
         if (!keysObj[kidx].isStr())
             throw std::runtime_error("privatekey not a string");
-        CBTCUSecret vchSecret;
-        bool fGood = vchSecret.SetString(keysObj[kidx].getValStr());
-        if (!fGood)
-            throw std::runtime_error("privatekey not valid");
-
-        CKey key = vchSecret.GetKey();
+        CKey key = DecodeSecret(keysObj[kidx].getValStr());
+        if(!key.IsValid())
+           throw std::runtime_error("privatekey not valid");
         tempKeystore.AddKey(key);
     }
 

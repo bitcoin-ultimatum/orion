@@ -58,8 +58,6 @@ namespace bech32
  */
 class CBech32Data
 {
-    friend class CBTCUAddress;
-    friend class CBTCUSecret;
 
     int nVersion = 255;
 

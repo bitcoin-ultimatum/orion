@@ -6,6 +6,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "bitcoinaddressvalidator.h"
+#include "key_io.h"
+#include "script/standard.h"
 
 
 /* Base58 characters are:
@@ -83,8 +85,8 @@ QValidator::State BitcoinAddressCheckValidator::validate(QString& input, int& po
 {
     Q_UNUSED(pos);
     // Validate the passed BTCU address
-    CBTCUAddress addr(input.toStdString());
-    if (addr.IsValid())
+    CTxDestination addr = DecodeDestination(input.toStdString());
+    if (IsValidDestination(addr))
         return QValidator::Acceptable;
 
     return QValidator::Invalid;

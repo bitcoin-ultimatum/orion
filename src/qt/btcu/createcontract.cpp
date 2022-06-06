@@ -385,7 +385,7 @@ void CreateContract::onCreateContract()
         CTxDestination txSenderAdress(txSenderDest);
         CKeyID keyid = GetKeyForDestination(*pwalletMain, txSenderAdress);
 
-        result.pushKV("sender", CBTCUAddress(txSenderAdress).ToString());
+        result.pushKV("sender", EncodeDestination(txSenderAdress));
         result.pushKV("hash160", HexStr(valtype(keyid.begin(),keyid.end())));
 
         std::vector<unsigned char> SHA256TxVout(32);

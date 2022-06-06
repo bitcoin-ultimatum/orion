@@ -166,15 +166,15 @@ void SettingsBitToolWidget::onEncryptKeyButtonENCClicked()
         return;
     }
 
-    CBTCUAddress addr(ui->addressIn_ENC->text().toStdString());
-    if (!addr.IsValid()) {
+    CTxDestination addr = DecodeDestination(ui->addressIn_ENC->text().toStdString());
+    if (!IsValidDestination(addr)) {
         ui->statusLabel_ENC->setStyleSheet("QLabel { color: red; }");
         ui->statusLabel_ENC->setText(tr("The entered address is invalid.") + QString(" ") + tr("Please check the address and try again."));
         return;
     }
 
-    CKeyID keyID;
-    if (!addr.GetKeyID(keyID)) {
+    CKeyID keyID = GetKeyForDestination(*pwalletMain, addr);
+    if (keyID.IsNull()) {
         //ui->addressIn_ENC->setValid(false);
         ui->statusLabel_ENC->setStyleSheet("QLabel { color: red; }");
         ui->statusLabel_ENC->setText(tr("The entered address does not refer to a key.") + QString(" ") + tr("Please check the address and try again."));
@@ -195,7 +195,7 @@ void SettingsBitToolWidget::onEncryptKeyButtonENCClicked()
         return;
     }
 
-    std::string encryptedKey = BIP38_Encrypt(addr.ToString(), qstrPassphrase.toStdString(), key.GetPrivKey_256(), key.IsCompressed());
+    std::string encryptedKey = BIP38_Encrypt(EncodeDestination(addr), qstrPassphrase.toStdString(), key.GetPrivKey_256(), key.IsCompressed());
     ui->encryptedKeyOut_ENC->setText(QString::fromStdString(encryptedKey));
 
     ui->statusLabel_ENC->setStyleSheet("QLabel { color: green; }");
@@ -301,7 +301,7 @@ void SettingsBitToolWidget::importAddressFromDecKey(){
         return;
     }
 
-    CBTCUAddress address(ui->lineEditDecryptResult->text().toStdString());
+    CTxDestination address = DecodeDestination(ui->lineEditDecryptResult->text().toStdString());
     if(!key.IsValid())
        {
           ui->statusLabel_DEC->setStyleSheet("QLabel { color: red; }");
@@ -310,7 +310,8 @@ void SettingsBitToolWidget::importAddressFromDecKey(){
        }
     CPubKey pubkey = key.GetPubKey();
 
-    if (!address.IsValid() || !key.IsValid() || EncodeDestination(PKHash(pubkey.GetID())) != address.ToString()) {
+    if (!IsValidDestination(address) || !key.IsValid() || EncodeDestination(PKHash(pubkey.GetID())) !=
+                                                          EncodeDestination(address)) {
         ui->statusLabel_DEC->setStyleSheet("QLabel { color: red; }");
         ui->statusLabel_DEC->setText(tr("Data Not Valid.") + QString(" ") + tr("Please try again."));
         return;

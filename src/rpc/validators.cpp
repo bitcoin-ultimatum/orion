@@ -37,7 +37,6 @@ boost::optional<CKey> GetCollateralKey(CMasternode *pmn)
     auto addr = pmn->pubKeyCollateralAddress.GetID(); // public key ID for MN's collateral address
     if (pwalletMain->GetKey(addr, key)) // get key (private and public parts) from wallet
     {
-//        auto addr_str = CBTCUAddress(key.GetPubKey().GetID()).ToString();
         keyOpt.emplace(key);
     }
     return keyOpt;
@@ -474,8 +473,7 @@ UniValue mnvotevalidatorlist(const UniValue& params, bool fHelp)
     {
        UniValue validator(UniValue::VOBJ);
        validator.push_back(Pair("validator", EncodeDestination(PKHash(valVote.pubKey.GetID()))));
-       //valVoteStr += "Voting address: " + CBTCUAddress(valVote.pubKey.GetID()).ToString() + "\n";
-       //valVoteStr +="\tVotes:\n";
+
        for(auto &vote:valVote.votes)
        {
           CTxOut prevOut;

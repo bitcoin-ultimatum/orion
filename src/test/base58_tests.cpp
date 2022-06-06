@@ -10,10 +10,12 @@
 
 #include "key.h"
 #include "script/script.h"
+#include "base58.h"
 #include "uint256.h"
 #include "util.h"
 #include "utilstrencodings.h"
 #include "test/test_btcu.h"
+#include "key_io.h"
 
 #include <boost/test/unit_test.hpp>
 
@@ -137,8 +139,7 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_parse)
 {
     UniValue tests = read_json(std::string(json_tests::base58_keys_valid, json_tests::base58_keys_valid + sizeof(json_tests::base58_keys_valid)));
     std::vector<unsigned char> result;
-    CBTCUSecret secret;
-    CBTCUAddress addr;
+    CTxDestination addr;
     SelectParams(CBaseChainParams::MAIN);
 
     for (unsigned int idx = 0; idx < tests.size(); idx++) {
@@ -162,16 +163,14 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_parse)
         {
             bool isCompressed = find_value(metadata, "isCompressed").get_bool();
             // Must be valid private key
-            // Note: CBTCUSecret::SetString tests isValid, whereas CBTCUAddress does not!
-            BOOST_CHECK_MESSAGE(secret.SetString(exp_base58string), "!SetString:"+ strTest);
-            BOOST_CHECK_MESSAGE(secret.IsValid(), "!IsValid:" + strTest);
-            CKey privkey = secret.GetKey();
+            CKey privkey = DecodeSecret(exp_base58string);
+            BOOST_CHECK_MESSAGE(privkey.IsValid(), "!IsValid:" + strTest);
             BOOST_CHECK_MESSAGE(privkey.IsCompressed() == isCompressed, "compressed mismatch:" + strTest);
             BOOST_CHECK_MESSAGE(privkey.size() == exp_payload.size() && std::equal(privkey.begin(), privkey.end(), exp_payload.begin()), "key mismatch:" + strTest);
 
             // Private key must be invalid public key
-            addr.SetString(exp_base58string);
-            BOOST_CHECK_MESSAGE(!addr.IsValid(), "IsValid privkey as pubkey:" + strTest);
+            addr = DecodeDestination(exp_base58string);
+            BOOST_CHECK_MESSAGE(!IsValidDestination(addr), "IsValid privkey as pubkey:" + strTest);
         }
         else
         {

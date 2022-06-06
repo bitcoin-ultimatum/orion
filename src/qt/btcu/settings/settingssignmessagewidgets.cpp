@@ -177,14 +177,14 @@ void SettingsSignMessageWidgets::onSignMessageButtonSMClicked(){
     ui->signatureOut_SM->clear();
 
 
-    CBTCUAddress addr(ui->addressIn_SM->text().toStdString());
-    if (!addr.IsValid()) {
+    CTxDestination addr = DecodeDestination(ui->addressIn_SM->text().toStdString());
+    if (!IsValidDestination(addr)) {
         ui->statusLabel_SM->setStyleSheet("QLabel { color: red; }");
         ui->statusLabel_SM->setText(tr("The entered address is invalid.") + QString(" ") + tr("Please check the address and try again."));
         return;
     }
-    CKeyID keyID;
-    if (!addr.GetKeyID(keyID)) {
+    CKeyID keyID = GetKeyForDestination(*pwalletMain, addr);
+    if (keyID.IsNull()) {
         // TODO: change css..
         //ui->addressIn_SM->setValid(false);
         ui->statusLabel_SM->setStyleSheet("QLabel { color: red; }");
