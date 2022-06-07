@@ -1702,7 +1702,7 @@ UniValue CreateLeasingTransaction(const UniValue& params, CWalletTx& wtxNew, CRe
     // Get Leasing Address
     bool isLeaserStaking = false;
     CTxDestination leaserAddr = DecodeDestination(params[0].get_str(), &isLeaserStaking);
-    if (!IsValidDestination(leaserAddr) || !isLeaserStaking)
+    if (!IsValidDestination(leaserAddr) || isLeaserStaking)
        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU leasing address");
 
     CKeyID leaserKey = GetKeyForDestination(*pwalletMain, leaserAddr);
