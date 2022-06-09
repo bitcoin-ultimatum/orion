@@ -250,7 +250,6 @@ extern const CHashWriter HASHER_TAPBRANCH;  //!< Hasher with tag "TapBranch" pre
 
 template <class T>
 uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache = nullptr);
-uint256 SignatureHash(const CScript &scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
 
 class BaseSignatureChecker
 {
@@ -287,8 +286,6 @@ public:
 
    virtual ~BaseSignatureChecker() {}
 };
-
-
 
 /** Enum to specify what *TransactionSignatureChecker's behavior should be
  *  when dealing with missing transaction data.

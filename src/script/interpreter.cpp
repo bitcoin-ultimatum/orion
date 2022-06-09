@@ -1808,7 +1808,6 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
    return ss.GetHash();
 }
 
-
 template <class T>
 bool GenericTransactionSignatureChecker<T>::VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const
 {
@@ -1967,45 +1966,24 @@ bool GenericTransactionSignatureChecker<T>::CheckLeaseLockTime(const CScriptNum&
 
    return true;
 }
+
+
 template<>
 bool TransactionSignatureChecker::CheckColdStake(const CScript& script) const
 {
-    return txTo->CheckColdStake(script);
+   return txTo->CheckColdStake(script);
 }
 
 
 template<>
 bool MutableTransactionSignatureChecker::CheckColdStake(const CScript& script) const
 {
-    return true;
+   return true;
 }
+
 // explicit instantiation
 template class GenericTransactionSignatureChecker<CTransaction>;
 template class GenericTransactionSignatureChecker<CMutableTransaction>;
-
-uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType)
-{
-    if (nIn >= txTo.vin.size()) {
-        //  nIn out of range
-        return 1;
-    }
-
-    // Check for invalid use of SIGHASH_SINGLE
-    if ((nHashType & 0x1f) == SIGHASH_SINGLE) {
-        if (nIn >= txTo.vout.size()) {
-            //  nOut out of range
-            return 1;
-        }
-    }
-
-    // Wrapper to serialize only the necessary parts of the transaction being signed
-    CTransactionSignatureSerializer txTmp(txTo, scriptCode, nIn, nHashType);
-
-    // Serialize and hash
-    CHashWriter ss(SER_GETHASH, 0);
-    ss << txTmp << nHashType;
-    return ss.GetHash();
-}
 
 static bool ExecuteWitnessScript(const Span<const valtype>& stack_span, const CScript& exec_script, unsigned int flags, SigVersion sigversion, const BaseSignatureChecker& checker, ScriptExecutionData& execdata, ScriptError* serror)
 {
