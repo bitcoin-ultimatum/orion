@@ -55,6 +55,7 @@ public:
     };
 
     enum Bech32Type {
+        BTC_LEGACY_BECH32,
         SAPLING_PAYMENT_ADDRESS,
         SAPLING_FULL_VIEWING_KEY,
         SAPLING_INCOMING_VIEWING_KEY,
@@ -124,7 +125,7 @@ public:
     std::string NetworkIDString() const { return strNetworkID; }
     const std::vector<CDNSSeedData>& DNSSeeds() const { return vSeeds; }
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
-    const std::string &Bech32HRP(Bech32Type type) const { return bech32_hrp[type]; }
+    const std::string &Bech32HRP(Bech32Type type = BTC_LEGACY_BECH32) const { return bech32_hrp[type]; }
     const std::vector<CAddress>& FixedSeeds() const { return vFixedSeeds; }
     virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }

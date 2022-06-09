@@ -296,7 +296,8 @@ public:
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
-        //bech32_hrp = "bc";
+        //bech32 legacy btc addresses
+        bech32_hrp[BTC_LEGACY_BECH32]      = "bc";
 
         // Sapling
         bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ps";
@@ -462,7 +463,8 @@ public:
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
-        //bech32_hrp = "tb";
+        //bech32 legacy btc addresses
+        bech32_hrp[BTC_LEGACY_BECH32]      = "tb";
 
         bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ptestsapling";
         bech32_hrp[SAPLING_FULL_VIEWING_KEY]     = "pviewtestsapling";
@@ -599,7 +601,9 @@ public:
         */
         strSporkPubKey = "043969b1b0e6f327de37f297a015d37e2235eaaeeb3933deecd8162c075cee0207b13537618bde640879606001a8136091c62ec272dd0133424a178704e6e75bb7";
 
-        //bech32_hrp = "bcrt";
+        //bech32 legacy btc addresses
+        bech32_hrp[BTC_LEGACY_BECH32]      = "bcrt";
+
         // Sapling
         bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ptestsapling";
         bech32_hrp[SAPLING_FULL_VIEWING_KEY]     = "pviewtestsapling";

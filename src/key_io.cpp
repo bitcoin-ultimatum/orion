@@ -185,8 +185,7 @@ bool N_DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vch
             std::vector<uint8_t> data = {0};
             data.reserve(33);
             ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.begin(), id.end());
-            //TO_FIX: Check param - CChainParams::SAPLING_PAYMENT_ADDRESS
-            return bech32::Encode(bech32::Encoding::BECH32, m_params.Bech32HRP(CChainParams::SAPLING_PAYMENT_ADDRESS),
+            return bech32::Encode(bech32::Encoding::BECH32, m_params.Bech32HRP(),
                                   data);
         }
 
@@ -194,8 +193,7 @@ bool N_DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vch
             std::vector<unsigned char> data = {0};
             data.reserve(53);
             ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.begin(), id.end());
-            //TO_FIX: Check param - CChainParams::SAPLING_PAYMENT_ADDRESS
-            return bech32::Encode(bech32::Encoding::BECH32, m_params.Bech32HRP(CChainParams::SAPLING_PAYMENT_ADDRESS),
+            return bech32::Encode(bech32::Encoding::BECH32, m_params.Bech32HRP(),
                                   data);
         }
 
@@ -206,8 +204,7 @@ bool N_DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vch
             std::vector<unsigned char> data = {(unsigned char) id.version};
             data.reserve(1 + (id.length * 8 + 4) / 5);
             ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.program, id.program + id.length);
-            //TO_FIX: Check param - CChainParams::SAPLING_PAYMENT_ADDRESS
-            return bech32::Encode(bech32::Encoding::BECH32, m_params.Bech32HRP(CChainParams::SAPLING_PAYMENT_ADDRESS),
+            return bech32::Encode(bech32::Encoding::BECH32, m_params.Bech32HRP(),
                                   data);
         }
 
@@ -227,7 +224,7 @@ bool N_DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vch
             std::vector<unsigned char> data = {1};
             data.reserve(53);
             ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, tap.begin(), tap.end());
-            return bech32::Encode(bech32::Encoding::BECH32M, m_params.Bech32HRP(CChainParams::SAPLING_PAYMENT_ADDRESS),
+            return bech32::Encode(bech32::Encoding::BECH32M, m_params.Bech32HRP(),
                                   data);
         }
 
