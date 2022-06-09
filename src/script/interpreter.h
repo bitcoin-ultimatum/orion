@@ -13,6 +13,7 @@
 
 #include <optional>
 #include <vector>
+#include <string>
 #include <stdint.h>
 
 class CPubKey;
