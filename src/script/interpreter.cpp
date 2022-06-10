@@ -1813,7 +1813,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
     }
 
    if (txTo.isSaplingVersion() && sigversion != SigVersion::SIGVERSION_SAPLING) {
-      throw std::runtime_error("SignatureHash in Sapling tx with wrong sigversion " + std::to_string(sigversion));
+      throw std::runtime_error("SignatureHash in Sapling tx with wrong sigversion ");
    }
 
    if (sigversion == SigVersion::SIGVERSION_SAPLING) {
@@ -1836,7 +1836,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
       if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
          hashOutputs = cache ? cache->hashOutputs : GetOutputsHash(txTo);
       } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nIn < txTo.vout.size()) {
-         CBLAKE2bWriter ss(SER_GETHASH, 0, PIVX_OUTPUTS_HASH_PERSONALIZATION);
+         CBLAKE2bWriter ss(SER_GETHASH, 0, BTCU_OUTPUTS_HASH_PERSONALIZATION);
          ss << txTo.vout[nIn];
          hashOutputs = ss.GetHash();
       }
@@ -1863,7 +1863,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
       // Version
       ss << txTo.nVersion;
       // Type
-      ss << txTo.nType;
+      //ss << txTo.nType;
       // Input prevouts/nSequence (none/all, depending on flags)
       ss << hashPrevouts;
       ss << hashSequence;
@@ -1890,9 +1890,9 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
       }
 
       // Extra payload for special transactions
-      if (txTo.IsSpecialTx()) {
-         ss << *(txTo.extraPayload);
-      }
+      //if (txTo.IsSpecialTx()) {
+      //   ss << *(txTo.extraPayload);
+      //}
 
       // Locktime
       ss << txTo.nLockTime;
