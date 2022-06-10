@@ -328,19 +328,18 @@ TransactionBuilderResult TransactionBuilder::ProveAndSign()
     }
 
     // Transparent signatures
-    CTransaction txNewConst(mtx);
     for (int nIn = 0; nIn < (int) mtx.vin.size(); nIn++) {
         auto tIn = tIns[nIn];
         SignatureData sigdata;
-        bool signSuccess = BTC::ProduceSignature(
-            BTC::TransactionSignatureCreator(
-                keystore, &txNewConst, nIn, tIn.value, SIGHASH_ALL),
-            tIn.scriptPubKey, sigdata, SigVersion::SIGVERSION_SAPLING, false, nullptr);
+        bool signSuccess = ProduceSignature(*keystore,
+            MutableTransactionSignatureCreator(
+                &mtx, nIn, tIn.value, SIGHASH_ALL),
+            tIn.scriptPubKey, sigdata, SigVersion::SIGVERSION_SAPLING, false);
 
         if (!signSuccess) {
             return TransactionBuilderResult("Failed to sign transaction");
         } else {
-            BTC::UpdateTransaction(mtx, nIn, sigdata);
+            UpdateTransaction(mtx, nIn, sigdata);
         }
     }
 
@@ -367,10 +366,10 @@ TransactionBuilderResult TransactionBuilder::AddDummySignatures()
     for (int nIn = 0; nIn < (int) mtx.vin.size(); nIn++) {
         auto tIn = tIns[nIn];
         SignatureData sigdata;
-        if (!BTC::ProduceSignature(BTC::DummySignatureCreator(keystore), tIn.scriptPubKey, sigdata, SigVersion::SIGVERSION_SAPLING, false)) {
+        if (!ProduceSignature(*keystore, DUMMY_SIGNATURE_CREATOR, tIn.scriptPubKey, sigdata, SigVersion::SIGVERSION_SAPLING, false)) {
             return TransactionBuilderResult("Failed to sign transaction");
         } else {
-            BTC::UpdateTransaction(mtx, nIn, sigdata);
+            UpdateTransaction(mtx, nIn, sigdata);
         }
     }
 

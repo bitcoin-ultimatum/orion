@@ -12,6 +12,7 @@
 #include <script/interpreter.h>
 #include <script/keyorigin.h>
 #include <script/standard.h>
+#include "script/interpreter.h"
 
 class CKey;
 class CKeyID;
@@ -49,6 +50,47 @@ public:
    bool CreateSchnorrSig(const CKeyStore& provider, std::vector<unsigned char>& sig, const XOnlyPubKey& pubkey, const uint256* leaf_hash, const uint256* merkle_root, SigVersion sigversion) const override;
 };
 
+namespace {
+/** Dummy signature checker which accepts all signatures. */
+    class DummySignatureChecker final : public BaseSignatureChecker
+    {
+    public:
+        DummySignatureChecker() {}
+        bool CheckECDSASignature(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override { return true; }
+        bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey, SigVersion sigversion, ScriptExecutionData& execdata, ScriptError* serror) const override { return true; }
+    };
+    const DummySignatureChecker DUMMY_CHECKER;
+
+    class DummySignatureCreator final : public BaseSignatureCreator {
+    private:
+        char m_r_len = 32;
+        char m_s_len = 32;
+    public:
+        DummySignatureCreator(char r_len, char s_len) : m_r_len(r_len), m_s_len(s_len) {}
+        const BaseSignatureChecker& Checker() const override { return DUMMY_CHECKER; }
+        bool CreateSig(const CKeyStore& provider, std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const override
+        {
+            // Create a dummy signature that is a valid DER-encoding
+            vchSig.assign(m_r_len + m_s_len + 7, '\000');
+            vchSig[0] = 0x30;
+            vchSig[1] = m_r_len + m_s_len + 4;
+            vchSig[2] = 0x02;
+            vchSig[3] = m_r_len;
+            vchSig[4] = 0x01;
+            vchSig[4 + m_r_len] = 0x02;
+            vchSig[5 + m_r_len] = m_s_len;
+            vchSig[6 + m_r_len] = 0x01;
+            vchSig[6 + m_r_len + m_s_len] = SIGHASH_ALL;
+            return true;
+        }
+        bool CreateSchnorrSig(const CKeyStore& provider, std::vector<unsigned char>& sig, const XOnlyPubKey& pubkey, const uint256* leaf_hash, const uint256* tweak, SigVersion sigversion) const override
+        {
+            sig.assign(64, '\000');
+            return true;
+        }
+    };
+
+}
 /** A signature creator that just produces 71-byte empty signatures. */
 extern const BaseSignatureCreator& DUMMY_SIGNATURE_CREATOR;
 /** A signature creator that just produces 72-byte empty signatures. */
@@ -82,7 +124,7 @@ struct SignatureData {
 };
 
 /** Produce a script signature using a generic signature creator. */
-bool ProduceSignature(const CKeyStore& provider, const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
+bool ProduceSignature(const CKeyStore& provider, const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, SigVersion sigversion = SigVersion::BASE, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
 
 /** Produce a script signature for a transaction. */
 bool SignSignature(const CKeyStore &provider, const CScript& fromPubKey, CMutableTransaction& txTo, unsigned int nIn, const CAmount& amount, int nHashType);
@@ -103,7 +145,6 @@ bool IsSegWitOutput(const CKeyStore& provider, const CScript& script);
 
 SignatureData CombineSignatures(const CKeyStore& provider, const CTxOut& txout, const CMutableTransaction& tx, const SignatureData& scriptSig1, const SignatureData& scriptSig2);
 
-/** Sign the CMutableTransaction */
-//bool SignTransaction(CMutableTransaction& mtx, const SigningProvider* provider, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, bilingual_str>& input_errors);
+void UpdateTransaction(CMutableTransaction& tx, unsigned int nIn, const SignatureData& data);
 
 #endif // BITCOIN_SCRIPT_SIGN_H

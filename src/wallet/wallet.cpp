@@ -3665,7 +3665,7 @@ bool CWallet::CreateLeasingRewards(
    const CScript& scriptPubKey = GetScriptForDestination(PKHash(pubKeySelf.GetID()));
    SignatureData sigdata;
 
-   if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata, false, true))
+   if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&tx, 0, amount, SIGHASH_ALL), scriptPubKey,sigdata, SigVersion::BASE, false, true))
    {
       return false;
    } else {
