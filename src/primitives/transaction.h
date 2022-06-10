@@ -301,6 +301,7 @@ public:
 struct CMutableTransaction
 {
     int32_t nVersion;
+    int16_t nType;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     uint32_t nLockTime;
