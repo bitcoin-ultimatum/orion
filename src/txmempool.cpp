@@ -13,6 +13,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "version.h"
+#include <random>
 
 #include <boost/circular_buffer.hpp>
 
@@ -229,7 +230,9 @@ public:
             // Insert at most 10 random entries per bucket, otherwise a single block
             // can dominate an estimate:
             if (e.size() > 10) {
-                std::random_shuffle(e.begin(), e.end());
+                std::random_device seed;
+                auto m_urng = std::mt19937_64(seed());
+                std::shuffle(e.begin(), e.end(), m_urng);
                 e.resize(10);
             }
             for (const CTxMemPoolEntry* entry : e) {

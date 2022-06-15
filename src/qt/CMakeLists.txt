@@ -376,7 +376,7 @@ target_include_directories(qt_stuff
 			${Boost_INCLUDE_DIRS}
 			${Boost_INCLUDE_DIRS}/filesystem
         )
-set_property(TARGET qt_stuff PROPERTY CXX_STANDARD 11)
+set_property(TARGET qt_stuff PROPERTY CXX_STANDARD 17)
 
 if(ZeroMQ_FOUND)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
