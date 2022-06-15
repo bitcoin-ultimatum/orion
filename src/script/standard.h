@@ -15,6 +15,7 @@
 #include <boost/variant.hpp>
 
 #include <stdint.h>
+#include <variant>
 
 //contract executions with less gas than this are not standard
 //Make sure is always equal or greater than MINIMUM_GAS_LIMIT (which we can't reference here due to insane header dependency chains)
