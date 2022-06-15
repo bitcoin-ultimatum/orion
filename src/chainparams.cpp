@@ -13,8 +13,8 @@
 #include "util.h"
 #include "utilstrencodings.h"
 #include "util/convert.h"
-#include "cpp-ethereum/libdevcore/SHA3.h"
-#include "cpp-ethereum/libdevcore/RLP.h"
+#include <libdevcore/SHA3.h>
+#include <libdevcore/RLP.h>
 #include <assert.h>
 
 #include <boost/assign/list_of.hpp>
