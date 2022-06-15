@@ -13,7 +13,7 @@ namespace dev
 
 h256 sha256(bytesConstRef _input) noexcept
 {
-	secp256k1_sha256_t ctx;
+	secp256k1_sha256 ctx;
 	secp256k1_sha256_initialize(&ctx);
 	secp256k1_sha256_write(&ctx, _input.data(), _input.size());
 	h256 hash;
