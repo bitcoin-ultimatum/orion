@@ -634,6 +634,16 @@ std::string CChainParams::EVMGenesisInfo(dev::eth::Network network) const
     return genesisInfo;
 }
 
+std::string CChainParams::EVMGenesisInfo() const
+{
+   dev::eth::EVMConsensus evmConsensus;
+   evmConsensus.QIP6Height = 0;
+   evmConsensus.QIP7Height = 0;
+   evmConsensus.nMuirGlacierHeight = 0;
+   evmConsensus.nLondonHeight = 0;
+   return dev::eth::genesisInfoQtum(dev::eth::Network::qtumNetwork, evmConsensus);
+}
+
 std::string toHexString(int64_t intValue) {
     //Store big endian representation in a vector
     uint64_t num = (uint64_t)intValue;

@@ -183,7 +183,7 @@ public:
     int MPoSRewardRecipients() const { return nMPoSRewardRecipients; }
 
     std::string EVMGenesisInfo(dev::eth::Network network) const;
-    
+    std::string EVMGenesisInfo() const;
     //Chainstate patching addresses
     const std::vector<std::string>& ExcludedBTCAddresses() const { return vExcludedAddresses; }
     const std::string& RechargedBTCAddress() const { return rechargedAddress; }
