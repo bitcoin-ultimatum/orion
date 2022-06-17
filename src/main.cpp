@@ -1381,8 +1381,8 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
                 return state.Invalid(error("AcceptToMempool(): Contract execution can not specify greater gas limit than can fit in 32-bits"), REJECT_INVALID, "bad-tx-too-much-gas");
 
              gasAllTxs += qtumTransaction.gas();
-             if(gasAllTxs > dev::u256(blockGasLimit))
-                return state.Invalid(false, REJECT_INVALID, "bad-txns-gas-exceeds-blockgaslimit");
+             //if(gasAllTxs > dev::u256(blockGasLimit))
+             //   return state.Invalid(false, REJECT_INVALID, "bad-txns-gas-exceeds-blockgaslimit");
 
              //don't allow less than DGP set minimum gas price to prevent MPoS greedy mining/spammers
              if(v.rootVM!=0 && (uint64_t)qtumTransaction.gasPrice() < minGasPrice)
