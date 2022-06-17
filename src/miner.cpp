@@ -157,7 +157,7 @@ bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* 
     dev::u256 txGas = 0;
     ByteCodeExecResult bceResult;
     for(QtumTransaction qtumTransaction : qtumTransactions){
-        txGas += qtumTransaction.gas();
+        /*txGas += qtumTransaction.gas();
         if(txGas > txGasLimit) {
             // Limit the tx gas limit by the soft limit if such a limit has been specified.
             return false;
@@ -166,7 +166,8 @@ bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* 
         if(bceResult.usedGas + qtumTransaction.gas() > softBlockGasLimit){
             //if this transaction's gasLimit could cause block gas limit to be exceeded, then don't add it
             return false;
-        }
+        }*/
+
         if(qtumTransaction.gasPrice() < minGasPrice){
             //if this transaction's gasPrice is less than the current DGP minGasPrice don't add it
             return false;
