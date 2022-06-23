@@ -24,18 +24,20 @@ struct EVMSchedule
     unsigned accountVersion = 0;
     bool exceptionalFailedCodeDeposit = true;
     bool haveDelegateCall = true;
-    bool eip150Mode = true;
-    bool eip158Mode = true;
-    bool eip1283Mode = true;
-    bool eip2200Mode = true;
-    bool haveBitwiseShifting = true;
-    bool haveRevert = true;
-    bool haveReturnData = true;
-    bool haveStaticCall = true;
-    bool haveCreate2 = true;
-    bool haveExtcodehash = true;
-    bool haveChainID = true;
-    bool haveSelfbalance = true;
+    bool eip150Mode = false;
+    bool eip158Mode = false;
+    bool eip1283Mode = false;
+    bool eip2200Mode = false;
+    bool eip2929Mode = false;
+    bool eip1559Mode = false;
+    bool haveBitwiseShifting = false;
+    bool haveRevert = false;
+    bool haveReturnData = false;
+    bool haveStaticCall = false;
+    bool haveCreate2 = false;
+    bool haveExtcodehash = false;
+    bool haveChainID = false;
+    bool haveSelfbalance = false;
     std::array<unsigned, 8> tierStepGas;
     unsigned expGas = 10;
     unsigned expByteGas = 10;
@@ -162,6 +164,21 @@ static const EVMSchedule& MuirGlacierSchedule = IstanbulSchedule;
 
 static const EVMSchedule BerlinSchedule = [] {
     EVMSchedule schedule = MuirGlacierSchedule;
+    schedule.eip2929Mode = true;
+
+	// sloadGas implements the changes in EIP-2929: WARM_STORAGE_READ_COST
+    schedule.sloadGas = 100;
+	// sstoreResetGas implements the changes in EIP-2929: 5000 - COLD_SLOAD_COST
+    schedule.sstoreResetGas = 2900;
+
+    // Warm storage read cost
+    schedule.extcodesizeGas = 100;
+    schedule.extcodecopyGas = 100;
+    schedule.extcodehashGas = 100;
+    schedule.balanceGas = 100;
+    schedule.callGas = 100;
+    schedule.callSelfGas = 100;
+    schedule.precompileStaticCallGas = 100;
     return schedule;
 }();
 

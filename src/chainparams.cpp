@@ -625,8 +625,9 @@ std::string CChainParams::EVMGenesisInfo(dev::eth::Network network) const
 {
     // replace_constants
     std::string genesisInfo = dev::eth::genesisInfo(network);
-    ReplaceInt(446320, "QIP7_STARTING_BLOCK", genesisInfo);
-    ReplaceInt(446320, "QIP6_STARTING_BLOCK", genesisInfo);
+    ReplaceInt(0, "QIP7_STARTING_BLOCK", genesisInfo);
+    ReplaceInt(0, "QIP6_STARTING_BLOCK", genesisInfo);
+    ReplaceInt(0, "MUIR_STARTING_BLOCK", genesisInfo);
     return genesisInfo;
 }
 
