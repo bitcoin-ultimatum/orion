@@ -1287,13 +1287,12 @@ set(SERVER_SOURCES
 
         ./src/evmone/evmc/lib/instructions/instruction_metrics.c
         ./src/evmone/evmc/lib/instructions/instruction_names.c
-        ./src/evmone/lib/evmone/advanced_analysis.cpp
-        ./src/evmone/lib/evmone/advanced_execution.cpp
-        ./src/evmone/lib/evmone/advanced_instructions.cpp
+        ./src/evmone/lib/evmone/analysis.cpp
         ./src/evmone/lib/evmone/baseline.cpp
         ./src/evmone/lib/evmone/baseline_instruction_table.cpp
-        ./src/evmone/lib/evmone/eof.cpp
+        ./src/evmone/lib/evmone/execution.cpp
         ./src/evmone/lib/evmone/instructions_calls.cpp
+        ./src/evmone/lib/evmone/instructions.cpp
         ./src/evmone/lib/evmone/tracing.cpp
         ./src/evmone/lib/evmone/vm.cpp
 
