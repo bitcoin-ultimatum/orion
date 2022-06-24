@@ -3076,8 +3076,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                     return state.Invalid("ConnectBlock(): Contract execution can not specify greater gas limit than can fit in 32-bits");
 
                  gasAllTxs += qtx.gas();
-                 //if (gasAllTxs > dev::u256(blockGasLimit))
-                 //   return state.Error("bad-txns-gas-exceeds-blockgaslimit");
+                 if (gasAllTxs > dev::u256(blockGasLimit))
+                    return state.Error("bad-txns-gas-exceeds-blockgaslimit");
 
                  //don't allow less than DGP set minimum gas price to prevent MPoS greedy mining/spammers
                  if (v.rootVM != 0 && (uint64_t)qtx.gasPrice() < minGasPrice)
@@ -3103,9 +3103,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                     return state.Error("ConnectBlock(): Error processing VM execution results");
                  }
                  blockGasUsed += bcer.usedGas;
-                 //if (blockGasUsed > blockGasLimit) {
-                 //   return state.Invalid("ConnectBlock(): Block exceeds gas limit");
-                 //}
+                 if (blockGasUsed > blockGasLimit) {
+                    return state.Invalid("ConnectBlock(): Block exceeds gas limit");
+                 }
                  for (CTxOut refundVout : bcer.refundOutputs) {
                     gasRefunds += refundVout.nValue;
                  }
