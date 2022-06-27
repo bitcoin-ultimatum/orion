@@ -37,18 +37,18 @@ BOOST_AUTO_TEST_CASE(rpc_addmultisig)
     const char address2Hex[] = "029BBEFF390CE736BD396AF43B52A1C14ED52C086B1E5585C15931F68725772BAC";
 
     UniValue v;
-    CBTCUAddress address;
+    CTxDestination address;
     BOOST_CHECK_NO_THROW(v = addmultisig(createArgs(1, address1Hex), false));
-    address.SetString(v.get_str());
-    BOOST_CHECK(address.IsValid() && address.IsScript());
+    address = DecodeDestination(v.get_str());
+    BOOST_CHECK(IsValidDestination(address) && (std::get<ScriptHash>(address).ToString().size() != 0) );
 
     BOOST_CHECK_NO_THROW(v = addmultisig(createArgs(1, address1Hex, address2Hex), false));
-    address.SetString(v.get_str());
-    BOOST_CHECK(address.IsValid() && address.IsScript());
+    address = DecodeDestination(v.get_str());
+    BOOST_CHECK(IsValidDestination(address) && (std::get<ScriptHash>(address).ToString().size() != 0) );
 
     BOOST_CHECK_NO_THROW(v = addmultisig(createArgs(2, address1Hex, address2Hex), false));
-    address.SetString(v.get_str());
-    BOOST_CHECK(address.IsValid() && address.IsScript());
+    address = DecodeDestination(v.get_str());
+    BOOST_CHECK(IsValidDestination(address) && (std::get<ScriptHash>(address).ToString().size() != 0) );
 
     BOOST_CHECK_THROW(addmultisig(createArgs(0), false), std::runtime_error);
     BOOST_CHECK_THROW(addmultisig(createArgs(1), false), std::runtime_error);
