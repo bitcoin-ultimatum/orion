@@ -7,6 +7,7 @@
 #include "State.h"
 #include <libdevcore/CommonIO.h>
 #include <libevm/VMFactory.h>
+#include "util.h"
 
 using namespace std;
 using namespace dev;
@@ -95,9 +96,10 @@ bool Executive::execute()
     // Entry point for a user-executed transaction.
 
     // Pay...
-    LOG(m_detailsLogger) << "Paying " << formatBalance(m_gasCost) << " from sender for gas ("
-                         << m_t.gas() << " gas at " << formatBalance(m_t.gasPrice()) << ")";
+    std::stringstream str; str << "Paying " << formatBalance(m_gasCost) << " from sender for gas ("
+                         << m_t.gas() << " gas at " << formatBalance(m_t.gasPrice()) << ")\n";
     m_s.subBalance(m_t.sender(), m_gasCost);
+    LogPrintf(str.str().c_str());
 
     assert(m_t.gas() >= (u256)m_baseGasRequired);
     if (m_t.isCreation())

@@ -362,8 +362,7 @@ target_include_directories(qt_stuff
 			${CMAKE_SOURCE_DIR}/src/leveldb/include
 			${CMAKE_SOURCE_DIR}/src/univalue/include
 			${CMAKE_SOURCE_DIR}/src/secp256k1/include
-            ${CMAKE_SOURCE_DIR}/src/eth_client/utils/ethash/lib/ethash
-            ${CMAKE_SOURCE_DIR}/src/eth_client/libethashseal
+            ${CMAKE_SOURCE_DIR}/src/eth_client
             ${CMAKE_SOURCE_DIR}/src/eth_client/utils/ethash/include
             ${CMAKE_SOURCE_DIR}/src/evmone/evmc/include
             ${CMAKE_SOURCE_DIR}/src/qtum
