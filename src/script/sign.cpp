@@ -321,8 +321,6 @@ static bool SignStep(const CKeyStore& provider, const BaseSignatureCreator& crea
             // sign with the owner key
             keyID = CKeyID(uint160(vSolutions[1]));
          }
-         if (!CreateSig(creator, sigdata, provider, sig, CPubKey(vSolutions[0]), scriptPubKey, sigversion)) return false;
-         ret.push_back(std::move(sig));
 
          CPubKey pubkey;
          if (!GetPubKey(provider, sigdata, keyID, pubkey)) {
@@ -330,6 +328,10 @@ static bool SignStep(const CKeyStore& provider, const BaseSignatureCreator& crea
             sigdata.missing_pubkeys.push_back(keyID);
             return false;
          }
+
+         if (!CreateSig(creator, sigdata, provider, sig, pubkey, scriptPubKey, sigversion)) return false;
+         ret.push_back(std::move(sig));
+
          scriptRet << ret[0];
          scriptRet << (fColdStake ? (int)OP_TRUE : OP_FALSE) << ToByteVector(pubkey);
          ret.clear();
@@ -351,8 +353,6 @@ static bool SignStep(const CKeyStore& provider, const BaseSignatureCreator& crea
             // sign with the owner key
             keyID = (whichTypeRet == TX_LEASE) ? CKeyID(uint160(vSolutions[1])): CKeyID(uint160(vSolutions[2]));
          }
-         if (!CreateSig(creator, sigdata, provider, sig, CPubKey(vSolutions[0]), scriptPubKey, sigversion)) return false;
-         ret.push_back(std::move(sig));
 
          CPubKey pubkey;
          if (!GetPubKey(provider, sigdata, keyID, pubkey)) {
@@ -360,6 +360,9 @@ static bool SignStep(const CKeyStore& provider, const BaseSignatureCreator& crea
             sigdata.missing_pubkeys.push_back(keyID);
             return false;
          }
+
+         if (!CreateSig(creator, sigdata, provider, sig, pubkey, scriptPubKey, sigversion)) return false;
+         ret.push_back(std::move(sig));
 
          scriptRet << ret[0];
          scriptRet << (fLeasing ? (int)OP_TRUE : OP_FALSE) << ToByteVector(pubkey);

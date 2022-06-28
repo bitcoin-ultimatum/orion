@@ -2224,18 +2224,18 @@ bool CWallet::AvailableCoins(
                 }
                 if (!found) continue;
 
-                if (nCoinType == STAKEABLE_COINS) {
-                    if (pcoin->vout[i].IsZerocoinMint()) continue;
+                std::vector<valtype> vSolutions;
+                txnouttype whichType;
+                CScript scriptPubKeyKernel = pcoin->vout[i].scriptPubKey;
 
-                    std::vector<valtype> vSolutions;
-                    txnouttype whichType;
-                    CScript scriptPubKeyKernel = pcoin->vout[i].scriptPubKey;
+                if (!Solver(scriptPubKeyKernel, whichType, vSolutions)) continue;
 
-                    if (!Solver(scriptPubKeyKernel, whichType, vSolutions)) continue;
-                    if (whichType != TX_PUBKEY && whichType != TX_PUBKEYHASH && whichType != TX_COLDSTAKE) continue;
+                if (nCoinType == STAKEABLE_COINS)
+                    if (pcoin->vout[i].IsZerocoinMint() || (whichType != TX_PUBKEY && whichType != TX_PUBKEYHASH && whichType != TX_COLDSTAKE)) continue;
 
-                    //check if leasing locktime has not yet come
-                    if (whichType == TX_LEASE_CLTV && CScriptNum::vch_to_uint64(vSolutions[0]) < chainActive.Tip()->GetBlockTime()) continue;
+                //check if leasing locktime has not yet come (if leasing locktime more then last blocktime then continue)
+                if (whichType == TX_LEASE_CLTV){
+                   if (CScriptNum::vch_to_uint64(vSolutions[0]) > chainActive.Tip()->GetBlockTime()) continue;
                 }
 
                 if (IsSpent(wtxid, i)) continue;
