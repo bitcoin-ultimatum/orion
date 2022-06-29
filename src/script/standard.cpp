@@ -825,8 +825,7 @@ bool IsValidDestination(const CTxDestination& dest) {
 
 bool IsValidContractSenderAddress(const CTxDestination &dest)
 {
-    const PKHash *hash = std::get_if<PKHash>(&dest);
-    return hash != 0;
+   return std::holds_alternative<PKHash>(dest);
 }
 CScript GetScriptForWitness(const CScript& redeemscript)
 {
