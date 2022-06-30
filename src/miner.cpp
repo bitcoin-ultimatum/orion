@@ -260,7 +260,7 @@ bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* 
 
     //calculate sigops from new refund/proof tx
     //this->nBlockSigOpsCost -= GetLegacySigOpCount(*pblock->vtx[proofTx]);
-    RebuildRefundTransaction(pblock, bceResult);
+    //RebuildRefundTransaction(pblock, bceResult);
     //this->nBlockSigOpsCost += GetLegacySigOpCount(*pblock->vtx[proofTx]);
 
     bceResult.valueTransfers.clear();
