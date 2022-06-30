@@ -127,7 +127,7 @@ void RebuildRefundTransaction(CBlock* pblock, ByteCodeExecResult &bceResult){
       refundtx=1; //1 for coinstake in PoS
    }
 
-   //pblock->vtx[refundtx].vout[refundtx].nValue -= bceResult.refundSender;
+   pblock->vtx[refundtx].vout[refundtx].nValue -= bceResult.refundSender;
    //note, this will need changed for MPoS
    for(CTxOut& vout : bceResult.refundOutputs){
       pblock->vtx[refundtx].vout.push_back(vout);
