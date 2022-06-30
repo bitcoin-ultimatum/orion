@@ -121,6 +121,19 @@ CBlockIndex* GetChainTip()
     return mapBlockIndex.at(p->GetBlockHash());
 }
 
+void RebuildRefundTransaction(CBlock* pblock, ByteCodeExecResult &bceResult){
+   int refundtx=0; //0 for coinbase in PoW
+   if(pblock->IsProofOfStake()){
+      refundtx=1; //1 for coinstake in PoS
+   }
+
+   //pblock->vtx[refundtx].vout[refundtx].nValue -= bceResult.refundSender;
+   //note, this will need changed for MPoS
+   for(CTxOut& vout : bceResult.refundOutputs){
+      pblock->vtx[refundtx].vout.push_back(vout);
+   }
+}
+
 bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* pblock, uint64_t minGasPrice) {
     //if (nTimeLimit != 0 && GetAdjustedTime() >= nTimeLimit - BYTECODE_TIME_BUFFER) {
     //    return false;
@@ -241,6 +254,14 @@ bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* 
     bceResult.refundSender += testExecResult.refundSender;
     bceResult.refundOutputs.insert(bceResult.refundOutputs.end(), testExecResult.refundOutputs.begin(), testExecResult.refundOutputs.end());
     bceResult.valueTransfers = std::move(testExecResult.valueTransfers);
+
+    for (CTransaction &t : bceResult.valueTransfers)
+        pblock->vtx.push_back(t);
+
+    //calculate sigops from new refund/proof tx
+    //this->nBlockSigOpsCost -= GetLegacySigOpCount(*pblock->vtx[proofTx]);
+    RebuildRefundTransaction(pblock, bceResult);
+    //this->nBlockSigOpsCost += GetLegacySigOpCount(*pblock->vtx[proofTx]);
 
     bceResult.valueTransfers.clear();
 
