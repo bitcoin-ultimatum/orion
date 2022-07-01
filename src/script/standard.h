@@ -193,7 +193,7 @@ enum addresstype
 ///////////////////////////////////////////qtum
 /** Parse a output public key for the sender public key and sender signature. */
 bool ExtractSenderData(const CScript& outputPubKey, CScript* senderPubKey, CScript* senderSig);
-
+bool GetSenderPubKey(const CScript& outputPubKey, CScript& senderPubKey);
 
 const char* GetTxnOutputType(txnouttype t);
 

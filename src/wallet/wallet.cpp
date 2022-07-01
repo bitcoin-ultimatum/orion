@@ -2825,31 +2825,14 @@ bool CWallet::CreateTransaction(const std::vector<std::pair<CScript,
                for (const PAIRTYPE(const CWalletTx*, unsigned int)& coin : setCoins)
                   txNew.vin.push_back(CTxIn(coin.first->GetHash(), coin.second));
 
-               if (sign)
-               {
-                  // Signing transaction outputs
-                  int nOut = 0;
-                  for (const auto& output : txNew.vout)
-                  {
-                     if (output.scriptPubKey.HasOpSender())
-                     {
-                        const CScript& scriptPubKey = GetScriptForDestination(signSenderAddress);
-                        SignatureData sigdata;
-                        const CAmount& amount = output.nValue;
 
-                        if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nOut, amount, SIGHASH_ALL), scriptPubKey,sigdata))
-                        {
-                           strFailReason = _("Signing transaction failed");
-                           return false;
-                        }
-                        else
-                        {
-                           UpdateInput(txNew.vin[nOut], sigdata);
-                        }
-                        nOut++;
-                     }
-                  }
+               // Signing transaction outputs
+               std::map<int, std::string> output_errors;
+               if(sign && txNew.HasOpSender() && !SignTransactionOutput(txNew, *this, SIGHASH_ALL, output_errors)) {
+                  strFailReason = _("Signing transaction output failed");
+                  return false;
                }
+
                // Sign
                int nIn = 0;
                for (const PAIRTYPE(const CWalletTx*, unsigned int)& coin : setCoins)

@@ -49,6 +49,22 @@ public:
    bool CreateSchnorrSig(const CKeyStore& provider, std::vector<unsigned char>& sig, const XOnlyPubKey& pubkey, const uint256* leaf_hash, const uint256* merkle_root, SigVersion sigversion) const override;
 };
 
+
+/** A signature creator for transactions outputs. */
+class MutableTransactionSignatureOutputCreator : public BaseSignatureCreator {
+   const CMutableTransaction* txTo;
+   unsigned int nOut;
+   int nHashType;
+   CAmount amount;
+   const MutableTransactionSignatureOutputChecker checker;
+
+public:
+   MutableTransactionSignatureOutputCreator(const CMutableTransaction* txToIn, unsigned int nOutIn, const CAmount& amountIn, int nHashTypeIn = SIGHASH_ALL);
+   const BaseSignatureChecker& Checker() const override { return checker; }
+   bool CreateSig(const CKeyStore& provider, std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const override;
+   bool CreateSchnorrSig(const CKeyStore& provider, std::vector<unsigned char>& sig, const XOnlyPubKey& pubkey, const uint256* leaf_hash, const uint256* merkle_root, SigVersion sigversion) const override;
+};
+
 /** A signature creator that just produces 71-byte empty signatures. */
 extern const BaseSignatureCreator& DUMMY_SIGNATURE_CREATOR;
 /** A signature creator that just produces 72-byte empty signatures. */
@@ -102,6 +118,10 @@ bool IsSolvable(const CKeyStore& provider, const CScript& script);
 bool IsSegWitOutput(const CKeyStore& provider, const CScript& script);
 
 SignatureData CombineSignatures(const CKeyStore& provider, const CTxOut& txout, const CMutableTransaction& tx, const SignatureData& scriptSig1, const SignatureData& scriptSig2);
+
+/** Sign output in the CMutableTransaction */
+bool SignTransactionOutput(CMutableTransaction& mtx, const CKeyStore& provider, int sighash, std::map<int, std::string>& output_errors);
+
 
 /** Sign the CMutableTransaction */
 //bool SignTransaction(CMutableTransaction& mtx, const SigningProvider* provider, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, bilingual_str>& input_errors);

@@ -87,6 +87,26 @@ bool MutableTransactionSignatureCreator::CreateSchnorrSig(const CKeyStore& provi
    return true;
 }
 
+MutableTransactionSignatureOutputCreator::MutableTransactionSignatureOutputCreator(const CMutableTransaction* txToIn, unsigned int nOutIn, const CAmount& amountIn, int nHashTypeIn) : txTo(txToIn), nOut(nOutIn), nHashType(nHashTypeIn), amount(amountIn), checker(txTo, nOut, amountIn) {}
+
+bool MutableTransactionSignatureOutputCreator::CreateSig(const CKeyStore& provider, std::vector<unsigned char>& vchSig, const CKeyID& address, const CScript& scriptCode, SigVersion sigversion) const
+{
+   CKey key;
+   if (!provider.GetKey(address, key))
+      return false;
+
+   uint256 hash = SignatureHashOutput(scriptCode, *txTo, nOut, nHashType, amount, sigversion);
+   if (!key.Sign(hash, vchSig))
+      return false;
+   vchSig.push_back((unsigned char)nHashType);
+   return true;
+}
+
+bool MutableTransactionSignatureOutputCreator::CreateSchnorrSig(const CKeyStore &, std::vector<unsigned char> &, const XOnlyPubKey &, const uint256 *, const uint256 *, SigVersion ) const
+{
+   return false;
+}
+
 static bool GetCScript(const CKeyStore& provider, const SignatureData& sigdata, const CScriptID& scriptid, CScript& script)
 {
    if (provider.GetCScript(scriptid, script)) {
@@ -718,6 +738,58 @@ SignatureData CombineSignatures(const CKeyStore& provider, const CTxOut& txout, 
    data.MergeSignatureData(scriptSig2);
    ProduceSignature(provider, MutableTransactionSignatureCreator(&tx, 0, txout.nValue, SIGHASH_DEFAULT), txout.scriptPubKey, data);
    return data;
+}
+
+bool UpdateOutput(CTxOut &output, const SignatureData &data)
+{
+   bool ret = false;
+   CDataStream streamSig(SER_NETWORK, PROTOCOL_VERSION);
+   streamSig << data.scriptSig;
+   CScript scriptPubKey;
+   if(output.scriptPubKey.UpdateSenderSig(ToByteVector(streamSig), scriptPubKey))
+   {
+      output.scriptPubKey = scriptPubKey;
+      ret = true;
+   }
+   return ret;
+}
+
+bool SignTransactionOutput(CMutableTransaction &mtx, const CKeyStore& provider, int nHashType, std::map<int, std::string>& output_errors)
+{
+   // Signing transaction outputs
+   for (unsigned int i = 0; i < mtx.vout.size(); i++)
+   {
+      CTxOut& output = mtx.vout[i];
+      if(output.scriptPubKey.HasOpSender())
+      {
+         CScript scriptPubKey;
+         if(!GetSenderPubKey(output.scriptPubKey, scriptPubKey))
+         {
+            output_errors[i] = "Fail to get sender public key";
+            continue;
+         }
+
+         SignatureData sigdata;
+         if (!ProduceSignature(provider, MutableTransactionSignatureOutputCreator(&mtx, i, output.nValue, nHashType), scriptPubKey, sigdata))
+         {
+            output_errors[i] = "Signing transaction output failed";
+            continue;
+         }
+         else
+         {
+            if(UpdateOutput(output, sigdata))
+            {
+               output_errors.erase(i);
+            }
+            else
+            {
+               output_errors[i] = "Update transaction output failed";
+               continue;
+            }
+         }
+      }
+   }
+   return output_errors.empty();
 }
 /*
 bool SignTransaction(CMutableTransaction& mtx, const SigningProvider* keystore, const std::map<COutPoint, Coin>& coins, int nHashType, std::map<int, bilingual_str>& input_errors)
