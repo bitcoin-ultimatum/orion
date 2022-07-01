@@ -1536,6 +1536,22 @@ namespace {
       return ss.GetSHA256();
    }
 
+   template <class T>
+   uint256 GetFirstPrevoutSHA256(const T& txTo)
+   {
+      CHashWriter ss(SER_GETHASH, 0);
+      ss << txTo.vin[0].prevout;
+      return ss.GetSHA256();
+   }
+
+   template <class T>
+   uint256 GetFirstSequenceSHA256(const T& txTo)
+   {
+      CHashWriter ss(SER_GETHASH, 0);
+      ss << txTo.vin[0].nSequence;
+      return ss.GetSHA256();
+   }
+
 /** Compute the (single) SHA256 of the concatenation of all txouts of a tx. */
    template <class T>
    uint256 GetOutputsSHA256(const T& txTo)
@@ -1567,6 +1583,27 @@ namespace {
       return ss.GetSHA256();
    }
 
+   CTxOut GetOutputWithoutSenderSig(const CTxOut& output)
+   {
+      return CTxOut(output.nValue, output.scriptPubKey.WithoutSenderSig());
+   }
+
+   template <class T>
+   uint256 GetOutputsOpSenderSHA256(const T& txTo)
+   {
+      CHashWriter ss(SER_GETHASH, 0);
+      for (const auto& txout : txTo.vout) {
+         if(txout.scriptPubKey.HasOpSender())
+         {
+            ss << GetOutputWithoutSenderSig(txout);
+         }
+         else
+         {
+            ss << txout;
+         }
+      }
+      return ss.GetSHA256();
+   }
 
 } // namespace
 
@@ -1584,6 +1621,7 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
    // Determine which precomputation-impacting features this transaction uses.
    bool uses_bip143_segwit = force;
    bool uses_bip341_taproot = force;
+   bool uses_op_sender = txTo.HasOpSender();
    for (size_t inpos = 0; inpos < txTo.vin.size() && !(uses_bip143_segwit && uses_bip341_taproot); ++inpos) {
       if (!txTo.vin[inpos].scriptWitness.IsNull()) {
          if (m_spent_outputs_ready && m_spent_outputs[inpos].scriptPubKey.size() == 2 + WITNESS_V1_TAPROOT_SIZE &&
@@ -1603,16 +1641,24 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
       if (uses_bip341_taproot && uses_bip143_segwit) break; // No need to scan further if we already need all.
    }
 
-   if (uses_bip143_segwit || uses_bip341_taproot) {
+   if (uses_bip143_segwit || uses_bip341_taproot || uses_op_sender) {
       // Computations shared between both sighash schemes.
       m_prevouts_single_hash = GetPrevoutsSHA256(txTo);
       m_sequences_single_hash = GetSequencesSHA256(txTo);
       m_outputs_single_hash = GetOutputsSHA256(txTo);
+      if(uses_op_sender)
+      {
+         m_outputs_opsender_single_hash = GetOutputsOpSenderSHA256(txTo);
+      }
    }
-   if (uses_bip143_segwit) {
+   if (uses_bip143_segwit || uses_op_sender) {
       hashPrevouts = SHA256Uint256(m_prevouts_single_hash);
       hashSequence = SHA256Uint256(m_sequences_single_hash);
       hashOutputs = SHA256Uint256(m_outputs_single_hash);
+      if(uses_op_sender)
+      {
+         hashOutputsOpSender = SHA256Uint256(m_outputs_opsender_single_hash);
+      }
       m_bip143_segwit_ready = true;
    }
    if (uses_bip341_taproot) {
@@ -1741,6 +1787,61 @@ bool SignatureHashSchnorr(uint256& hash_out, ScriptExecutionData& execdata, cons
 }
 
 template <class T>
+uint256 SignatureHashOutput(const CScript& scriptCode, const T& txTo, unsigned int nOut, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
+{
+   assert(nOut < txTo.vout.size());
+
+   uint256 hashPrevouts;
+   uint256 hashSequence;
+   uint256 hashOutputs;
+   const bool cacheready = cache && cache->m_bip143_segwit_ready;
+
+   if (nHashType & SIGHASH_ANYONECANPAY) {
+      assert(0 < txTo.vin.size());
+      hashPrevouts = SHA256Uint256(GetFirstPrevoutSHA256(txTo));
+      hashSequence = SHA256Uint256(GetFirstSequenceSHA256(txTo));
+   }
+
+   if (!(nHashType & SIGHASH_ANYONECANPAY)) {
+      hashPrevouts = cacheready ? cache->hashPrevouts : SHA256Uint256(GetPrevoutsSHA256(txTo));
+   }
+
+   if (!(nHashType & SIGHASH_ANYONECANPAY) && (nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
+      hashSequence = cacheready ? cache->hashSequence : SHA256Uint256(GetSequencesSHA256(txTo));
+   }
+
+
+   if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
+      hashOutputs = cacheready ? cache->hashOutputsOpSender : SHA256Uint256(GetOutputsOpSenderSHA256(txTo));
+   } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nOut < txTo.vout.size()) {
+      CHashWriter ss(SER_GETHASH, 0);
+      ss << GetOutputWithoutSenderSig(txTo.vout[nOut]);
+      hashOutputs = ss.GetHash();
+   }
+
+   CHashWriter ss(SER_GETHASH, 0);
+
+   // Version
+   ss << txTo.nVersion;
+   // Input prevouts/nSequence (none/first/all, depending on flags)
+   ss << hashPrevouts;
+   ss << hashSequence;
+   // The output being signed
+   ss << GetOutputWithoutSenderSig(txTo.vout[nOut]);
+   ss << scriptCode;
+   ss << amount;
+   // Outputs (none/one/all, depending on flags)
+   ss << hashOutputs;
+   // Locktime
+   ss << txTo.nLockTime;
+   // Sighash type
+   ss << nHashType;
+
+   return ss.GetHash();
+}
+
+
+template <class T>
 uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
 {
    assert(nIn < txTo.vin.size());
@@ -1807,6 +1908,8 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
    ss << txTmp << nHashType;
    return ss.GetHash();
 }
+
+
 
 template <class T>
 bool GenericTransactionSignatureChecker<T>::VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const
@@ -1984,6 +2087,38 @@ bool MutableTransactionSignatureChecker::CheckColdStake(const CScript& script) c
 // explicit instantiation
 template class GenericTransactionSignatureChecker<CTransaction>;
 template class GenericTransactionSignatureChecker<CMutableTransaction>;
+
+template <class T>
+bool GenericTransactionSignatureOutputChecker<T>::VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const
+{
+   return pubkey.Verify(sighash, vchSig);
+}
+
+template <class T>
+bool GenericTransactionSignatureOutputChecker<T>::CheckECDSASignature(const std::vector<unsigned char>& vchSigIn, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const
+{
+   CPubKey pubkey(vchPubKey);
+   if (!pubkey.IsValid())
+      return false;
+
+   // Hash type is one byte tacked on to the end of the signature
+   std::vector<unsigned char> vchSig(vchSigIn);
+   if (vchSig.empty())
+      return false;
+   int nHashType = vchSig.back();
+   vchSig.pop_back();
+
+   uint256 sighash = SignatureHashOutput(scriptCode, *txTo, nOut, nHashType, amount, sigversion, this->txdata);
+
+   if (!VerifyECDSASignature(vchSig, pubkey, sighash))
+      return false;
+
+   return true;
+}
+
+// explicit instantiation
+template class GenericTransactionSignatureOutputChecker<CTransaction>;
+template class GenericTransactionSignatureOutputChecker<CMutableTransaction>;
 
 static bool ExecuteWitnessScript(const Span<const valtype>& stack_span, const CScript& exec_script, unsigned int flags, SigVersion sigversion, const BaseSignatureChecker& checker, ScriptExecutionData& execdata, ScriptError* serror)
 {
