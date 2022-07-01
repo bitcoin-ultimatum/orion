@@ -2034,12 +2034,16 @@ void UpdateCoins(const CTransaction& tx, CValidationState& state, CCoinsViewCach
 }
 
 bool CScriptCheck::operator()() {
+   if(checkOutput())
+   {
+      // Check the sender signature inside the output, used to identify VM sender
+      CScript senderPubKey, senderSig;
+      if(!ExtractSenderData(ptxTo->vout[nOut].scriptPubKey, &senderPubKey, &senderSig))
+         return false;
+      return VerifyScript(senderSig, senderPubKey, nullptr, nFlags, CachingTransactionSignatureOutputChecker(ptxTo, nOut, ptxTo->vout[nOut].nValue, cacheStore, *txdata), &error);
+   }
 
-   // Check the sender signature inside the output, used to identify VM sender
-   CScript senderPubKey, senderSig;
-   if(!ExtractSenderData(ptxTo->vout[nOut].scriptPubKey, &senderPubKey, &senderSig))
-      return false;
-
+   // Check the input signature
    const CScript &scriptSig = ptxTo->vin[nIn].scriptSig;
    const CScriptWitness *witness = &ptxTo->vin[nIn].scriptWitness;
    return VerifyScript(scriptSig, m_tx_out.scriptPubKey, witness, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, m_tx_out.nValue, cacheStore, *txdata), &error);
