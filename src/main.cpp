@@ -2220,6 +2220,25 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
                    return state.DoS(100, false, REJECT_INVALID, strprintf("mandatory-script-verify-flag-failed (%s)", ScriptErrorString(check.GetScriptError())));
                 }
             }
+
+            for (unsigned int i = 0; i < tx.vout.size(); i++) {
+               const COutPoint& prevout = tx.vin[i].prevout;
+               const CCoins* coins = inputs.AccessCoins(prevout.hash);
+               assert(coins);
+
+              // Verify sender output signature
+              PrecomputedTransactionData txdata(tx);
+              if(tx.vout[i].scriptPubKey.HasOpSender())
+              {
+                 CScriptCheck check(coins->vout[prevout.n], tx, i, 0, cacheStore, &txdata);
+                 if (pvChecks) {
+                    pvChecks->push_back(CScriptCheck());
+                    check.swap(pvChecks->back());
+                 } else if (!check()) {
+                    return state.DoS(100, false, REJECT_INVALID, strprintf("sender-output-script-verify-failed (%s)", ScriptErrorString(check.GetScriptError())));
+                 }
+              }
+           }
         }
     }
 
