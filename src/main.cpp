@@ -1462,10 +1462,11 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
 
         // Check against previous transactions
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
+        PrecomputedTransactionData txdata;
         int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
         if (fCLTVIsActivated)
             flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
-        if (!CheckInputs(tx, state, view, true, flags, true)) {
+        if (!CheckInputs(tx, state, view, true, flags, true, txdata)) {
             return error("%s : ConnectInputs failed %s", __func__, hash.ToString());
         }
 
@@ -1481,7 +1482,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
         flags = MANDATORY_SCRIPT_VERIFY_FLAGS;
         if (fCLTVIsActivated)
             flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
-        if (!CheckInputs(tx, state, view, true, flags, true)) {
+        if (!CheckInputs(tx, state, view, true, flags, true, txdata)) {
             return error("%s : BUG! PLEASE REPORT THIS! ConnectInputs failed against MANDATORY but not STANDARD flags %s",
                     __func__, hash.ToString());
         }
@@ -1502,6 +1503,7 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
         *pfMissingInputs = false;
 
     const int chainHeight = chainActive.Height();
+    PrecomputedTransactionData txdata;
 
     if (!CheckTransaction(tx, chainHeight >= Params().Zerocoin_StartHeight(), true, state))
         return error("AcceptableInputs: : CheckTransaction failed");
@@ -1676,7 +1678,7 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
         int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
         if (fCLTVIsActivated)
             flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
-        if (!CheckInputs(tx, state, view, false, flags, true)) {
+        if (!CheckInputs(tx, state, view, false, flags, true, txdata)) {
             return error("AcceptableInputs: : ConnectInputs failed %s", hash.ToString());
         }
 
@@ -2036,7 +2038,7 @@ void UpdateCoins(const CTransaction& tx, CValidationState& state, CCoinsViewCach
 bool CScriptCheck::operator()() {
    if(checkOutput())
    {
-      // Check the sender signature inside the output, used to identify VM sender
+      // Check the sender signature inside the output, usenderPubKey = {CScript} sed to identify VM sender
       CScript senderPubKey, senderSig;
       if(!ExtractSenderData(ptxTo->vout[nOut].scriptPubKey, &senderPubKey, &senderSig))
          return false;
@@ -2133,7 +2135,7 @@ CAmount GetInvalidUTXOValue()
     return nValue;
 }
 
-bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, bool fScriptChecks, unsigned int flags, bool cacheStore, std::vector<CScriptCheck>* pvChecks)
+bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, bool fScriptChecks, unsigned int flags, bool cacheStore, PrecomputedTransactionData& txdata, std::vector<CScriptCheck>* pvChecks)
 {
     if (!tx.IsCoinBase() && !tx.HasZerocoinSpendInputs() && !tx.IsLeasingReward()) {
         if (pvChecks)
@@ -2200,7 +2202,6 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
                 assert(coins);
 
                 // Verify signature
-                PrecomputedTransactionData txdata(tx);
                 CScriptCheck check(coins->vout[prevout.n], tx, i, flags, cacheStore, &txdata);
 
                 if (pvChecks) {
@@ -2233,7 +2234,6 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
 
             for (unsigned int i = 0; i < tx.vout.size(); i++) {
                // Verify sender output signature
-              PrecomputedTransactionData txdata(tx);
               if(tx.vout[i].scriptPubKey.HasOpSender())
               {
                  CScriptCheck check(tx, i, 0, cacheStore, &txdata);
@@ -2815,8 +2815,14 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         fCLTVIsActivated = pindex->pprev->nHeight >= Params().BIP65ActivationHeight();
     }
 
+    // Precomputed transaction data pointers must not be invalidated
+    // until after `control` has run the script checks (potentially
+    // in multiple threads). Preallocate the vector size so a new allocation
+    // doesn't invalidate pointers into the vector, and keep txsdata in scope
+    // for as long as `control`.
     CCheckQueueControl<CScriptCheck> control(fScriptChecks && nScriptCheckThreads ? &scriptcheckqueue : nullptr);
-    
+    std::vector<PrecomputedTransactionData> txsdata(block.vtx.size());
+
     // TODO: the first condition is only for testing purposes to allow blocks without validators signature
     if(!block.vchValidatorSig.empty()){
         if(!CheckValidator(block, view)){
@@ -2875,6 +2881,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (block.nTime > sporkManager.GetSporkValue(SPORK_16_ZEROCOIN_MAINTENANCE_MODE) && !IsInitialBlockDownload() && tx.ContainsZerocoins()) {
             return state.DoS(100, error("ConnectBlock() : zerocoin transactions are currently in maintenance mode"));
         }
+
+        bool hasOpSpend = tx.HasOpSpend();
 
         if (tx.HasZerocoinMintOutputs()) {
 
@@ -2965,9 +2973,14 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             if (fCLTVIsActivated)
                 flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
 
-            if (!CheckInputs(tx, state, view, fScriptChecks, flags, false, nScriptCheckThreads ? &vChecks : NULL))
+            if (!CheckInputs(tx, state, view, fScriptChecks, flags, false, txsdata[i], (hasOpSpend || tx.HasCreateOrCall()) ? nullptr: ( nScriptCheckThreads ? &vChecks : nullptr)))
                 return false;
-            control.Add(vChecks);
+            for(auto &c: vChecks)
+           {
+               if(!c())
+                  std::cout<<"vChecks fail:"<<ScriptErrorString(c.GetScriptError())<<std::endl;
+           }
+            // control.Add(vChecks);
     
             // Check validators after the basic checks have been passed
             if(!CheckValidatorTransaction(tx, state, view, pindex->nHeight, validatorTransactions)){
@@ -3003,7 +3016,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         vPos.emplace_back(tx.GetHash(), pos);
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
 
-        bool hasOpSpend = tx.HasOpSpend();
+
         unsigned int contractflags = SCRIPT_EXEC_BYTE_CODE;
 
        if(!CheckOpSender(tx, Params(), pindex->nHeight)){
@@ -3015,7 +3028,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
         //checks for smart contracts trxs
         bool bSCValidatorFound = true;
-        if (tx.HasCreateOrCall() && !hasOpSpend) {
+        if (tx.HasCreateOrCall() && ! hasOpSpend) {
               //check that only validator can create contract
               if(tx.HasOpCreate() && !sporkManager.IsSporkActive(SPORK_1019_CREATECONTRACT_ANY_ALLOWED)) {
                  //check if create contract allowed for all

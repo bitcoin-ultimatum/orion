@@ -564,7 +564,9 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
             // create only contains transactions that are valid in new blocks.
 
             CValidationState state;
-            if (!CheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true))
+
+            PrecomputedTransactionData txdata;
+            if (!CheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true, txdata))
                 continue;
 
             CTxUndo txundo;
