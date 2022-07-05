@@ -2975,7 +2975,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
             if (!CheckInputs(tx, state, view, fScriptChecks, flags, false, txsdata[i], (hasOpSpend || tx.HasCreateOrCall()) ? nullptr: ( nScriptCheckThreads ? &vChecks : nullptr)))
                 return false;
-
+            for(auto &c: vChecks)
+           {
+               if(!c())
+                  std::cout<<"vChecks fail:"<<ScriptErrorString(c.GetScriptError())<<std::endl;
+           }
             control.Add(vChecks);
     
             // Check validators after the basic checks have been passed
