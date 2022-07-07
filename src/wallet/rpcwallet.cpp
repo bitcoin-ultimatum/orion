@@ -134,7 +134,7 @@ bool SetDefaultPayForContractAddress(CWallet* const pwallet, CCoinControl & coin
     // Set default coin to pay for the contract
     // Select any valid unspent output that can be used to pay for the contract
     std::vector<COutput> vecOutputs;
-    coinControl.fAllowOtherInputs=false;
+    coinControl.fAllowOtherInputs=true;
 
     assert(pwallet != NULL);
     pwallet->AvailableCoins(&vecOutputs, false, &coinControl, true);
