@@ -657,7 +657,7 @@ UniValue sendtocontract(const UniValue& params, bool fHelp){
 
     CWalletTx wtx;
     CReserveKey reservekey(pwalletMain);
-    if (!pwalletMain->CreateTransaction(scriptPubKey, nAmount, wtx, reservekey, nFeeRequired, strError, &coinControl, ALL_COINS, false, nGasFee, false, true)) {
+    if (!pwalletMain->CreateTransaction(scriptPubKey, nAmount, wtx, reservekey, nFeeRequired, strError, &coinControl, ALL_COINS, false, nGasFee, false, true, true, signSenderAddress)) {
         if (nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);

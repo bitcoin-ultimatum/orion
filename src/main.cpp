@@ -2152,6 +2152,21 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
         int nSpendHeight = pindexPrev->nHeight + 1;
         CAmount nValueIn = 0;
         CAmount nFees = 0;
+
+        if (!txdata.m_spent_outputs_ready) {
+          std::vector<CTxOut> spent_outputs;
+          spent_outputs.reserve(tx.vin.size());
+
+          for (const auto& txin : tx.vin) {
+             const COutPoint& prevout = txin.prevout;
+             const CCoins* coins = inputs.AccessCoins(prevout.hash);
+             assert(coins);
+             spent_outputs.emplace_back(coins->vout[prevout.n]);
+          }
+          txdata.Init(tx, std::move(spent_outputs));
+       }
+        assert(txdata.m_spent_outputs.size() == tx.vin.size());
+
         for (unsigned int i = 0; i < tx.vin.size(); i++) {
             const COutPoint& prevout = tx.vin[i].prevout;
             const CCoins* coins = inputs.AccessCoins(prevout.hash);
@@ -2197,12 +2212,9 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
         // still computed and checked, and any change will be caught at the next checkpoint.
         if (fScriptChecks) {
             for (unsigned int i = 0; i < tx.vin.size(); i++) {
-                const COutPoint& prevout = tx.vin[i].prevout;
-                const CCoins* coins = inputs.AccessCoins(prevout.hash);
-                assert(coins);
 
                 // Verify signature
-                CScriptCheck check(coins->vout[prevout.n], tx, i, flags, cacheStore, &txdata);
+                CScriptCheck check(txdata.m_spent_outputs[i], tx, i, flags, cacheStore, &txdata);
 
                 if (pvChecks) {
                       pvChecks->push_back(CScriptCheck());
@@ -2215,10 +2227,10 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
                          // arguments; if so, don't trigger DoS protection to
                          // avoid splitting the network between upgraded and
                          // non-upgraded nodes.
-                         CScriptCheck check(coins->vout[prevout.n], tx, i, flags & ~STANDARD_NOT_MANDATORY_VERIFY_FLAGS, cacheStore, &txdata);
+                         CScriptCheck check2(txdata.m_spent_outputs[i], tx, i, flags & ~STANDARD_NOT_MANDATORY_VERIFY_FLAGS, cacheStore, &txdata);
                          //CScriptCheck check(*coins, tx, i,
                          //                   flags & ~STANDARD_NOT_MANDATORY_VERIFY_FLAGS, cacheStore);
-                         if (check())
+                         if (check2())
                             return state.Invalid(false, REJECT_NONSTANDARD, strprintf("non-mandatory-script-verify-flag (%s)", ScriptErrorString(check.GetScriptError())));
                       }
                    // Failures of other flags indicate a transaction that is
@@ -2973,13 +2985,12 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             if (fCLTVIsActivated)
                 flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
 
+            //For contract sender suport add this flag
+            flags |= SCRIPT_OUTPUT_SENDER;
+
             if (!CheckInputs(tx, state, view, fScriptChecks, flags, false, txsdata[i], (hasOpSpend || tx.HasCreateOrCall()) ? nullptr: ( nScriptCheckThreads ? &vChecks : nullptr)))
                 return false;
-            for(auto &c: vChecks)
-           {
-               if(!c())
-                  std::cout<<"vChecks fail:"<<ScriptErrorString(c.GetScriptError())<<std::endl;
-           }
+
             control.Add(vChecks);
     
             // Check validators after the basic checks have been passed
