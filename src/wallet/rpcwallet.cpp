@@ -137,7 +137,7 @@ bool SetDefaultPayForContractAddress(CWallet* const pwallet, CCoinControl & coin
     coinControl.fAllowOtherInputs=true;
 
     assert(pwallet != NULL);
-    pwallet->AvailableCoins(&vecOutputs, false, NULL, true);
+    pwallet->AvailableCoins(&vecOutputs, false, &coinControl, true);
 
     for (const COutput& out : vecOutputs) {
         CTxDestination destAdress;
@@ -549,7 +549,7 @@ UniValue sendtocontract(const UniValue& params, bool fHelp){
     if (params.size() > 5){
         senderAddress = DecodeDestination(params[5].get_str());
         if (!IsValidDestination(senderAddress))
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Qtum address to send from");
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid BTCU address to send from");
         if (!IsValidContractSenderAddress(senderAddress))
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid contract sender address. Only P2PK and P2PKH allowed");
         else
