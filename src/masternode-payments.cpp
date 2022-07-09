@@ -228,7 +228,7 @@ void DumpMasternodePayments()
     LogPrint("masternode","Budget dump finished  %dms\n", GetTimeMillis() - nStart);
 }
 
-bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMinted)
+bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMinted, bool fAlreadyChecked)
 {
     CBlockIndex* pindexPrev = chainActive.Tip();
     if (pindexPrev == NULL) return true;
@@ -253,7 +253,7 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
         if (nHeight % Params().GetBudgetCycleBlocks() < 100) {
             return true;
         } else {
-            if (nMinted > nExpectedValue) {
+            if (fAlreadyChecked && (nMinted > nExpectedValue)) {
                 return false;
             }
         }
