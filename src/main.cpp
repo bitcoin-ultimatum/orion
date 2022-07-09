@@ -2988,7 +2988,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             //For contract sender suport add this flag
             flags |= SCRIPT_OUTPUT_SENDER;
 
-            if (!CheckInputs(tx, state, view, fScriptChecks, flags, false, txsdata[i], (hasOpSpend || tx.HasCreateOrCall()) ? nullptr: ( nScriptCheckThreads ? &vChecks : nullptr)))
+            if (!CheckInputs(tx, state, view, fScriptChecks, flags, false, txsdata[i], (hasOpSpend || tx.HasCreateOrCall()) ? nullptr: ( nScriptCheckThreads ? /*&vChecks*/nullptr : nullptr)))
                 return false;
 
             control.Add(vChecks);
@@ -3140,7 +3140,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  }
               }
 
-              if (fAlreadyChecked || fVerifyDB) {
+   //           if (fAlreadyChecked || fVerifyDB) {
 
                  if (!exec.performByteCode()) {
                     return state.Error("ConnectBlock(): Unknown error during contract execution");
@@ -3164,7 +3164,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                  if (fRecordLogOpcodes && !fJustCheck) {
                     writeVMlog(resultExec, tx, block);
                  }
-              }
+  //            }
            }
     }
 
@@ -3188,9 +3188,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         nExpectedMint += nFees;
 
     //Check that the block does not overmint
-    if (!IsBlockValueValid(block, nExpectedMint, pindex->nMint)) {
+    if (!IsBlockValueValid(block, nExpectedMint + gasRefunds, pindex->nMint)) {
         return state.DoS(100, error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
-                                    FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)),
+                                    FormatMoney(pindex->nMint), FormatMoney(nExpectedMint + gasRefunds)),
                          REJECT_INVALID, "bad-cb-amount");
     }
 

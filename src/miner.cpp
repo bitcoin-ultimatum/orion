@@ -37,6 +37,7 @@
 #include "invalid.h"
 #include "zbtcuchain.h"
 #include "contract.h"
+#include "script/sign.h"
 
 
 #include <boost/thread.hpp>
@@ -134,7 +135,7 @@ void RebuildRefundTransaction(CBlock* pblock, ByteCodeExecResult &bceResult){
    }
 }
 
-bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* pblock, uint64_t minGasPrice) {
+bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* pblock, uint64_t minGasPrice, std::vector<CTxOut> &refund_outs) {
     //if (nTimeLimit != 0 && GetAdjustedTime() >= nTimeLimit - BYTECODE_TIME_BUFFER) {
     //    return false;
     //}
@@ -233,6 +234,7 @@ bool AttemptToAddContractToBlock(CTxMemPoolEntry& me, CTransaction& tx, CBlock* 
     contrTx.vout.resize(contrTx.vout.size()+testExecResult.refundOutputs.size());
     for(CTxOut& vout : testExecResult.refundOutputs){
         contrTx.vout[i]=vout;
+        refund_outs.emplace_back(vout);
         i++;
     }
     nBlockSigOpsCost += GetLegacySigOpCount(contrTx);
@@ -272,7 +274,7 @@ std::pair<int, std::pair<uint256, uint256> > pCheckpointCache;
 CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, bool fProofOfStake)
 {
     CReserveKey reservekey(pwallet);
-
+    int staketx_index;
     // Create new block
     std::unique_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
     if (!pblocktemplate.get()) return nullptr;
@@ -315,6 +317,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
         pblock->nTime = nTxNewTime;
         pblock->vtx[0].vout[0].SetEmpty();
         pblock->vtx.push_back(CTransaction(txCoinStake));
+        staketx_index = 1;
 
         // Pay rewards for leasing
         CMutableTransaction txLeasing;
@@ -646,10 +649,24 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
        int nDescendantsUpdated = 0;
 
        //addPackageTxs(nPackagesSelected, nDescendantsUpdated, minGasPrice);
+       std::vector<CTxOut> refund_outs;
        for (CTransaction tx: pblock->vtx){
           if(tx.HasCreateOrCall()){
-             AttemptToAddContractToBlock(mempool.mapTx.begin()->second, tx,pblock, minGasPrice);
+             AttemptToAddContractToBlock(mempool.mapTx.begin()->second, tx,pblock, minGasPrice, refund_outs);
           }
+       }
+       //add contracts refund outputs to reward coinstake transaction and resign it
+       if(refund_outs.size() > 0)
+       {
+          for(auto &vout: refund_outs)
+             pblock->vtx[staketx_index].vout.emplace_back(vout);
+
+          //re-sign stake trx
+          std::map<int, bilingual_str> input_errors;
+          CMutableTransaction cs_trx = pblock->vtx[staketx_index];
+          SignTransaction(cs_trx, pwallet, SIGHASH_ALL, input_errors);
+          pblock->vtx[staketx_index] = cs_trx;
+
        }
 
        pblock->hashStateRoot = uint256(h256Touint(dev::h256(globalState->rootHash())));
