@@ -1224,6 +1224,9 @@ CAmount CWalletTx::GetUnspentCredit(const isminefilter& filter) const
     if (filter & ISMINE_LEASED) {
         credit += pwallet->GetCredit(*this, ISMINE_LEASED, true);
     }
+    if (filter & ISMINE_LEASED_LOCKED_CLTV) {
+       credit += pwallet->GetCredit(*this, ISMINE_LEASED_LOCKED_CLTV, true);
+    }
     return credit;
 }
 
@@ -1321,6 +1324,11 @@ CAmount CWalletTx::GetLeasingCredit(bool fUseCache) const
 CAmount CWalletTx::GetLeasedCredit(bool fUseCache) const
 {
     return GetUnspentCredit(ISMINE_LEASED);
+}
+
+CAmount CWalletTx::GetLeasedLockedCLTVCredit(bool fUseCache) const
+{
+   return GetUnspentCredit(ISMINE_LEASED_LOCKED_CLTV);
 }
 
 CAmount CWalletTx::UpdateAmount(CAmount& amountToUpdate, bool& cacheFlagToUpdate, bool fUseCache, isminetype mimeType, bool fCredit) const
@@ -1932,7 +1940,10 @@ CAmount CWallet::GetLeasedBalance() const
 {
     return loopTxsBalance([](const uint256& id, const CWalletTx& pcoin, CAmount& nTotal) {
         if (pcoin.HasP2LOutputs() && pcoin.IsTrusted())
-            nTotal += pcoin.GetLeasedCredit();
+        {
+           nTotal += pcoin.GetLeasedCredit();
+           nTotal += pcoin.GetLeasedLockedCLTVCredit();
+        }
     });
 }
 

@@ -2930,13 +2930,13 @@ UniValue listleasingutxos(const UniValue& params, bool fHelp)
             continue;
 
         // if this tx has no unspent P2L outputs for us, skip it
-        if(pcoin->GetLeasingCredit() == 0 && pcoin->GetLeasedCredit() == 0)
+        if(pcoin->GetLeasingCredit() == 0 && pcoin->GetLeasedCredit() == 0 && pcoin->GetLeasedLockedCLTVCredit() == 0)
             continue;
 
         for (unsigned int i = 0; i < pcoin->vout.size(); i++) {
             const CTxOut& out = pcoin->vout[i];
             isminetype mine = pwalletMain->IsMine(out);
-            if (!bool(mine & ISMINE_LEASING) && !bool(mine & ISMINE_LEASED))
+            if (!bool(mine & ISMINE_LEASING) && !bool(mine & ISMINE_LEASED) && !bool(mine & ISMINE_LEASED_LOCKED_CLTV))
                 continue;
             txnouttype type;
             std::vector<CTxDestination> addresses;
@@ -2953,6 +2953,8 @@ UniValue listleasingutxos(const UniValue& params, bool fHelp)
             entry.push_back(Pair("confirmations", pcoin->GetDepthInMainChain(false)));
             entry.push_back(Pair("coin-leaser", EncodeDestination(addresses[0], CChainParams::PUBKEY_ADDRESS)));
             entry.push_back(Pair("coin-owner", EncodeDestination(addresses[1])));
+            if(mine & ISMINE_LEASED_LOCKED_CLTV)
+               entry.push_back(Pair("leased_until", out.scriptPubKey.ExtractLeasedCLTVTimestamp()));
             entry.push_back(Pair("whitelisted", fWhitelisted ? "true" : "false"));
             results.push_back(entry);
         }

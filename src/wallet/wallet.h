@@ -901,6 +901,7 @@ public:
     CAmount GetLeasingCredit(bool fUseCache = true) const;
     CAmount GetLeasingDebit(bool fUseCache = true) const;
     CAmount GetLeasedCredit(bool fUseCache = true) const;
+    CAmount GetLeasedLockedCLTVCredit(bool fUseCache = true) const;
     CAmount GetLeasedDebit(bool fUseCache = true) const;
 
     // Helper method to update the amount and cacheFlag.
