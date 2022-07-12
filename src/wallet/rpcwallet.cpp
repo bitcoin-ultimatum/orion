@@ -2951,8 +2951,8 @@ UniValue listleasingutxos(const UniValue& params, bool fHelp)
             entry.push_back(Pair("txidn", (int)i));
             entry.push_back(Pair("amount", ValueFromAmount(out.nValue)));
             entry.push_back(Pair("confirmations", pcoin->GetDepthInMainChain(false)));
-            entry.push_back(Pair("coin-leaser", EncodeDestination(addresses[0], CChainParams::PUBKEY_ADDRESS)));
-            entry.push_back(Pair("coin-owner", EncodeDestination(addresses[1])));
+            entry.push_back(Pair("coin_leaser", EncodeDestination(addresses[0], CChainParams::PUBKEY_ADDRESS)));
+            entry.push_back(Pair("coin_owner", EncodeDestination(addresses[1])));
             if(mine & ISMINE_LEASED_LOCKED_CLTV)
                entry.push_back(Pair("leased_until", out.scriptPubKey.ExtractLeasedCLTVTimestamp()));
             entry.push_back(Pair("whitelisted", fWhitelisted ? "true" : "false"));
