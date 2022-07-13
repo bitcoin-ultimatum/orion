@@ -164,7 +164,6 @@ btcud
 test_btcu
 install_manifest.txt
 osx_volname
-lib/
 bin/
 conf*/*
 conftest.c
