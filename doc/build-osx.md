@@ -190,7 +190,7 @@ Or use manual installation:
 
 1. Clone the BTCU source code:
 ```shell
-    git clone https://github.com/bitcoin-ultimatum/orion
+    git clone https://github.com/bitcoin-ultimatum/orion --recursive
     cd btcu
 ```
 
