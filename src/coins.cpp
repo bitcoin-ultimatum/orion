@@ -64,6 +64,7 @@ bool CCoinsViewIterator::GetCoins(CCoins&, bool) const { return false; };
 bool CCoinsViewIterator::Valid() const { return false; }
 void CCoinsViewIterator::Next() const { }
 
+SaltedIdHasher::SaltedIdHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
 bool CCoinsView::GetCoins(const uint256& txid, CCoins& coins) const { return false; }
 bool CCoinsView::HaveCoins(const uint256& txid) const { return false; }
@@ -72,6 +73,10 @@ bool CCoinsView::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock) { ret
 bool CCoinsView::GetStats(CCoinsStats& stats) const { return false; }
 std::unique_ptr<CCoinsViewIterator> CCoinsView::SeekToFirst() const { return std::unique_ptr<CCoinsViewIterator>(new CCoinsViewIterator()); }
 int64_t CCoinsView::GetBTCAirdroppedSupply() const { return 0;}
+// Sapling
+bool CCoinsView::GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const { return false; }
+bool CCoinsView::GetNullifier(const uint256 &nullifier) const { return false; }
+uint256 CCoinsView::GetBestAnchor() const { return uint256(); };
 
 CCoinsViewBacked::CCoinsViewBacked(CCoinsView* viewIn) : base(viewIn) {}
 bool CCoinsViewBacked::GetCoins(const uint256& txid, CCoins& coins) const { return base->GetCoins(txid, coins); }
@@ -82,6 +87,10 @@ bool CCoinsViewBacked::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock)
 bool CCoinsViewBacked::GetStats(CCoinsStats& stats) const { return base->GetStats(stats); }
 std::unique_ptr<CCoinsViewIterator> CCoinsViewBacked::SeekToFirst() const { return base->SeekToFirst(); }
 int64_t CCoinsViewBacked::GetBTCAirdroppedSupply() const { return base->GetBTCAirdroppedSupply();}
+// Sapling
+bool CCoinsViewBacked::GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const { return base->GetSaplingAnchorAt(rt, tree); }
+bool CCoinsViewBacked::GetNullifier(const uint256 &nullifier) const { return base->GetNullifier(nullifier); }
+uint256 CCoinsViewBacked::GetBestAnchor() const { return base->GetBestAnchor(); }
 
 CCoinsKeyHasher::CCoinsKeyHasher() : salt(GetRandHash()) {}
 
@@ -279,6 +288,52 @@ double CCoinsViewCache::GetPriority(const CTransaction& tx, int nHeight) const
         }
     }
     return tx.ComputePriority(dResult);
+}
+
+// Sapling
+
+bool CCoinsViewCache::GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const {
+
+    CAnchorsSaplingMap::const_iterator it = cacheSaplingAnchors.find(rt);
+    if (it != cacheSaplingAnchors.end()) {
+        if (it->second.entered) {
+            tree = it->second.tree;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    if (!base->GetSaplingAnchorAt(rt, tree)) {
+        return false;
+    }
+
+    CAnchorsSaplingMap::iterator ret = cacheSaplingAnchors.insert(std::make_pair(rt, CAnchorsSaplingCacheEntry())).first;
+    ret->second.entered = true;
+    ret->second.tree = tree;
+    cachedCoinsUsage += ret->second.tree.DynamicMemoryUsage();
+
+    return true;
+}
+
+bool CCoinsViewCache::GetNullifier(const uint256 &nullifier) const {
+    CNullifiersMap* cacheToUse = &cacheSaplingNullifiers;
+    CNullifiersMap::iterator it = cacheToUse->find(nullifier);
+    if (it != cacheToUse->end())
+        return it->second.entered;
+
+    CNullifiersCacheEntry entry;
+    bool tmp = base->GetNullifier(nullifier);
+    entry.entered = tmp;
+
+    cacheToUse->insert(std::make_pair(nullifier, entry));
+    return tmp;
+}
+
+uint256 CCoinsViewCache::GetBestAnchor() const {
+    if (hashSaplingAnchor.IsNull())
+        hashSaplingAnchor = base->GetBestAnchor();
+    return hashSaplingAnchor;
 }
 
 CCoinsModifier::CCoinsModifier(CCoinsViewCache& cache_, CCoinsMap::iterator it_) : cache(cache_), it(it_)

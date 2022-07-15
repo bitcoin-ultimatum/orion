@@ -27,9 +27,102 @@
 
 static uint64_t nAccountingEntryNumber = 0;
 
+namespace DBKeys {
+    const std::string BESTBLOCK_NOMERKLE{"bestblock_nomerkle"};
+    const std::string BESTBLOCK{"bestblock"};
+    const std::string CRYPTED_KEY{"ckey"};
+    const std::string CSCRIPT{"cscript"};
+    const std::string DEFAULTKEY{"defaultkey"};
+    const std::string DESTDATA{"destdata"};
+    const std::string HDCHAIN{"hdchain"};
+    const std::string KEYMETA{"keymeta"};
+    const std::string KEY{"key"};
+    const std::string MASTER_KEY{"mkey"};
+    const std::string MINVERSION{"minversion"};
+    const std::string NAME{"name"};
+    const std::string ORDERPOSNEXT{"orderposnext"};
+    const std::string POOL{"pool"};
+    const std::string PURPOSE{"purpose"};
+    const std::string TX{"tx"};
+    const std::string VERSION{"version"};
+    const std::string WATCHS{"watchs"};
+
+    // Sapling
+    const std::string SAP_KEYMETA{"sapzkeymeta"};
+    const std::string SAP_KEY{"sapzkey"};
+    const std::string SAP_KEY_CRIPTED{"csapzkey"};
+    const std::string SAP_ADDR{"sapzaddr"};
+    const std::string SAP_COMMON_OVK{"commonovk"};
+    const std::string SAP_HDCHAIN{"hdchain_sap"};
+    const std::string SAP_WITNESS_CACHE_SIZE{"witnesscachesize"};
+
+    // Wallet custom settings
+    const std::string AUTOCOMBINE{"autocombinesettings"};
+    const std::string STAKE_SPLIT_THRESHOLD{"stakeSplitThreshold"};
+    const std::string USE_CUSTOM_FEE{"fUseCustomFee"};
+    const std::string CUSTOM_FEE_VALUE{"nCustomFee"};
+
+} // namespace DBKeys
+
+
 //
 // CWalletDB
 //
+
+bool CWalletDB::ReadSaplingCommonOVK(uint256& ovkRet)
+{
+    return false; //m_batch.Read(std::string(DBKeys::SAP_COMMON_OVK), ovkRet);
+}
+
+bool CWalletDB::WriteSaplingPaymentAddress(const libzcash::SaplingPaymentAddress &addr,
+                                           const libzcash::SaplingIncomingViewingKey &ivk)
+{
+    return Write(std::make_pair(std::string(DBKeys::SAP_ADDR), addr), ivk, false);
+}
+
+bool CWalletDB::WriteSaplingZKey(const libzcash::SaplingIncomingViewingKey &ivk,
+                                 const libzcash::SaplingExtendedSpendingKey &key,
+                                 const CKeyMetadata &keyMeta)
+{
+    if (!Write(std::make_pair(std::string(DBKeys::SAP_KEYMETA), ivk), keyMeta)) {
+        return false;
+    }
+
+    return Write(std::make_pair(std::string(DBKeys::SAP_KEY), ivk), key, false);
+}
+
+bool CWalletDB::WriteHDChain(const CHDChain& chain)
+{
+    std::string key = chain.chainType == HDChain::ChainCounterType::Sapling ?
+                      DBKeys::SAP_HDCHAIN : DBKeys::HDCHAIN;
+    return Write(key, chain);
+}
+bool CWalletDB::WriteCryptedSaplingZKey(const libzcash::SaplingExtendedFullViewingKey &extfvk,
+                                          const std::vector<unsigned char>& vchCryptedSecret,
+                                          const CKeyMetadata &keyMeta)
+{
+    const bool fEraseUnencryptedKey = true;
+    auto ivk = extfvk.fvk.in_viewing_key();
+
+    if (!Write(std::make_pair(std::string(DBKeys::SAP_KEYMETA), ivk), keyMeta)) {
+        return false;
+    }
+
+    if (!Write(std::make_pair(std::string(DBKeys::SAP_KEY_CRIPTED), ivk),
+                 std::make_pair(extfvk, vchCryptedSecret), false)) {
+        return false;
+    }
+
+    if (fEraseUnencryptedKey) {
+        Erase(std::make_pair(std::string(DBKeys::SAP_KEY), ivk));
+    }
+    return true;
+}
+
+bool CWalletDB::WriteSaplingCommonOVK(const uint256& ovk)
+{
+    return Write(std::string(DBKeys::SAP_COMMON_OVK), ovk);
+}
 
 bool CWalletDB::WriteName(const std::string& strAddress, const std::string& strName)
 {
@@ -399,6 +492,9 @@ public:
     unsigned int nKeys;
     unsigned int nCKeys;
     unsigned int nKeyMeta;
+    unsigned int nZKeys;
+    unsigned int nZKeyMeta;
+    unsigned int nSapZAddrs;
     bool fIsEncrypted;
     bool fAnyUnordered;
     int nFileVersion;
@@ -406,7 +502,7 @@ public:
 
     CWalletScanState()
     {
-        nKeys = nCKeys = nKeyMeta = 0;
+        nKeys = nCKeys = nKeyMeta =  nZKeys = nZKeyMeta = nSapZAddrs = 0;
         fIsEncrypted = false;
         fAnyUnordered = false;
         nFileVersion = 0;
@@ -431,7 +527,7 @@ bool ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue, CW
         } else if (strType == "tx") {
             uint256 hash;
             ssKey >> hash;
-            CWalletTx wtx;
+            CWalletTx wtx(nullptr /* pwallet */, MakeTransactionRef());
             ssValue >> wtx;
             if (wtx.GetHash() != hash)
                 return false;
@@ -660,7 +756,68 @@ bool ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue, CW
                 strErr = "Error reading wallet database: LoadDestData failed";
                 return false;
             }
+        } else if (strType == "hdchain") {
+            CHDChain chain;
+            ssValue >> chain;
+            pwallet->GetScriptPubKeyMan()->SetHDChain(chain, true);
+        } else if (strType == "hdchain_sap") {
+            CHDChain chain;
+            ssValue >> chain;
+            pwallet->GetSaplingScriptPubKeyMan()->SetHDChain(chain, true);
+        } else if(strType == "sapzkey") {
+            libzcash::SaplingIncomingViewingKey ivk;
+            ssKey >> ivk;
+            libzcash::SaplingExtendedSpendingKey key;
+            ssValue >> key;
+            if (!pwallet->LoadSaplingZKey(key)) {
+                strErr = "Error reading wallet database: LoadSaplingZKey failed";
+                return false;
+            }
+            //add checks for integrity
+            wss.nZKeys++;
+        } else if (strType == "commonovk") {
+            uint256 ovk;
+            ssValue >> ovk;
+            pwallet->GetSaplingScriptPubKeyMan()->setCommonOVK(ovk);
+        } else if (strType == "csapzkey") {
+            libzcash::SaplingIncomingViewingKey ivk;
+            ssKey >> ivk;
+            libzcash::SaplingExtendedFullViewingKey extfvk;
+            ssValue >> extfvk;
+            std::vector<unsigned char> vchCryptedSecret;
+            ssValue >> vchCryptedSecret;
+            wss.nCKeys++;
+
+            if (!pwallet->LoadCryptedSaplingZKey(extfvk, vchCryptedSecret)) {
+                strErr = "Error reading wallet database: LoadCryptedSaplingZKey failed";
+                return false;
+            }
+            wss.fIsEncrypted = true;
+        } else if (strType == "sapzkeymeta") {
+            libzcash::SaplingIncomingViewingKey ivk;
+            ssKey >> ivk;
+            CKeyMetadata keyMeta;
+            ssValue >> keyMeta;
+
+            wss.nZKeyMeta++;
+
+            pwallet->LoadSaplingZKeyMetadata(ivk, keyMeta);
+        } else if (strType == "sapzaddr") {
+            libzcash::SaplingPaymentAddress addr;
+            ssKey >> addr;
+            libzcash::SaplingIncomingViewingKey ivk;
+            ssValue >> ivk;
+
+            wss.nSapZAddrs++;
+
+            if (!pwallet->LoadSaplingPaymentAddress(addr, ivk)) {
+                strErr = "Error reading wallet database: LoadSaplingPaymentAddress failed";
+                return false;
+            }
+        } else if (strType == "witnesscachesize") {
+            ssValue >> pwallet->GetSaplingScriptPubKeyMan()->nWitnessCacheSize;
         }
+
     } catch (...) {
         return false;
     }

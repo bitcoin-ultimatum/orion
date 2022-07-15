@@ -16,6 +16,7 @@
 #include "swifttx.h"
 #include "wallet/wallet.h"
 #include "pairresult.h"
+#include "coincontrol.h"
 
 #include <map>
 #include <vector>
@@ -394,7 +395,7 @@ public Q_SLOTS:
     /* Current, immature or unconfirmed balance might have changed - emit 'balanceChanged' if so */
     void pollBalanceChanged();
     /* Update address book labels in the database */
-    bool updateAddressBookLabels(const CTxDestination& address, const std::string& strName, const std::string& strPurpose);
+    bool updateAddressBookLabels(const CWDestination& address, const std::string& strName, const std::string& strPurpose);
 };
 
 #endif // BTCU_QT_WALLETMODEL_H

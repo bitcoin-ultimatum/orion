@@ -14,6 +14,7 @@
 #include "uint256.h"
 #include "tx_in_out.h"
 #include "masternode-validators.h"
+#include "sapling/sapling_transaction.h"
 
 #include <list>
 #include <memory>
@@ -49,6 +50,7 @@ public:
     static const int32_t BITCOIN_VERSION=1;
     static const int32_t BTCU_START_VERSION=2;
     static const int32_t CURRENT_VERSION=BTCU_START_VERSION;
+    static const int32_t SAPLING_VERSION=3;
 
     // The local variables are made const to prevent unintended modification
     // without updating the cached hash value. However, CTransaction is not
@@ -59,6 +61,9 @@ public:
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     const uint32_t nLockTime;
+    Optional<SaplingTxData> sapData{SaplingTxData()}; // Future: Don't initialize it by default
+    Optional<std::vector<uint8_t>> extraPayload{nullopt};     // only available for special transaction types
+
     //const unsigned int nTime;
 
    // Operation codes
@@ -82,6 +87,11 @@ public:
 
     /** Convert a CCoins into a CTransaction. For Bitcoin Genesis cases.*/
     CTransaction(const uint256& coinsHash, const CCoins& coins);
+
+    /** This deserializing constructor is provided instead of an Unserialize method.
+      *  Unserialize is not possible, since it would require overwriting const fields. */
+    template <typename Stream>
+    CTransaction(deserialize_type, Stream& s) : CTransaction(CMutableTransaction(deserialize, s)) {}
 
     CTransaction& operator=(const CTransaction& tx);
 
@@ -176,10 +186,27 @@ public:
         return hash;
     }
 
+    bool hasSaplingData() const
+    {
+        return sapData != nullopt &&
+               (!sapData->vShieldedOutput.empty() ||
+                !sapData->vShieldedSpend.empty() ||
+                sapData->valueBalance != 0 ||
+                sapData->hasBindingSig());
+    };
+
+    bool isSaplingVersion() const
+    {
+        return nVersion >= SAPLING_VERSION;
+    }
+
     // Return sum of txouts.
     CAmount GetValueOut() const;
     // GetValueIn() is a method on CCoinsViewCache, because
     // inputs must be known to compute value in.
+
+    // Return sum of (positive valueBalance or zero) and JoinSplit vpub_new
+    CAmount GetShieldedValueIn() const;
 
     // Compute priority, given priority of inputs and (optionally) tx size
     double ComputePriority(double dPriorityInputs, unsigned int nTxSize=0) const;
@@ -253,6 +280,20 @@ public:
       }
       return false;
    }
+    bool IsShieldedTx() const
+    {
+        return isSaplingVersion() && hasSaplingData();
+    }
+
+    bool IsSpecialTx() const
+    {
+        return isSaplingVersion() && hasExtraPayload();
+    }
+
+    bool hasExtraPayload() const
+    {
+        return extraPayload != nullopt && !extraPayload->empty();
+    }
 
 };
 
@@ -260,16 +301,23 @@ public:
 struct CMutableTransaction
 {
     int32_t nVersion;
+    int16_t nType;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     uint32_t nLockTime;
-    
+    Optional<SaplingTxData> sapData{SaplingTxData()}; // Future: Don't initialize it by default
+    Optional<std::vector<uint8_t>> extraPayload{nullopt};
+
     std::vector<CValidatorRegister> validatorRegister;
     std::vector<CValidatorVote> validatorVote;
     
     CMutableTransaction();
     CMutableTransaction(const CTransaction& tx);
 
+    template <typename Stream>
+    CMutableTransaction(deserialize_type, Stream& s) {
+        Unserialize(s, 4, this->nVersion );
+    }
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -283,7 +331,16 @@ struct CMutableTransaction
             READWRITE(validatorRegister);
             READWRITE(validatorVote);
         }
+        if (this->isSaplingVersion()) {
+            READWRITE(this->sapData);
+            /*if (!this->IsNormalType()) {
+                s >> tx.extraPayload;
+            }*/
+        }
     }
+
+    bool isSaplingVersion() const { return nVersion >= CTransaction::SAPLING_VERSION; }
+    //bool IsNormalType() const { return nType == CTransaction::TL; }
 
     /** Compute the hash of this CMutableTransaction. This is computed on the
      * fly, as opposed to GetHash() in CTransaction, which uses a cached result.

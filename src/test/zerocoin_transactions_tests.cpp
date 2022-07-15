@@ -18,7 +18,7 @@
 #include "key_io.h"
 #include <boost/test/unit_test.hpp>
 #include <iostream>
-
+#include "key_io.h"
 
 
 BOOST_FIXTURE_TEST_SUITE(zerocoin_transactions_tests, TestingSetup)

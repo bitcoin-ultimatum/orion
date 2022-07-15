@@ -7,6 +7,7 @@
 
 #include <attributes.h>
 
+#include <time.h>
 #include <cstring>
 #include <locale>
 #include <sstream>

@@ -13,6 +13,7 @@
 
 #include <optional>
 #include <vector>
+#include <string>
 #include <stdint.h>
 
 class CPubKey;
@@ -21,6 +22,9 @@ class CScript;
 class CTransaction;
 class CTxOut;
 class uint256;
+
+/** Special case nIn for signing Sapling txs. */
+const unsigned int NOT_AN_INPUT = UINT_MAX;
 
 /** Signature hash types/flags */
 enum
@@ -169,7 +173,7 @@ struct PrecomputedTransactionData
    bool m_bip341_taproot_ready = false;
 
    // BIP143 precomputed data (double-SHA256).
-   uint256 hashPrevouts, hashSequence, hashOutputs, hashOutputsOpSender;
+   uint256 hashPrevouts, hashSequence, hashOutputs, hashOutputsOpSender, hashShieldedSpends, hashShieldedOutputs;
    //! Whether the 3 fields above are initialized.
    bool m_bip143_segwit_ready = false;
 
@@ -199,6 +203,7 @@ enum class SigVersion
    WITNESS_V0 = 1,  //!< Witness v0 (P2WPKH and P2WSH); see BIP 141
    TAPROOT = 2,     //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, key path spending; see BIP 341
    TAPSCRIPT = 3,   //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, script path spending, leaf version 0xc0; see BIP 342
+   SIGVERSION_SAPLING = 4,
 };
 
 struct ScriptExecutionData

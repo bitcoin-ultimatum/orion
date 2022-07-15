@@ -15,7 +15,7 @@
 #include "zbtcu/deterministicmint.h"
 #include "script/signingprovider.h"
 #include "key_io.h"
-
+#include "script/interpreter.h"
 
 /*
  * Legacy Zerocoin Wallet
@@ -77,7 +77,7 @@ std::string CWallet::MintZerocoinFromOutPoint(CAmount nValue, CWalletTx& wtxNew,
 {
     CCoinControl* coinControl = new CCoinControl();
     for (const COutPoint& outpt : vOutpts) {
-        coinControl->Select(outpt);
+        coinControl->Select(BaseOutPoint(outpt.hash,outpt.n));
     }
     if (!coinControl->HasSelected()){
         std::string strError = _("Error: No valid utxo!");
@@ -211,7 +211,7 @@ bool CWallet::CreateZerocoinMintTransaction(const CAmount nValue,
        const CTxOut& txout = coin.first->vout[txin.prevout.n];
 
        ///TODO:initialize provider with keystore(CKeyStore)
-       if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata))
+       if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, txout.nValue, SIGHASH_ALL), txout.scriptPubKey, sigdata, SigVersion::BASE, false, false))
        {
           strFailReason = _("Signing transaction failed");
           return false;

@@ -76,7 +76,8 @@ enum RPCErrorCode {
     RPC_WALLET_ENCRYPTION_FAILED        = -16, //! Failed to encrypt the wallet
     RPC_WALLET_ALREADY_UNLOCKED         = -17, //! Wallet is already unlocked
     RPC_WALLET_PASSPHRASE_NOT_SECURE    = -18,
-    RPC_WALLET_CREATECONTRACT_DISABLED  = -19  //! Wallet create contract allowed only for validators
+    RPC_WALLET_CREATECONTRACT_DISABLED  = -19,  //! Wallet create contract allowed only for validators
+    RPC_WALLET_NOT_SPECIFIED            = -20, //!< No wallet specified (error when there are multiple wallets loaded)
 };
 
 std::string JSONRPCRequest(const std::string& strMethod, const UniValue& params, const UniValue& id);

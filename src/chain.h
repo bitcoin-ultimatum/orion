@@ -239,6 +239,8 @@ public:
     uint256 hashStateRoot; // qtum
     uint256 hashUTXORoot; // qtum
 
+    uint256 hashFinalSaplingRoot;               // only for version 8+
+
     uint256 nAccumulatorCheckpoint;
     uint256 hashChainstate;
 

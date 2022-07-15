@@ -419,6 +419,16 @@ void MarkBlockAsReceived(const uint256& hash)
     }
 }
 
+CAmount GetShieldedTxMinFee(const CTransaction& tx)
+{
+    assert (tx.IsShieldedTx());
+    unsigned int K = DEFAULT_SHIELDEDTXFEE_K;   // Fixed (100) for now
+    CAmount nMinFee = ::minRelayTxFee.GetFee(tx.GetTotalSize()) * K;
+    if (!Params().GetConsensus().MoneyRange(nMinFee))
+        nMinFee = Params().GetConsensus().nMaxMoneyOut;
+    return nMinFee;
+}
+
 // Requires cs_main.
 void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, CBlockIndex* pindex = NULL)
 {
@@ -1106,11 +1116,13 @@ CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowF
     return nMinFee;
 }
 
-CBlockIndex* LookupBlockIndex(const uint256& hash)
+CAmount GetMinRelayFee(unsigned int nBytes)
 {
-   AssertLockHeld(cs_main);
-   BlockMap::const_iterator it = mapBlockIndex.find(hash);
-   return it == mapBlockIndex.end() ? nullptr : it->second;
+    CAmount nMinFee = ::minRelayTxFee.GetFee(nBytes);
+    if (!Params().GetConsensus().MoneyRange(nMinFee)) {
+        nMinFee = Params().GetConsensus().nMaxMoneyOut;
+    }
+    return nMinFee;
 }
 
 int GetSpendHeight(const CCoinsViewCache& inputs)

@@ -75,6 +75,16 @@ const char* GetTxnOutputType(txnouttype t)
     return NULL;
 }
 
+CScript GetScriptForStakeDelegationLOF(const CKeyID& stakingKey, const CKeyID& spendingKey)
+{
+    CScript script;
+    script << OP_DUP << OP_HASH160 << OP_ROT <<
+           OP_IF << OP_CHECKCOLDSTAKEVERIFY_LOF << ToByteVector(stakingKey) <<
+           OP_ELSE << ToByteVector(spendingKey) << OP_ENDIF <<
+           OP_EQUALVERIFY << OP_CHECKSIG;
+    return script;
+}
+
 /**
  * Return public keys or hashes from scriptPubKey, for 'standard' transaction types.
  */
@@ -666,54 +676,66 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
 
 namespace
 {
-class CScriptVisitor
-{
-private:
-    CScript *script;
-public:
-    CScriptVisitor(CScript *scriptin) { script = scriptin; }
-
-    bool operator()(const CNoDestination &dest) const {
-        return false;
-    }
-
-    bool operator()(const PKHash &keyID) const {
-        *script << OP_DUP << OP_HASH160 << ToByteVector(keyID) << OP_EQUALVERIFY << OP_CHECKSIG;
-        return true;
-    }
-
-    bool operator()(const ScriptHash& scriptID) const {
-        *script << OP_HASH160 << ToByteVector(scriptID) << OP_EQUAL;
-        return true;
-    }
-
-    bool operator()(const WitnessV0KeyHash& id) const
+    class CScriptVisitor
     {
-      script->clear();
-      *script << OP_0 << ToByteVector(id);
-      return true;
-    }
+    private:
+        CScript *script;
+    public:
+        CScriptVisitor(CScript *scriptin) { script = scriptin; }
 
-    bool operator()(const WitnessV0ScriptHash& id) const
-    {
-      script->clear();
-      *script << OP_0 << ToByteVector(id);
-      return true;
-    }
+        bool operator()(const CNoDestination &dest) const {
+            return false;
+        }
 
-    bool operator()(const WitnessV1Taproot& tap) const
-    {
-       *script << OP_1 << ToByteVector(tap);
-       return true;
-    }
+        bool operator()(const PKHash &keyID) const {
+            *script << OP_DUP << OP_HASH160 << ToByteVector(keyID) << OP_EQUALVERIFY << OP_CHECKSIG;
+            return true;
+        }
 
-    bool operator()(const WitnessUnknown& id) const
-    {
-      script->clear();
-      *script << CScript::EncodeOP_N(id.version) << std::vector<unsigned char>(id.program, id.program + id.length);
-      return true;
-    }
-};
+        bool operator()(const ScriptHash& scriptID) const {
+            *script << OP_HASH160 << ToByteVector(scriptID) << OP_EQUAL;
+            return true;
+        }
+
+        bool operator()(const WitnessV0KeyHash& id) const
+        {
+            script->clear();
+            *script << OP_0 << ToByteVector(id);
+            return true;
+        }
+
+        bool operator()(const WitnessV0ScriptHash& id) const
+        {
+            script->clear();
+            *script << OP_0 << ToByteVector(id);
+            return true;
+        }
+
+        bool operator()(const WitnessV1Taproot& tap) const
+        {
+            *script << OP_1 << ToByteVector(tap);
+            return true;
+        }
+
+        bool operator()(const WitnessUnknown& id) const
+        {
+            script->clear();
+            *script << CScript::EncodeOP_N(id.version) << std::vector<unsigned char>(id.program, id.program + id.length);
+            return true;
+        }
+
+        bool operator()(const CKeyID &keyID) const {
+            script->clear();
+            *script << OP_DUP << OP_HASH160 << ToByteVector(keyID) << OP_EQUALVERIFY << OP_CHECKSIG;
+            return true;
+        }
+
+        bool operator()(const CScriptID &scriptID) const {
+            script->clear();
+            *script << OP_HASH160 << ToByteVector(scriptID) << OP_EQUAL;
+            return true;
+        }
+    };
 }
 
 CScript GetScriptForDestination(const CTxDestination& dest)
@@ -856,6 +878,17 @@ bool IsValidDestination(const CTxDestination& dest) {
    return dest.index() != 0;
 }
 
+bool IsLeasingAddress(CTxDestination& dest)
+{
+
+    /*if (dest.type() != DataType::Base58 || !IsValidBase58Size()) {
+        return false;
+    }
+
+    return base58.vchVersion == Params().Base58Prefix(CChainParams::PUBKEY_ADDRESS);*/
+    return true;
+}
+
 bool IsValidContractSenderAddress(const CTxDestination &dest)
 {
    return std::holds_alternative<PKHash>(dest);
@@ -882,6 +915,12 @@ CScript GetScriptForLeasingReward(const COutPoint& outPoint, const CTxDestinatio
     return script;
 }
 
+CScript GetScriptForOpReturn(const uint256& message)
+{
+    CScript script;
+    script << OP_RETURN << ToByteVector(message);
+    return script;
+}
 void TaprootSpendData::Merge(TaprootSpendData other)
 {
    // TODO: figure out how to better deal with conflicting information

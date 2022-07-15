@@ -12,6 +12,7 @@
 #include <script/interpreter.h>
 #include <script/keyorigin.h>
 #include <script/standard.h>
+#include "script/interpreter.h"
 
 class CKey;
 class CKeyID;
@@ -98,7 +99,7 @@ struct SignatureData {
 };
 
 /** Produce a script signature using a generic signature creator. */
-bool ProduceSignature(const CKeyStore& provider, const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
+bool ProduceSignature(const CKeyStore& provider, const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, SigVersion sigversion = SigVersion::BASE, bool fColdStake = false, bool fLeasing = false, bool fForceLeaserSign = false);
 
 /** Produce a script signature for a transaction. */
 bool SignSignature(const CKeyStore &provider, const CScript& fromPubKey, CMutableTransaction& txTo, unsigned int nIn, const CAmount& amount, int nHashType);
@@ -126,4 +127,5 @@ bool SignTransactionOutput(CMutableTransaction& mtx, const CKeyStore& provider, 
 /** Sign the CMutableTransaction */
 bool SignTransaction(CMutableTransaction& mtx, const CKeyStore* provider, int sighash, std::map<int, bilingual_str>& input_errors);
 
+void UpdateTransaction(CMutableTransaction& tx, unsigned int nIn, const SignatureData& data);
 #endif // BITCOIN_SCRIPT_SIGN_H

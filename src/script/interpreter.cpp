@@ -1786,6 +1786,66 @@ bool SignatureHashSchnorr(uint256& hash_out, ScriptExecutionData& execdata, cons
    return true;
 }
 
+const unsigned char BTCU_PREVOUTS_HASH_PERSONALIZATION[crypto_generichash_blake2b_PERSONALBYTES] =
+        {'B','T','C','U','P','r','e','v','o','u','t','H','a','s','h'};
+const unsigned char BTCU_SEQUENCE_HASH_PERSONALIZATION[crypto_generichash_blake2b_PERSONALBYTES] =
+        {'B','T','C','U','S','e','q','u','e','n','c','H','a','s','h'};
+const unsigned char BTCU_OUTPUTS_HASH_PERSONALIZATION[crypto_generichash_blake2b_PERSONALBYTES] =
+        {'B','T','C','U','O','u','t','p','u','t','s','H','a','s','h'};
+const unsigned char BTCU_SHIELDED_SPENDS_HASH_PERSONALIZATION[crypto_generichash_blake2b_PERSONALBYTES] =
+        {'B','T','C','U','S','S','p','e','n','d','s','H','a','s','h'};
+const unsigned char BTCU_SHIELDED_OUTPUTS_HASH_PERSONALIZATION[crypto_generichash_blake2b_PERSONALBYTES] =
+        {'B','T','C','U','S','O','u','t','p','u','t','H','a','s','h'};
+
+
+
+uint256 GetPrevoutHash(const CTransaction& txTo) {
+    CBLAKE2bWriter ss(SER_GETHASH, 0, BTCU_PREVOUTS_HASH_PERSONALIZATION);
+    for (unsigned int n = 0; n < txTo.vin.size(); n++) {
+        ss << txTo.vin[n].prevout;
+    }
+    return ss.GetHash();
+}
+
+uint256 GetSequenceHash(const CTransaction& txTo) {
+    CBLAKE2bWriter ss(SER_GETHASH, 0, BTCU_SEQUENCE_HASH_PERSONALIZATION);
+    for (unsigned int n = 0; n < txTo.vin.size(); n++) {
+        ss << txTo.vin[n].nSequence;
+    }
+    return ss.GetHash();
+}
+
+uint256 GetOutputsHash(const CTransaction& txTo) {
+    CBLAKE2bWriter ss(SER_GETHASH, 0, BTCU_OUTPUTS_HASH_PERSONALIZATION);
+    for (unsigned int n = 0; n < txTo.vout.size(); n++) {
+        ss << txTo.vout[n];
+    }
+    return ss.GetHash();
+}
+
+uint256 GetShieldedSpendsHash(const CTransaction& txTo) {
+    assert(txTo.sapData);
+    CBLAKE2bWriter ss(SER_GETHASH, 0, BTCU_SHIELDED_SPENDS_HASH_PERSONALIZATION);
+    auto sapData = txTo.sapData;
+    for (const auto& n : sapData->vShieldedSpend) {
+        ss << n.cv;
+        ss << n.anchor;
+        ss << n.nullifier;
+        ss << n.rk;
+        ss << n.zkproof;
+    }
+    return ss.GetHash();
+}
+
+uint256 GetShieldedOutputsHash(const CTransaction& txTo) {
+    assert(txTo.sapData);
+    CBLAKE2bWriter ss(SER_GETHASH, 0, BTCU_SHIELDED_OUTPUTS_HASH_PERSONALIZATION);
+    auto sapData = txTo.sapData;
+    for (const auto& n : sapData->vShieldedOutput) {
+        ss << n;
+    }
+    return ss.GetHash();
+}
 template <class T>
 uint256 SignatureHashOutput(const CScript& scriptCode, const T& txTo, unsigned int nOut, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
 {
@@ -1844,7 +1904,104 @@ uint256 SignatureHashOutput(const CScript& scriptCode, const T& txTo, unsigned i
 template <class T>
 uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
 {
-   assert(nIn < txTo.vin.size());
+    if (nIn >= txTo.vin.size() && nIn != NOT_AN_INPUT) {
+        //  nIn out of range
+        return UINT256_ONE;
+    }
+
+    if (txTo.isSaplingVersion() && sigversion != SigVersion::SIGVERSION_SAPLING) {
+        throw std::runtime_error("SignatureHash in Sapling tx with wrong sigversion ");
+    }
+
+   if (txTo.isSaplingVersion() && sigversion != SigVersion::SIGVERSION_SAPLING) {
+      throw std::runtime_error("SignatureHash in Sapling tx with wrong sigversion ");
+   }
+
+   if (sigversion == SigVersion::SIGVERSION_SAPLING) {
+
+      uint256 hashPrevouts;
+      uint256 hashSequence;
+      uint256 hashOutputs;
+      uint256 hashShieldedSpends;
+      uint256 hashShieldedOutputs;
+      bool hasSapData = false;
+
+      if (!(nHashType & SIGHASH_ANYONECANPAY)) {
+         hashPrevouts = cache ? cache->hashPrevouts : GetPrevoutHash(txTo);
+      }
+
+      if (!(nHashType & SIGHASH_ANYONECANPAY) && (nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
+         hashSequence = cache ? cache->hashSequence : GetSequenceHash(txTo);
+      }
+
+      if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
+         hashOutputs = cache ? cache->hashOutputs : GetOutputsHash(txTo);
+      } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nIn < txTo.vout.size()) {
+         CBLAKE2bWriter ss(SER_GETHASH, 0, BTCU_OUTPUTS_HASH_PERSONALIZATION);
+         ss << txTo.vout[nIn];
+         hashOutputs = ss.GetHash();
+      }
+
+      if (txTo.sapData) {
+         if (!txTo.sapData->vShieldedSpend.empty()) {
+            hashShieldedSpends = cache ? cache->hashShieldedSpends : GetShieldedSpendsHash(txTo);
+            hasSapData = true;
+         }
+
+         if (!txTo.sapData->vShieldedOutput.empty()) {
+            hashShieldedOutputs = cache ? cache->hashShieldedOutputs : GetShieldedOutputsHash(txTo);
+            hasSapData = true;
+         }
+      }
+
+      // todo: complete branch id with the active network upgrade
+      uint32_t leConsensusBranchId = htole32(0);
+      unsigned char personalization[16] = {};
+      memcpy(personalization, "PIVXSigHash", 12);
+      memcpy(personalization+12, &leConsensusBranchId, 4);
+
+      CBLAKE2bWriter ss(SER_GETHASH, 0, personalization);
+      // Version
+      ss << txTo.nVersion;
+      // Type
+      //ss << txTo.nType;
+      // Input prevouts/nSequence (none/all, depending on flags)
+      ss << hashPrevouts;
+      ss << hashSequence;
+      // Outputs (none/one/all, depending on flags)
+      ss << hashOutputs;
+
+      if (hasSapData) {
+         // Spend descriptions
+         ss << hashShieldedSpends;
+         // Output descriptions
+         ss << hashShieldedOutputs;
+         // Sapling value balance
+         ss << txTo.sapData->valueBalance;
+      }
+
+      if (nIn != NOT_AN_INPUT) {
+         // The input being signed (replacing the scriptSig with scriptCode + amount)
+         // The prevout may already be contained in hashPrevout, and the nSequence
+         // may already be contained in hashSequence.
+         ss << txTo.vin[nIn].prevout;
+         ss << scriptCode;
+         ss << amount;
+         ss << txTo.vin[nIn].nSequence;
+      }
+
+      // Extra payload for special transactions
+      //if (txTo.IsSpecialTx()) {
+      //   ss << *(txTo.extraPayload);
+      //}
+
+      // Locktime
+      ss << txTo.nLockTime;
+      // Sighash type
+      ss << nHashType;
+
+      return ss.GetHash();
+   }
 
    if (sigversion == SigVersion::WITNESS_V0) {
       uint256 hashPrevouts;
@@ -1900,6 +2057,91 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
       }
    }
 
+   if (sigversion == SigVersion::SIGVERSION_SAPLING){
+
+       uint256 hashPrevouts;
+       uint256 hashSequence;
+       uint256 hashOutputs;
+       uint256 hashShieldedSpends;
+       uint256 hashShieldedOutputs;
+       bool hasSapData = false;
+
+       if (!(nHashType & SIGHASH_ANYONECANPAY)) {
+           hashPrevouts = cache ? cache->hashPrevouts : GetPrevoutHash(txTo);
+       }
+
+       if (!(nHashType & SIGHASH_ANYONECANPAY) && (nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
+           hashSequence = cache ? cache->hashSequence : GetSequenceHash(txTo);
+       }
+
+       if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
+           hashOutputs = cache ? cache->hashOutputs : GetOutputsHash(txTo);
+       } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nIn < txTo.vout.size()) {
+           CBLAKE2bWriter ss(SER_GETHASH, 0, BTCU_OUTPUTS_HASH_PERSONALIZATION);
+           ss << txTo.vout[nIn];
+           hashOutputs = ss.GetHash();
+       }
+
+       if (txTo.sapData) {
+           if (!txTo.sapData->vShieldedSpend.empty()) {
+               hashShieldedSpends = cache ? cache->hashShieldedSpends : GetShieldedSpendsHash(txTo);
+               hasSapData = true;
+           }
+
+           if (!txTo.sapData->vShieldedOutput.empty()) {
+               hashShieldedOutputs = cache ? cache->hashShieldedOutputs : GetShieldedOutputsHash(txTo);
+               hasSapData = true;
+           }
+       }
+
+       // todo: complete branch id with the active network upgrade
+       uint32_t leConsensusBranchId = htole32(0);
+       unsigned char personalization[16] = {};
+       memcpy(personalization, "PIVXSigHash", 12);
+       memcpy(personalization+12, &leConsensusBranchId, 4);
+
+       CBLAKE2bWriter ss(SER_GETHASH, 0, personalization);
+       // Version
+       ss << txTo.nVersion;
+       // Type
+       //ss << txTo.nType;
+       // Input prevouts/nSequence (none/all, depending on flags)
+       ss << hashPrevouts;
+       ss << hashSequence;
+       // Outputs (none/one/all, depending on flags)
+       ss << hashOutputs;
+
+       if (hasSapData) {
+           // Spend descriptions
+           ss << hashShieldedSpends;
+           // Output descriptions
+           ss << hashShieldedOutputs;
+           // Sapling value balance
+           ss << txTo.sapData->valueBalance;
+       }
+
+       if (nIn != NOT_AN_INPUT) {
+           // The input being signed (replacing the scriptSig with scriptCode + amount)
+           // The prevout may already be contained in hashPrevout, and the nSequence
+           // may already be contained in hashSequence.
+           ss << txTo.vin[nIn].prevout;
+           ss << scriptCode;
+           ss << amount;
+           ss << txTo.vin[nIn].nSequence;
+       }
+
+       // Extra payload for special transactions
+       /*if (txTo.IsSpecialTx()) {
+           ss << *(txTo.extraPayload);
+       }*/
+
+       // Locktime
+       ss << txTo.nLockTime;
+       // Sighash type
+       ss << nHashType;
+
+       return ss.GetHash();
+   }
    // Wrapper to serialize only the necessary parts of the transaction being signed
    CTransactionSignatureSerializer<T> txTmp(txTo, scriptCode, nIn, nHashType);
 

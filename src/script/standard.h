@@ -11,7 +11,7 @@
 #include "script/interpreter.h"
 #include "uint256.h"
 #include <util/hash_type.h>
-
+#include "variant"
 #include <boost/variant.hpp>
 
 #include <stdint.h>
@@ -76,7 +76,18 @@ static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS_N = MANDATORY_SCRIPT_
                                                              SCRIPT_VERIFY_WITNESS_PUBKEYTYPE |
                                                              SCRIPT_VERIFY_CONST_SCRIPTCODE;
 
-
+/**
+ * Standard script verification flags that standard transactions will comply
+ * with. However scripts violating these flags may still be present in valid
+ * blocks and we must accept those blocks.
+ */
+static const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VERIFY_FLAGS |
+                                                         SCRIPT_VERIFY_DERSIG |
+                                                         SCRIPT_VERIFY_STRICTENC |
+                                                         SCRIPT_VERIFY_MINIMALDATA |
+                                                         SCRIPT_VERIFY_NULLDUMMY |
+                                                         SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
+                                                         SCRIPT_VERIFY_WITNESS_PUBKEYTYPE;
 enum txnouttype
 {
     TX_NONSTANDARD,
@@ -179,7 +190,7 @@ struct WitnessUnknown
  *  * CKeyID: TX_PUBKEYHASH destination
  *  * CScriptID: TX_SCRIPTHASH destination
  */
-using CTxDestination = std::variant<CNoDestination, PKHash, ScriptHash, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessV1Taproot, WitnessUnknown>;
+using CTxDestination = std::variant<CNoDestination, CKeyID, CScriptID, PKHash, ScriptHash, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessV1Taproot, WitnessUnknown>;
 
 enum addresstype
 {
@@ -205,7 +216,7 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet,
 bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<CTxDestination>& addressRet, int& nRequiredRet);
 /** Check whether a CTxDestination is a CNoDestination. */
 bool IsValidDestination(const CTxDestination& dest);
-
+bool IsLeasingAddress(CTxDestination& dest);
 /** Check whether a CTxDestination can be used as contract sender address. */
 bool IsValidContractSenderAddress(const CTxDestination& dest);
 
@@ -218,6 +229,7 @@ CScript GetScriptForStakeDelegation(const CKeyID& stakingKey, const CKeyID& spen
 CScript GetScriptForLeasing(const CKeyID& leaserKey, const CKeyID& ownerKey);
 CScript GetScriptForLeasingCLTV(const CKeyID& leaserKey, const CKeyID& ownerKey, uint32_t nLockTime);
 CScript GetScriptForLeasingReward(const COutPoint& outPoint, const CTxDestination& dest);
+CScript GetScriptForStakeDelegationLOF(const CKeyID& stakingKey, const CKeyID& spendingKey);
 
 /**
  * Generate a pay-to-witness script for the given redeem script. If the redeem
@@ -229,6 +241,8 @@ CScript GetScriptForLeasingReward(const COutPoint& outPoint, const CTxDestinatio
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
 
+/** Generate an OP_RETURN output script with the given data. */
+CScript GetScriptForOpReturn(const uint256& message);
 struct ShortestVectorFirstComparator
 {
    bool operator()(const std::vector<unsigned char>& a, const std::vector<unsigned char>& b) const

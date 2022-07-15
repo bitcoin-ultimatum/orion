@@ -23,6 +23,11 @@ std::string COutPoint::ToString() const
     return strprintf("COutPoint(%s, %u)", hash.ToString()/*.substr(0,10)*/, n);
 }
 
+std::string SaplingOutPoint::ToString() const
+{
+    return strprintf("SaplingOutPoint(%s, %u)", hash.ToString().substr(0, 10), n);
+}
+
 std::string COutPoint::ToStringShort() const
 {
     return strprintf("%s-%u", hash.ToString().substr(0,64), n);
@@ -126,7 +131,7 @@ std::string CTxOut::ToString() const
 }
 
 CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nLockTime(0) {}
-CMutableTransaction::CMutableTransaction(const CTransaction& tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), validatorRegister(tx.validatorRegister), validatorVote(tx.validatorVote) {}
+CMutableTransaction::CMutableTransaction(const CTransaction& tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), sapData(tx.sapData), validatorRegister(tx.validatorRegister), validatorVote(tx.validatorVote) {}
 
 uint256 CMutableTransaction::GetHash() const
 {
@@ -153,8 +158,8 @@ void CTransaction::UpdateHash() const
     *const_cast<uint256*>(&hash) = SerializeHash(*this);
 }
 
-CTransaction::CTransaction() : hash(), nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0), validatorRegister(), validatorVote() { }
-CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), validatorRegister(tx.validatorRegister), validatorVote(tx.validatorVote) {
+CTransaction::CTransaction() : hash(), nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0), sapData(), validatorRegister(), validatorVote() { }
+CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), sapData(tx.sapData), extraPayload(tx.extraPayload), validatorRegister(tx.validatorRegister), validatorVote(tx.validatorVote) {
     UpdateHash();
 }
 
@@ -309,7 +314,33 @@ CAmount CTransaction::GetValueOut() const
 
         nValueOut += it->nValue;
     }
+    // Sapling
+    if (hasSaplingData() && sapData->valueBalance < 0) {
+        // NB: negative valueBalance "takes" money from the transparent value pool just as outputs do
+        nValueOut += -sapData->valueBalance;
+
+        // Verify Sapling version
+        if (!isSaplingVersion())
+            throw std::runtime_error("GetValueOut(): invalid tx version");
+    }
+
     return nValueOut;
+}
+
+CAmount CTransaction::GetShieldedValueIn() const
+{
+    CAmount nValue = 0;
+
+    if (hasSaplingData() && sapData->valueBalance > 0) {
+        // NB: positive valueBalance "gives" money to the transparent value pool just as inputs do
+        nValue += sapData->valueBalance;
+
+        // Verify Sapling
+        if (!isSaplingVersion())
+            throw std::runtime_error("GetValueOut(): invalid tx version");
+    }
+
+    return nValue;
 }
 
 CAmount CTransaction::GetZerocoinMinted() const

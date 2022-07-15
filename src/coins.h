@@ -14,10 +14,12 @@
 #include "serialize.h"
 #include "uint256.h"
 #include "undo.h"
+#include "sapling/incrementalmerkletree.h"
+#include "crypto/siphash.h"
 
 #include <assert.h>
 #include <stdint.h>
-
+#include <unordered_map>
 #include <boost/unordered_map.hpp>
 
 /** 
@@ -73,6 +75,56 @@
  *              * 8c988f1a4a4de2161e0f50aac7f17e7f9555caa4: address uint160
  *  - height = 120891
  */
+// Sapling
+
+struct CAnchorsSaplingCacheEntry
+{
+    bool entered; // This will be false if the anchor is removed from the cache
+    SaplingMerkleTree tree; // The tree itself
+    unsigned char flags;
+
+    enum Flags {
+        DIRTY = (1 << 0), // This cache entry is potentially different from the version in the parent view.
+    };
+
+    CAnchorsSaplingCacheEntry() : entered(false), flags(0) {}
+};
+
+struct CNullifiersCacheEntry
+{
+    bool entered; // If the nullifier is spent or not
+    unsigned char flags;
+
+    enum Flags {
+        DIRTY = (1 << 0), // This cache entry is potentially different from the version in the parent view.
+    };
+
+    CNullifiersCacheEntry() : entered(false), flags(0) {}
+};
+
+// Used on Sapling nullifiers, anchor maps and txmempool::mapTx: sorted by txid
+class SaltedIdHasher
+{
+private:
+    /** Salt */
+    const uint64_t k0, k1;
+
+public:
+    SaltedIdHasher();
+
+    /**
+     * This *must* return size_t. With Boost 1.46 on 32-bit systems the
+     * unordered_map will behave unpredictably if the custom hasher returns a
+     * uint64_t, resulting in failures when syncing the chain (#4634).
+     */
+    size_t operator()(const uint256& txid) const {
+        return SipHashUint256(k0, k1, txid);
+    }
+};
+
+typedef std::unordered_map<uint256, CAnchorsSaplingCacheEntry, SaltedIdHasher> CAnchorsSaplingMap;
+typedef std::unordered_map<uint256, CNullifiersCacheEntry, SaltedIdHasher> CNullifiersMap;
+
 class CCoins
 {
 public:
@@ -368,6 +420,16 @@ public:
     virtual std::unique_ptr<CCoinsViewIterator> SeekToFirst() const;
     std::unique_ptr<CCoinsViewIterator> SeekToEnd() const { return std::unique_ptr<CCoinsViewIterator>(); }
 
+    // Sapling
+    //! Retrieve the tree (Sapling) at a particular anchored root in the chain
+    virtual bool GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const;
+
+    //! Determine whether a nullifier is spent or not
+    virtual bool GetNullifier(const uint256 &nullifier) const;
+
+    //! Get the current "tip" or the latest anchored tree root in the chain
+    virtual uint256 GetBestAnchor() const;
+
     virtual int64_t GetBTCAirdroppedSupply() const;
 
     //! As we use CCoinsViews polymorphically, have a virtual destructor
@@ -391,6 +453,11 @@ public:
     bool GetStats(CCoinsStats& stats) const;
     std::unique_ptr<CCoinsViewIterator> SeekToFirst() const;
     int64_t GetBTCAirdroppedSupply() const;
+
+    // Sapling
+    bool GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const override;
+    bool GetNullifier(const uint256 &nullifier) const override;
+    uint256 GetBestAnchor() const override;
 };
 
 class CCoinsViewCache;
@@ -428,6 +495,14 @@ protected:
      */
     mutable uint256 hashBlock;
     mutable CCoinsMap cacheCoins;
+
+    // Sapling
+    mutable uint256 hashSaplingAnchor;
+    mutable CAnchorsSaplingMap cacheSaplingAnchors;
+    mutable CNullifiersMap cacheSaplingNullifiers;
+
+    /* Cached dynamic memory usage for the inner Coin objects. */
+    mutable size_t cachedCoinsUsage;
 
 public:
     CCoinsViewCache(CCoinsView* baseIn);
@@ -487,6 +562,11 @@ public:
     const CTxOut& GetOutputFor(const CTxIn& input) const;
 
     friend class CCoinsModifier;
+
+    // Sapling methods
+    bool GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const override;
+    bool GetNullifier(const uint256 &nullifier) const override;
+    uint256 GetBestAnchor() const override;
 
 private:
     CCoinsMap::iterator FetchCoins(const uint256& txid);

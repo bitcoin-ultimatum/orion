@@ -12,10 +12,13 @@
 #include "wallet/db.h"
 #include "key.h"
 #include "keystore.h"
+#include "script/keyorigin.h"
 #include "zbtcu/zerocoin.h"
 #include "libzerocoin/Accumulator.h"
 #include "libzerocoin/Denominations.h"
 #include "zbtcu/zbtcutracker.h"
+#include "wallet/hdchain.h"
+#include "crates/rustzcash-lib/src/librustzcash.h"
 
 #include <list>
 #include <stdint.h>
@@ -37,6 +40,9 @@ class CZerocoinSpend;
 class uint160;
 class uint256;
 
+/** Backend-agnostic database type. */
+using WalletDatabase = BerkeleyDatabase;
+
 /** Error statuses for the wallet database */
 enum DBErrors {
     DB_LOAD_OK,
@@ -52,7 +58,9 @@ class CKeyMetadata
 public:
     static const int CURRENT_VERSION = 1;
     int nVersion;
+    CKeyID hd_seed_id; //id of the HD seed used to derive this key
     int64_t nCreateTime; // 0 means unknown
+    KeyOriginInfo key_origin; // Key origin info with path and fingerprint
 
     CKeyMetadata()
     {
@@ -145,6 +153,12 @@ public:
     CAmount GetAccountCreditDebit(const std::string& strAccount);
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& acentries);
 
+    bool WriteHDChain(const CHDChain& chain);
+    bool WriteSaplingCommonOVK(const uint256& ovk);
+    bool WriteCryptedSaplingZKey(const libzcash::SaplingExtendedFullViewingKey &extfvk,
+                                            const std::vector<unsigned char>& vchCryptedSecret,
+                                            const CKeyMetadata &keyMeta);
+
     DBErrors ReorderTransactions(CWallet* pwallet);
     DBErrors LoadWallet(CWallet* pwallet);
     DBErrors FindWalletTx(CWallet* pwallet, std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx);
@@ -156,6 +170,12 @@ public:
     bool ReadDeterministicMint(const uint256& hashPubcoin, CDeterministicMint& dMint);
     bool EraseDeterministicMint(const uint256& hashPubcoin);
     bool WriteZerocoinMint(const CZerocoinMint& zerocoinMint);
+    bool WriteSaplingZKey(const libzcash::SaplingIncomingViewingKey &ivk,
+                                 const libzcash::SaplingExtendedSpendingKey &key,
+                                 const CKeyMetadata &keyMeta);
+    bool WriteSaplingPaymentAddress(const libzcash::SaplingPaymentAddress &addr,
+                                           const libzcash::SaplingIncomingViewingKey &ivk);
+    bool ReadSaplingCommonOVK(uint256& ovkRet);
 
     bool EraseZerocoinMint(const CZerocoinMint& zerocoinMint);
     bool ReadZerocoinMint(const CBigNum &bnPubcoinValue, CZerocoinMint& zerocoinMint);
@@ -191,6 +211,8 @@ private:
     void operator=(const CWalletDB&);
 
     bool WriteAccountingEntry(const uint64_t nAccEntryNum, const CAccountingEntry& acentry);
+
+    //BerkeleyBatch m_batch;
 };
 
 void NotifyBacked(const CWallet& wallet, bool fSuccess, std::string strMessage);

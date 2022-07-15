@@ -18,6 +18,7 @@
 
 typedef std::vector<unsigned char> valtype;
 
+
 MutableTransactionSignatureCreator::MutableTransactionSignatureCreator(const CMutableTransaction* tx, unsigned int input_idx, const CAmount& amount, int hash_type)
 : txTo{tx}, nIn{input_idx}, nHashType{hash_type}, amount{amount}, checker{txTo, nIn, amount, MissingDataBehavior::FAIL},
   m_txdata(nullptr)
@@ -428,14 +429,14 @@ static CScript PushAll(const std::vector<valtype>& values)
    return result;
 }
 
-bool ProduceSignature(const CKeyStore& provider, const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, bool fColdStake, bool fLeasing, bool fForceLeaserSign)
+bool ProduceSignature(const CKeyStore& provider, const BaseSignatureCreator& creator, const CScript& fromPubKey, SignatureData& sigdata, SigVersion sigversion, bool fColdStake, bool fLeasing, bool fForceLeaserSign)
 {
    if (sigdata.complete) return true;
 
    std::vector<valtype> result;
    txnouttype whichType;
    int flags = STANDARD_SCRIPT_VERIFY_FLAGS;
-   bool solved = SignStep(provider, creator, fromPubKey, result, whichType, SigVersion::BASE, sigdata, fColdStake, fLeasing, fForceLeaserSign);
+   bool solved = SignStep(provider, creator, fromPubKey, result, whichType, sigversion, sigdata, fColdStake, fLeasing, fForceLeaserSign);
    bool P2SH = false;
    CScript subscript;
 
@@ -446,7 +447,7 @@ bool ProduceSignature(const CKeyStore& provider, const BaseSignatureCreator& cre
       // and then the serialized subscript:
       subscript = CScript(result[0].begin(), result[0].end());
       sigdata.redeem_script = subscript;
-      solved = solved && SignStep(provider, creator, subscript, result, whichType, SigVersion::BASE, sigdata) && whichType != TX_SCRIPTHASH;
+      solved = solved && SignStep(provider, creator, subscript, result, whichType, sigversion, sigdata) && whichType != TX_SCRIPTHASH;
       P2SH = true;
    }
 

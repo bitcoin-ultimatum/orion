@@ -10,7 +10,9 @@
 #include <consensus/validation.h>
 #include <coins.h>
 
+CFeeRate dustRelayFee = CFeeRate(DUST_RELAY_TX_FEE);
 
+/*
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 {
     // "Dust" is defined in terms of dustRelayFee,
@@ -153,6 +155,7 @@ bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, const CFeeR
  * expensive-to-check-upon-redemption script like:
  *   DUP CHECKSIG DROP ... repeated 100 times... OP_1
  */
+/*
 bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
 {
     if (tx.IsCoinBase())
@@ -248,4 +251,19 @@ int64_t GetVirtualTransactionSize(const CTransaction& tx, int64_t nSigOpCost, un
 int64_t GetVirtualTransactionInputSize(const CTxIn& txin, int64_t nSigOpCost, unsigned int bytes_per_sigop)
 {
     return GetVirtualTransactionSize(GetTransactionInputWeight(txin), nSigOpCost, bytes_per_sigop);
+}
+*/
+CAmount GetShieldedDustThreshold(const CFeeRate& dustRelayFeeIn)
+{
+    //TO_FIX: return K to 100
+    unsigned int K = 25;   // Fixed (100) for now
+    return K * dustRelayFeeIn.GetFee(SPENDDESCRIPTION_SIZE +
+                                     CTXOUT_REGULAR_SIZE +
+                                     BINDINGSIG_SIZE);
+}
+
+CAmount GetDustThreshold(const CFeeRate& dustRelayFeeIn)
+{
+    // return the dust threshold for a typical 34 bytes output
+    return dustRelayFeeIn.GetFee(182);
 }

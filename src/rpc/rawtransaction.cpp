@@ -30,6 +30,7 @@
 #include "key_io.h"
 
 #endif
+#include "key_io.h"
 
 #include <stdint.h>
 
@@ -801,7 +802,7 @@ UniValue signrawtransaction(const UniValue& params, bool fHelp)
         SignatureData sigdata;
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mergedTx.vout.size()))
-           ProduceSignature(keystore, MutableTransactionSignatureCreator(&mergedTx, i, amount, nHashType), prevPubKey, sigdata, fColdStake, fLeasing, fForceLeaserSign);
+           ProduceSignature(keystore, MutableTransactionSignatureCreator(&mergedTx, i, amount, nHashType), prevPubKey, sigdata, SigVersion::BASE, fColdStake, fLeasing, fForceLeaserSign);
 
         // ... and merge in other signatures:
         for (const CMutableTransaction& txv : txVariants) {

@@ -1,4 +1,7 @@
 #include <consensus/consensus.h>
+#include "consensus/params.h"
+#include "consensus/upgrades.h"
+#include "util/system.h"
 
 /** The maximum allowed size for a serialized block, in bytes (only for buffer size limits) */
 unsigned int dgpMaxBlockSerSize = 8000000;
@@ -21,4 +24,18 @@ void updateBlockSizeParams(unsigned int newBlockSize){
     dgpMaxBlockSigOps=(int64_t)(newSizeForParams/100);
     dgpMaxTxSigOps = (unsigned int)(dgpMaxBlockSigOps/5);
     dgpMaxProtoMsgLength=newSizeForParams;
+}
+namespace Consensus {
+
+    bool Params::NetworkUpgradeActive(int nHeight, Consensus::UpgradeIndex idx) const {
+        if (idx >= Consensus::MAX_NETWORK_UPGRADES)
+            return error("%s: Upgrade index out of bounds: %d >= %d",
+                         __func__, idx, Consensus::MAX_NETWORK_UPGRADES);
+
+        if (nHeight < 0)
+            return error("%s: Requested state for upgrade %s at negative height %d",
+                         __func__, NetworkUpgradeInfo[idx].strName, nHeight);
+
+        return NetworkUpgradeState(nHeight, *this, idx) == UPGRADE_ACTIVE;
+    }
 }

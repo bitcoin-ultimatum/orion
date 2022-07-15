@@ -366,6 +366,8 @@ target_include_directories(qt_stuff
             ${CMAKE_SOURCE_DIR}/src/eth_client/utils/ethash/include
             ${CMAKE_SOURCE_DIR}/src/evmone/evmc/include
             ${CMAKE_SOURCE_DIR}/src/qtum
+            ${CMAKE_SOURCE_DIR}/src/wallet
+            ${CMAKE_SOURCE_DIR}/src/sapling
 			${CMAKE_CURRENT_SOURCE_DIR}
 			${CMAKE_CURRENT_SOURCE_DIR}/btcu
 			${CMAKE_CURRENT_SOURCE_DIR}/btcu/settings
@@ -441,7 +443,7 @@ target_include_directories(btcu-qt PUBLIC ${ENDIAN_INCLUDES} ${CMAKE_SOURCE_DIR}
 target_link_libraries(btcu-qt
         qt_stuff
         univalue
-        SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A COMMON_B BITCOIN_CRYPTO_B SERVER_B
+        SERVER_A WALLET_A CLI_A UTIL_A SAPLING_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A COMMON_B BITCOIN_CRYPTO_B SERVER_B
         leveldb leveldb_sse42 memenv secp256k1
         ${BerkeleyDB_Cxx_LIBRARY}
         ${OPENSSL_LIBRARIES}
@@ -450,6 +452,7 @@ target_link_libraries(btcu-qt
 		${LibEvent_LIBRARIES}
         ${Qrcode_LIBRARIES}
         Threads::Threads
+        ${sodium_LIBRARY_RELEASE}
     )
 
 if(BUILD_STATIC)
@@ -930,7 +933,7 @@ if(ENABLE_TESTS)
 	target_link_libraries(test_btcu-qt PUBLIC
 			qt_stuff
 			univalue
-			SERVER_A WALLET_A CLI_A UTIL_A COMMON_A ZEROCOIN_A BITCOIN_CRYPTO_A COMMON_B BITCOIN_CRYPTO_B SERVER_B
+			SERVER_A WALLET_A CLI_A UTIL_A COMMON_A SAPLING_A ZEROCOIN_A BITCOIN_CRYPTO_A COMMON_B BITCOIN_CRYPTO_B SERVER_B
 			leveldb leveldb_sse42 memenv secp256k1
 			${BerkeleyDB_Cxx_LIBRARY}
 			${OPENSSL_LIBRARIES}
@@ -939,6 +942,7 @@ if(ENABLE_TESTS)
 			${LibEvent_LIBRARIES}
 			${Qrcode_LIBRARIES}
 			Qt5::Gui Qt5::Core Qt5::Widgets Qt5::Network Qt5::Svg Qt5::Test ${QT_LIBRARIES}
+            ${sodium_LIBRARY_RELEASE}
 		)
 	if(BUILD_STATIC)
 		qt5_import_qml_plugins(test_btcu-qt)

@@ -615,3 +615,25 @@ int atoi(const std::string& str)
 {
     return atoi(str.c_str());
 }
+
+// Based on http://www.zedwood.com/article/cpp-is-valid-utf8-string-function
+bool IsValidUTF8(const std::string& str)
+{
+    const unsigned int strLen = str.length();
+    int c,n;
+    for (unsigned i = 0; i < strLen; i++) {
+        c = (unsigned char) str[i];
+        if (0x00 <= c && c <= 0x7f)     n=0;      // 0bbbbbbb (ASCII)
+        else if ((c & 0xE0) == 0xC0)    n=1;      // 110bbbbb
+        else if ( c == 0xED && i < (strLen - 1) && ((unsigned char)str[i+1] & 0xA0) == 0xA0)
+            return false;                         //U+d800 to U+dfff
+        else if ((c & 0xF0) == 0xE0)    n=2;      // 1110bbbb
+        else if ((c & 0xF8) == 0xF0)    n=3;      // 11110bbb
+        else return false;
+        for (int j=0; j < n && i < strLen; j++) { // n bytes matching 10bbbbbb follow ?
+            if ((++i == strLen) || (( (unsigned char)str[i] & 0xC0) != 0x80))
+                return false;
+        }
+    }
+    return true;
+}

@@ -17,8 +17,7 @@
 #include <attributes.h>
 #include <compat.h>
 #include <compat/assumptions.h>
-#include <fs.h>
-#include <logging.h>
+//#include <logging.h>
 #include <sync.h>
 #include <tinyformat.h>
 #include <util/memory.h>
@@ -40,7 +39,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <chainparamsbase.h>
-
+#include "qtum/fs.h"
 #endif
 
 // Application startup time (used for uptime calculation)
@@ -54,7 +53,7 @@ bool SetupNetworking();
 template<typename... Args>
 bool error(const char* fmt, const Args&... args)
 {
-    LogPrintf("ERROR: %s\n", tfm::format(fmt, args...));
+    //ogPrintf("ERROR: %s\n", tfm::format(fmt, args...));
     return false;
 }
 
@@ -68,6 +67,11 @@ bool LockDirectory(const fs::path& directory, const std::string lockfile_name, b
 void UnlockDirectory(const fs::path& directory, const std::string& lockfile_name);
 bool DirIsWritable(const fs::path& directory);
 bool CheckDiskSpace(const fs::path& dir, uint64_t additional_bytes = 0);
+
+// Sapling network dir
+const fs::path &ZC_GetParamsDir();
+// Init sapling library
+void initZKSNARKS();
 
 /** Release all directory locks. This is used for unit testing only, at runtime
  * the global destructor will take care of the locks.
@@ -88,7 +92,7 @@ fs::path GetConfigFile(const std::string& confPath);
 fs::path FSGetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
 #if HAVE_SYSTEM
-void runCommand(const std::string& strCommand);
+void runCommand(std::string& strCommand);
 #endif
 
 /**

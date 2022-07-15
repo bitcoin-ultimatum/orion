@@ -60,7 +60,7 @@ Dependency Build Instructions: Ubuntu & Debian
 Build requirements:
 
 ```bash
-    sudo apt-get install git build-essential libtool bsdmainutils autotools-dev autoconf pkg-config automake python3-dev libzmq3-dev libevent-dev libjsonrpccpp-dev libsnappy-dev libbenchmark-dev libnorm-dev libpgm-dev
+    sudo apt-get install git build-essential libtool bsdmainutils autotools-dev autoconf pkg-config automake python3-dev libzmq3-dev libevent-dev libjsonrpccpp-dev libsnappy-dev libbenchmark-dev libnorm-dev libpgm-dev libsodium-dev rustc
 ```
 
 GCC version 9.0:
