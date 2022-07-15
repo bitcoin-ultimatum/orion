@@ -15,6 +15,17 @@ endif()
 
 cmake_minimum_required(VERSION 3.14)
 
+# Search for the cargo and rustc compilers required to build libzcashrust
+find_program(CARGO_PROGRAM cargo REQUIRED HINTS ~/.cargo/bin)
+if(CARGO_PROGRAM)
+    message(STATUS "Found cargo: ${CARGO_PROGRAM}")
+endif()
+
+find_program(RUSTC_PROGRAM rustc REQUIRED HINTS ~/.cargo/bin)
+if(RUSTC_PROGRAM)
+    message(STATUS "Found rustc: ${RUSTC_PROGRAM}")
+endif()
+
 # the version of this package
 set(PROJECT_VERSION 1.0.0.0)
 
@@ -44,6 +55,12 @@ ENDIF()
 set(CMAKE_USER_MAKE_RULES_OVERRIDE
 	"${CMAKE_SOURCE_DIR}/cmake/scripts/OverrideInitFlags.cmake"
 )
+
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+message(${CMAKE_MODULE_PATH})
+enable_language(Rust)
+include(CMakeCargo)
+include(FetchContent)
 
 message(STATUS "CMAKE_TOOLCHAIN_FILE ${CMAKE_TOOLCHAIN_FILE}")
 # Trying to set toolchain if not presented
@@ -93,6 +110,7 @@ add_custom_target(print-version
 )
 
 add_definitions(-DQTUM_BUILD=1)
+include(ExternalProject)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     if (CMAKE_GENERATOR MATCHES "Visual Studio" OR MSVC)
@@ -103,7 +121,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd  /Zi /Ob0 /Od /RTC1" CACHE STRING "Enforced CXX static flag for debug" FORCE)
     set(CMAKE_CXX_FLAGS_MINSIZEREL "/MT /O1 /Ob1" CACHE STRING "Enforced CXX static flag for minsizerel" FORCE)
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MT /Zi /O2 /Ob1" CACHE STRING "Enforced CXX static flag for relwithdebinfo" FORCE)
-
     # /MD /O2 /Ob2
     set(CMAKE_C_FLAGS_RELEASE "/MT  /O2 /Ob2" CACHE STRING "Enforced C static flag for release" FORCE)
 
@@ -664,6 +681,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     link_directories(${BOOST_LIBRARYDIR})
 endif()
 
+
 include(BrewHelper)
 
 list(APPEND CMAKE_PREFIX_PATH ./src/jsoncpp)
@@ -844,6 +862,13 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     find_library(Z_LIBRARY NAMES zlib z)
 
     include(WindowsVersionInfo)
+endif()
+
+find_package(sodium REQUIRED)
+if(SODIUM_FOUND)
+    message(STATUS SODIUM_FOUND:)
+    message (STATUS ${sodium_LIBRARY_RELEASE})
+    message (STATUS ${sodium_INCLUDE_DIR})
 endif()
 
 find_package(OpenSSL REQUIRED)
@@ -1220,6 +1245,15 @@ target_include_directories(leveldb_sse42 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/
 
 target_link_libraries(leveldb leveldb_sse42)
 
+ExternalProject_Add (
+        libzcashrust
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ${CARGO_PROGRAM} build --release
+        BUILD_IN_SOURCE 1
+        INSTALL_COMMAND ""
+)
+
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h)
 file(GLOB CRYPTO_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/crypto/*.h)
 file(GLOB PRIMITIVE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/primitives/*.h)
@@ -1227,6 +1261,8 @@ file(GLOB ZMQ_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/zmq/*.h)
 file(GLOB SCRIPT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/script/*.h)
 file(GLOB RPC_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/rpc/*.h)
 file(GLOB COMPAT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/compat/*.h)
+file(GLOB ZRUST_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/rust/include/*.h)
+file(GLOB SAPLING_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling/*.h)
 
 source_group("BitcoinHeaders" FILES
         ${HEADERS}
@@ -1350,12 +1386,12 @@ set(SERVER_SOURCES
         ./src/eth_client/utils/json_spirit/json_spirit_value.cpp
         ./src/eth_client/utils/json_spirit/json_spirit_writer.cpp
 
-
-
-
         ./src/validation.cpp
         ./src/consensus/consensus.cpp
         ./src/zbtcuchain.cpp
+
+        #./src/sapling/sapling_txdb.cpp
+        #./src/sapling/sapling_validation.cpp
         
         # currently used only as experimental feature on Windows
         ./src/shutdown.cpp
@@ -1377,6 +1413,7 @@ target_include_directories(SERVER_A
         ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/helpers/memenv
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/rust/include
         ${ZeroMQ_INCLUDE_DIRS}
         ${LibEvent_INCLUDE_DIR}
         ${BerkeleyDB_INCLUDE_DIRS}
@@ -1485,11 +1522,13 @@ if(ZeroMQ_FOUND)
         ./src/zmq/zmqpublishnotifier.cpp
     )
     add_library(ZMQ_A STATIC ${BitcoinHeaders} ${ZMQ_SOURCES})
-    target_include_directories(ZMQ_A PUBLIC 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src ${ZeroMQ_INCLUDE_DIRS} 
-        ${OPENSSL_INCLUDE_DIR}
-        ${Boost_INCLUDE_DIRS}
-        )
+    target_include_directories(ZMQ_A PUBLIC
+            ${sodium_INCLUDE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${ZeroMQ_INCLUDE_DIRS}
+            ${OPENSSL_INCLUDE_DIR}
+            ${Boost_INCLUDE_DIRS}
+            )
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" OR BUILD_STATIC)
         target_link_libraries(ZMQ_A 
             ZeroMQ::zmq
@@ -1505,7 +1544,8 @@ if(ZeroMQ_FOUND)
 endif()
 
 add_library(WALLET_A STATIC ${BitcoinHeaders} ${WALLET_SOURCES})
-target_include_directories(WALLET_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+target_include_directories(WALLET_A PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
@@ -1514,6 +1554,8 @@ target_include_directories(WALLET_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/eth_client/utils/ethash/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/evmone/evmc/include
         ${OPENSSL_INCLUDE_DIR}
+        ${sodium_INCLUDE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling
         ${BerkeleyDB_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         )
@@ -1537,6 +1579,10 @@ set(BITCOIN_CRYPTO_SOURCES
         ./src/crypto/jh.c
         ./src/crypto/keccak.c
         ./src/crypto/skein.c
+        ./src/uint256.cpp
+        ./src/utilstrencodings.cpp
+        ./src/allocators.cpp
+        ./src/support/cleanse.cpp
         )
 add_library(BITCOIN_CRYPTO_A ${BITCOIN_CRYPTO_SOURCES})
 target_link_libraries(BITCOIN_CRYPTO_A
@@ -1593,7 +1639,8 @@ set(COMMON_SOURCES
 
 add_library(COMMON_A STATIC ${BitcoinHeaders} ${COMMON_SOURCES})
 target_include_directories(COMMON_A 
-    PUBLIC 
+    PUBLIC
+        ${sodium_INCLUDE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
@@ -1605,6 +1652,8 @@ target_include_directories(COMMON_A
         ${CMAKE_CURRENT_SOURCE_DIR}/src/eth_client/utils/ethash/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/evmone/evmc/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/qtum
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/rust/src
         )
 target_link_libraries(COMMON_A
             BITCOIN_CRYPTO_A
@@ -1682,9 +1731,11 @@ add_library(UTIL_A
             ${UTIL_SOURCES}
         )
         
-target_include_directories(UTIL_A PUBLIC 
+target_include_directories(UTIL_A PUBLIC
+            ${sodium_INCLUDE_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/rust/include
             ${OPENSSL_INCLUDE_DIR}
             ${Boost_LIBRARIES} 
             ${CMAKE_CURRENT_SOURCE_DIR}/src/eth_client/
@@ -1714,9 +1765,43 @@ target_link_libraries(CLI_A
             Threads::Threads
         )
 
+set(SAPLING_SOURCES
+        ./src/bech32.cpp
+        ./src/sapling/sapling_util.cpp
+        ./src/sapling/key_io_sapling.cpp
+        ./src/destination_io.cpp
+        ./src/sapling/sapling_core_write.cpp
+        ./src/sapling/prf.cpp
+        ./src/sapling/noteencryption.cpp
+        ./src/sapling/address.cpp
+        ./src/sapling/note.cpp
+        ./src/sapling/zip32.cpp
+        ./src/sapling/crypter_sapling.cpp
+        ./src/sapling/incrementalmerkletree.cpp
+        ./src/sapling/transaction_builder.cpp
+        ./src/sapling/saplingscriptpubkeyman.cpp
+        ./src/sapling/sapling_operation.cpp
+        )
+
+add_library(SAPLING_A STATIC ${BitcoinHeaders} ${SAPLING_SOURCES})
+target_include_directories(SAPLING_A PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sapling
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/rust/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wallet
+        ${BerkeleyDB_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}
+        ${sodium_INCLUDE_DIR}
+        )
+if(GMP_FOUND)
+    target_link_libraries(SAPLING_A ${GMP_LIBRARIES})
+    target_include_directories(SAPLING_A PUBLIC ${GMP_INCLUDE_DIR})
+endif()
+
 if(BUILD_UTILS)
     set(btcu-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-cli.cpp)
     add_executable(btcu-cli ${btcu-cli_SOURCES})
+    add_dependencies(btcu-cli libzcashrust )
     if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         generate_windows_version_info(btcu-cli
             DESCRIPTION "CLI BTCU transaction editor utility"
@@ -1733,9 +1818,12 @@ if(BUILD_UTILS)
             univalue
             UTIL_A
             BITCOIN_CRYPTO_A
+            SAPLING_A
+            rustzcash
             ${Boost_LIBRARIES} 
             ${OPENSSL_LIBRARIES}
             ${LibEvent_LIBRARIES}
+            ${sodium_LIBRARY_RELEASE}
             Threads::Threads
             )
     target_include_directories(btcu-cli 
@@ -1768,7 +1856,7 @@ if(BUILD_UTILS)
         )
         list(APPEND btcu-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcu-tx-res.rc)
     endif()
-    add_dependencies(btcu-tx leveldb leveldb_sse42 memenv)
+    add_dependencies(btcu-tx leveldb leveldb_sse42 memenv libzcashrust)
     target_link_libraries(btcu-tx
             univalue
             COMMON_A
@@ -1781,9 +1869,12 @@ if(BUILD_UTILS)
             leveldb_sse42
             memenv
             secp256k1
+            SAPLING_A
+            rustzcash
             ${Boost_LIBRARIES} 
             ${OPENSSL_LIBRARIES}
             ${LibEvent_LIBRARIES}
+            ${sodium_LIBRARY_RELEASE}
             )
     if(GMP_FOUND)
         target_link_libraries(btcu-tx ${GMP_LIBRARIES})
@@ -1832,7 +1923,7 @@ if(ENABLE_DAEMON)
         )
         list(APPEND btcud_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/btcud-res.rc)
     endif()
-    add_dependencies(btcud leveldb leveldb_sse42 memenv)
+    add_dependencies(btcud leveldb leveldb_sse42 memenv libzcashrust)
     target_include_directories(btcud PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb
             ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include
@@ -1849,6 +1940,8 @@ if(ENABLE_DAEMON)
             ZEROCOIN_A
             UTIL_A
             BITCOIN_CRYPTO_A
+            SAPLING_A
+            rustzcash
             leveldb
             leveldb_sse42
             memenv
@@ -1857,6 +1950,7 @@ if(ENABLE_DAEMON)
             ${OPENSSL_LIBRARIES}
             ${Boost_LIBRARIES}
             ${LibEvent_LIBRARIES}
+            ${sodium_LIBRARY_RELEASE}
             )
     if(GMP_FOUND)
         target_link_libraries(btcud ${GMP_LIBRARIES})
@@ -2129,7 +2223,9 @@ if(ENABLE_TESTS)
     target_compile_definitions(SERVER_A_test PRIVATE TEST_BTCU)
 
     add_library(WALLET_A_test STATIC ${BitcoinHeaders} ${WALLET_SOURCES})
-    target_include_directories(WALLET_A_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+    target_include_directories(WALLET_A_test PUBLIC
+            ${sodium_INCLUDE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/src/secp256k1/include
             ${CMAKE_CURRENT_SOURCE_DIR}/src/univalue/include
             ${CMAKE_CURRENT_SOURCE_DIR}/src/leveldb/include

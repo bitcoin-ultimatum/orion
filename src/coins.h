@@ -10,6 +10,7 @@
 
 #include "compressor.h"
 #include "consensus/consensus.h"  // can be removed once policy/ established
+#include "sapling/incrementalmerkletree.h"
 #include "script/standard.h"
 #include "serialize.h"
 #include "uint256.h"
