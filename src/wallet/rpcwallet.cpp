@@ -177,7 +177,7 @@ bool SetDefaultPayForContractAddress(CWallet* const pwallet, CCoinControl & coin
         if (!fValidAddress)
             continue;
 
-        coinControl.Select(COutPoint(out.tx->GetHash(),out.i));
+        coinControl.Select(BaseOutPoint(out.tx->GetHash(),out.i));
         break;
     }
 
@@ -208,7 +208,7 @@ bool GetSenderDest(CWallet * const pwallet, const CTransaction& tx, CTxDestinati
     else
     {
         // Get destination from the inputs
-        senderPubKey = pwallet->mapWallet.at(tx.vin[0].prevout.hash).tx->vout[tx.vin[0].prevout.n].scriptPubKey;
+        senderPubKey = pwallet->mapWallet.at(tx.vin[0].prevout.hash).vout[tx.vin[0].prevout.n].scriptPubKey;
     }
 
     // Extract destination from script
@@ -344,7 +344,7 @@ UniValue createcontract(const UniValue& params, bool fHelp){
             if (!fValidAddress || !(senderAddress == destAdress))
                 continue;
 
-            coinControl->Select(COutPoint(out.tx->GetHash(),out.i));
+            coinControl->Select(BaseOutPoint(out.tx->GetHash(),out.i));
             break;
         }
 
@@ -616,7 +616,7 @@ UniValue sendtocontract(const UniValue& params, bool fHelp){
             if (!fValidAddress || !(senderAddress == destAdress))
                 continue;
 
-            coinControl.Select(COutPoint(out.tx->GetHash(),out.i));
+            coinControl.Select(BaseOutPoint(out.tx->GetHash(),out.i));
 
             break;
 
@@ -1091,7 +1091,7 @@ UniValue ListaddressesForPurpose(const std::string strPurpose)
             if (addr.second.purpose != strPurpose) continue;
             UniValue entry(UniValue::VOBJ);
             entry.push_back(Pair("label", addr.second.name));
-            entry.push_back(Pair("address", EncodeDestination(addr.first, addrType)));
+            entry.push_back(Pair("address", Standard::EncodeDestination(addr.first, addrType)));
             ret.push_back(entry);
         }
     }
@@ -1400,7 +1400,7 @@ UniValue getaddressesbyaccount(const UniValue& params, bool fHelp)
         const CWDestination & address = item.first;
         const std::string& strName = item.second.name;
         if (strName == strAccount)
-            ret.push_back(EncodeDestination(address));
+            ret.push_back(Standard::EncodeDestination(address));
     }
     return ret;
 }
@@ -2744,7 +2744,7 @@ UniValue ListReceived(const UniValue& params, bool fByAccounts)
             UniValue obj(UniValue::VOBJ);
             if (fIsWatchonly)
                 obj.push_back(Pair("involvesWatchonly", true));
-            obj.push_back(Pair("address", EncodeDestination(address)));
+            obj.push_back(Pair("address", Standard::EncodeDestination(address)));
             obj.push_back(Pair("account", strAccount));
             obj.push_back(Pair("amount", ValueFromAmount(nAmount)));
             obj.push_back(Pair("confirmations", (nConf == std::numeric_limits<int>::max() ? 0 : nConf)));
@@ -4172,7 +4172,8 @@ UniValue printMultiSend()
 UniValue printAddresses()
 {
     std::vector<COutput> vCoins;
-    pwalletMain->AvailableCoins(&vCoins);
+    //TODO: should use legacy version AvailableCoins
+    //pwalletMain->AvailableCoins(&vCoins);
     std::map<std::string, double> mapAddresses;
     for (const COutput& out : vCoins) {
         CTxDestination utxoAddress;

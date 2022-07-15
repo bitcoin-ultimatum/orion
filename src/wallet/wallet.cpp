@@ -246,7 +246,7 @@ PairResult CWallet::getNewAddress(CTxDestination& ret, const std::string address
     if (!SetAddressBook(PKHash(keyID), addressLabel, purpose))
         throw std::runtime_error("CWallet::getNewAddress() : SetAddressBook failed");
 
-    ret = CTxDestination(keyID);
+    ret = PKHash(keyID);
     return PairResult(true);
 }
 

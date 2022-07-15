@@ -271,8 +271,8 @@ void ScriptPubKeyMan::MarkReserveKeysAsUsed(int64_t keypool_id)
             const CKeyID& keyid = keypool.vchPubKey.GetID();
             m_pool_key_to_index.erase(keyid);
             // add missing receive addresses to the AddressBook
-            if (!internal && !wallet->HasAddressBook(keyid)) {
-                wallet->SetAddressBook(keyid, "", staking ? AddressBook::AddressBookPurpose::COLD_STAKING
+            if (!internal && !wallet->HasAddressBook(PKHash(keyid))) {
+                wallet->SetAddressBook(PKHash(keyid), "", staking ? AddressBook::AddressBookPurpose::COLD_STAKING
                                                           : AddressBook::AddressBookPurpose::RECEIVE);
             }
         }

@@ -872,3 +872,9 @@ bool SignTransaction(CMutableTransaction& mtx, const CKeyStore* keystore, int nH
 
    return input_errors.empty();
 }
+
+void UpdateTransaction(CMutableTransaction& tx, unsigned int nIn, const SignatureData& data)
+{
+   assert(tx.vin.size() > nIn);
+   tx.vin[nIn].scriptSig = data.scriptSig;
+}

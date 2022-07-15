@@ -1617,6 +1617,7 @@ set(COMMON_SOURCES
         ./src/sporkdb.cpp
         ./src/validators_state.cpp
         ./src/validators_voting.cpp
+        ./src/consensus/upgrades.cpp
         ./src/eth_client/libethashseal/GenesisInfo.cpp
         ./src/uint256.cpp
         ./src/crypto/siphash.cpp

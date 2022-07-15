@@ -14,7 +14,7 @@
 #include "primitives/block.h"
 #include "protocol.h"
 #include "uint256.h"
-
+#include "consensus/params.h"
 #include "libzerocoin/Params.h"
 #include <vector>
 
@@ -54,6 +54,21 @@ public:
         MAX_BASE58_TYPES
     };
 
+    enum Bech32Type {
+        BTC_LEGACY_BECH32,
+        SAPLING_PAYMENT_ADDRESS,
+        SAPLING_FULL_VIEWING_KEY,
+        SAPLING_INCOMING_VIEWING_KEY,
+        SAPLING_EXTENDED_SPEND_KEY,
+        SAPLING_EXTENDED_FVK,
+
+        BLS_SECRET_KEY,
+        BLS_PUBLIC_KEY,
+
+        MAX_BECH32_TYPES
+    };
+
+    const Consensus::Params& GetConsensus() const { return consensus; }
     const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
     const MessageStartChars& MessageStart() const { return pchMessageStart; }
     const std::vector<unsigned char>& AlertKey() const { return vAlertPubKey; }
@@ -110,7 +125,7 @@ public:
     std::string NetworkIDString() const { return strNetworkID; }
     const std::vector<CDNSSeedData>& DNSSeeds() const { return vSeeds; }
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
-    const std::string& Bech32HRP() const { return bech32_hrp; }
+    const std::string& Bech32HRP(Bech32Type type = BTC_LEGACY_BECH32) const { return bech32_hrp[type]; }
     const std::vector<CAddress>& FixedSeeds() const { return vFixedSeeds; }
     virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
@@ -191,6 +206,8 @@ public:
 protected:
     CChainParams() {}
 
+    Consensus::Params consensus;
+
     uint256 hashGenesisBlock;
     MessageStartChars pchMessageStart;
     //! Raw pub key bytes for the broadcast alert signing key.
@@ -216,13 +233,14 @@ protected:
     int nStakeMinAge;
     int nFutureTimeDriftPoW;
     int nFutureTimeDriftPoS;
+    int nMaxMoneyOut;
     int nTimeSlotLength;
 
     int nModifierUpdateBlock;
     int nMinerThreads;
     std::vector<CDNSSeedData> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
-    std::string bech32_hrp;
+    std::string bech32_hrp[MAX_BECH32_TYPES];
     CBaseChainParams::Network networkID;
     std::string strNetworkID;
     CBlock genesis;

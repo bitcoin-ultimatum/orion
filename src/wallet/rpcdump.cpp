@@ -182,7 +182,7 @@ UniValue importaddress(const UniValue& params, bool fHelp)
     CScript script;
 
     bool isStaking = false;
-    CTxDestination dest = DecodeDestination(params[0].get_str(), isStaking);
+    CTxDestination dest = DecodeDestination(params[0].get_str(), &isStaking);
     if (IsValidDestination(dest)) {
         script = GetScriptForDestination(dest);
     } else if (IsHex(params[0].get_str())) {

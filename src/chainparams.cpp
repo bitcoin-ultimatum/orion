@@ -176,6 +176,7 @@ public:
         nStakeMinDepth = 9; //same as nMaturity
         nFutureTimeDriftPoW = 7200;
         nFutureTimeDriftPoS = 180;
+        consensus.nMaxMoneyOut = 21000000 * COIN;
         nMasternodeCountDrift = 20;
         nMinColdStakingAmount = 1 * COIN;
         nMinLeasingAmount = 1 * COIN;
@@ -295,7 +296,18 @@ public:
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
-        bech32_hrp = "bc";
+        //bech32 legacy btc addresses
+        bech32_hrp[BTC_LEGACY_BECH32]      = "bc";
+
+        // Sapling
+        bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ps";
+        bech32_hrp[SAPLING_FULL_VIEWING_KEY]     = "pviews";
+        bech32_hrp[SAPLING_INCOMING_VIEWING_KEY] = "pivks";
+        bech32_hrp[SAPLING_EXTENDED_SPEND_KEY]   = "p-secret-spending-key-main";
+        bech32_hrp[SAPLING_EXTENDED_FVK]         = "pxviews";
+
+        bech32_hrp[BLS_SECRET_KEY]               = "bls-sk";
+        bech32_hrp[BLS_PUBLIC_KEY]               = "bls-pk";
 
         convertSeed6(vFixedSeeds, pnSeed6_main, ARRAYLEN(pnSeed6_main));
 
@@ -375,6 +387,7 @@ public:
         nMaturity = 5; // 3 validators in testnet, for  activatin pos must be one more
         nStakeMinDepth = 20;
         nMasternodeCountDrift = 4;
+        consensus.nMaxMoneyOut = 21000000 * COIN;
         nModifierUpdateBlock = 51197; //approx Mon, 17 Apr 2017 04:00:00 GMT
         nZerocoinStartHeight = 1;
         nZerocoinStartTime = 1501776000;
@@ -450,7 +463,17 @@ public:
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
-        bech32_hrp = "tb";
+        //bech32 legacy btc addresses
+        bech32_hrp[BTC_LEGACY_BECH32]      = "tb";
+
+        bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ptestsapling";
+        bech32_hrp[SAPLING_FULL_VIEWING_KEY]     = "pviewtestsapling";
+        bech32_hrp[SAPLING_INCOMING_VIEWING_KEY] = "pivktestsapling";
+        bech32_hrp[SAPLING_EXTENDED_SPEND_KEY]   = "p-secret-spending-key-test";
+        bech32_hrp[SAPLING_EXTENDED_FVK]         = "pxviewtestsapling";
+
+        bech32_hrp[BLS_SECRET_KEY]               = "bls-sk-test";
+        bech32_hrp[BLS_PUBLIC_KEY]               = "bls-pk-test";
 
         convertSeed6(vFixedSeeds, pnSeed6_test, ARRAYLEN(pnSeed6_test));
 
@@ -508,6 +531,7 @@ public:
         nModifierUpdateBlock = 0;
         nZerocoinStartHeight = 300;
         nBlockZerocoinV2 = 300;
+        consensus.nMaxMoneyOut = 43199500 * COIN;
         nZerocoinStartTime = 1501776000;
         nBlockEnforceSerialRange = 1;               // Enforce serial range starting this block
         nBlockRecalculateAccumulators = 999999999;  // Trigger a recalculation of accumulators
@@ -577,7 +601,18 @@ public:
         */
         strSporkPubKey = "043969b1b0e6f327de37f297a015d37e2235eaaeeb3933deecd8162c075cee0207b13537618bde640879606001a8136091c62ec272dd0133424a178704e6e75bb7";
 
-        bech32_hrp = "bcrt";
+        //bech32 legacy btc addresses
+        bech32_hrp[BTC_LEGACY_BECH32]      = "bcrt";
+
+        // Sapling
+        bech32_hrp[SAPLING_PAYMENT_ADDRESS]      = "ptestsapling";
+        bech32_hrp[SAPLING_FULL_VIEWING_KEY]     = "pviewtestsapling";
+        bech32_hrp[SAPLING_INCOMING_VIEWING_KEY] = "pivktestsapling";
+        bech32_hrp[SAPLING_EXTENDED_SPEND_KEY]   = "p-secret-spending-key-test";
+        bech32_hrp[SAPLING_EXTENDED_FVK]         = "pxviewtestsapling";
+
+        bech32_hrp[BLS_SECRET_KEY]               = "bls-sk-test";
+        bech32_hrp[BLS_PUBLIC_KEY]               = "bls-pk-test";
     }
     const Checkpoints::CCheckpointData& Checkpoints() const
     {

@@ -495,7 +495,7 @@ UniValue validateaddress(const UniValue& params, bool fHelp)
 
     std::string strAddress = params[0].get_str();
     bool isStaking = false;
-    CTxDestination dest = DecodeDestination(params[0].get_str(), isStaking);
+    CTxDestination dest = DecodeDestination(params[0].get_str(), &isStaking);
     bool isValid = IsValidDestination(dest);
 
     PPaymentAddress finalAddress;
