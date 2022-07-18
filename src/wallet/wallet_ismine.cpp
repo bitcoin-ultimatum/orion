@@ -222,3 +222,43 @@ isminetype IsMine(const CKeyStore& keystore, const CTxDestination& dest)
     CScript script = GetScriptForDestination(dest);
     return IsMine(keystore, script, IsMineSigVersion::TOP);
 }
+
+
+isminetype IsMine(const CKeyStore& keystore, const libzcash::SaplingPaymentAddress& pa)
+{
+   libzcash::SaplingIncomingViewingKey ivk;
+   libzcash::SaplingExtendedFullViewingKey exfvk;
+   if (keystore.GetSaplingIncomingViewingKey(pa, ivk) &&
+       keystore.GetSaplingFullViewingKey(ivk, exfvk) &&
+       keystore.HaveSaplingSpendingKey(exfvk)) {
+      return ISMINE_SPENDABLE_SHIELDED;
+   } else if (!ivk.IsNull()) {
+      return ISMINE_WATCH_ONLY_SHIELDED;
+   } else {
+      return ISMINE_NO;
+   }
+}
+
+namespace
+{
+   class CWDestinationVisitor : public boost::static_visitor<isminetype>
+   {
+   private:
+      const CKeyStore& keystore;
+   public:
+      CWDestinationVisitor(const CKeyStore& _keystore) : keystore(_keystore) {}
+
+      isminetype operator()(const CTxDestination& dest) const {
+         return ::IsMine(keystore, dest);
+      }
+
+      isminetype operator()(const libzcash::SaplingPaymentAddress& pa) const {
+         return ::IsMine(keystore, pa);
+      }
+   };
+}
+
+isminetype IsMine(const CKeyStore& keystore, const CWDestination& dest)
+{
+   return boost::apply_visitor(CWDestinationVisitor(keystore), dest);
+}

@@ -47,7 +47,6 @@
 #include <unordered_set>
 #include <interfaces/chain.h>
 #include <interfaces/node.h>
-#include "script/ismine.h"
 typedef CWallet* CWalletRef;
 extern std::vector<CWalletRef> vpwallets;
 

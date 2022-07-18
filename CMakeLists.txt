@@ -1375,7 +1375,6 @@ set(SERVER_SOURCES
         ./src/validation.cpp
         ./src/consensus/consensus.cpp
         ./src/zbtcuchain.cpp
-        ./src/script/ismine.cpp
         # currently used only as experimental feature on Windows
         ./src/shutdown.cpp
         )

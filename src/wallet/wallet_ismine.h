@@ -10,6 +10,7 @@
 
 #include "key.h"
 #include "script/standard.h"
+#include "destination_io.h"
 
 class CKeyStore;
 class CScript;
@@ -41,15 +42,36 @@ enum isminetype {
     ISMINE_SPENDABLE_STAKEABLE = ISMINE_SPENDABLE_DELEGATED | ISMINE_COLD,
     ISMINE_SPENDABLE_LEASING = ISMINE_LEASED | ISMINE_LEASING,
     ISMINE_ALL = ISMINE_WATCH_ONLY | ISMINE_SPENDABLE | ISMINE_COLD | ISMINE_SPENDABLE_DELEGATED | ISMINE_LEASING | ISMINE_LEASED | ISMINE_LEASED_LOCKED_CLTV | ISMINE_SPENDABLE_SHIELDED | ISMINE_WATCH_ONLY_SHIELDED,
-    ISMINE_ENUM_ELEMENTS,
     ISMINE_SPENDABLE_ALL_NON_LEASED = ISMINE_SPENDABLE_DELEGATED | ISMINE_SPENDABLE,
     ISMINE_SPENDABLE_TRANSPARENT = ISMINE_SPENDABLE_DELEGATED | ISMINE_SPENDABLE,
-    ISMINE_SPENDABLE_NO_DELEGATED =  ISMINE_SPENDABLE | ISMINE_SPENDABLE_SHIELDED
+    ISMINE_SPENDABLE_NO_DELEGATED =  ISMINE_SPENDABLE | ISMINE_SPENDABLE_SHIELDED,
+    ISMINE_ENUM_ELEMENTS
 };
 /** used for bitflags of isminetype */
 typedef uint8_t isminefilter;
 
 isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
 isminetype IsMine(const CKeyStore& keystore, const CTxDestination& dest);
+isminetype IsMine(const CKeyStore& keystore, const libzcash::SaplingPaymentAddress& pa);
+isminetype IsMine(const CKeyStore& keystore, const CWDestination& dest);
+
+/**
+ * Cachable amount subdivided into watchonly and spendable parts.
+ */
+struct CachableAmount
+{
+   // NO and ALL are never (supposed to be) cached
+   std::bitset<ISMINE_ENUM_ELEMENTS> m_cached;
+   CAmount m_value[ISMINE_ENUM_ELEMENTS];
+   inline void Reset()
+   {
+      m_cached.reset();
+   }
+   void Set(isminefilter filter, CAmount value)
+   {
+      m_cached.set(filter);
+      m_value[filter] = value;
+   }
+};
 
 #endif // BITCOIN_WALLET_ISMINE_H

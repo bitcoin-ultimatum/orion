@@ -27,7 +27,6 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 #include <key_io.h>
-#include "script/ismine.h"
 #include <random>
 
 #include "keystore.h"
