@@ -405,6 +405,7 @@ static bool SignStep(const CKeyStore& provider, const BaseSignatureCreator& crea
             return false;
          }
          if (!CreateSig(creator, sigdata, provider, sig, pubkey, scriptPubKey, sigversion)) return false;
+         ret.push_back(std::move(sig));
          ret.push_back(ToByteVector(pubkey));
          return true;
       }
