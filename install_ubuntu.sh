@@ -644,7 +644,7 @@ echo  "[71%] Running CMake configuring... Done!"
 echo  ""
 echo  "[72%] Building BTCU... "
 
-make
+make btcud btcu-cli
 
 echo  ""
 echo  "[90%] Building BTCU... Done!"
