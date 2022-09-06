@@ -1090,11 +1090,7 @@ bool AppInit2()
         return InitError(_("Initialization sanity check failed. BTCU Core is shutting down."));
 
     std::string strDataDir = GetDataDir().string();
-#ifdef ENABLE_WALLET
-    // Wallet file must be a plain filename without a directory
-    if (strWalletFile != boost::filesystem::basename(strWalletFile) + boost::filesystem::extension(strWalletFile))
-        return InitError(strprintf(_("Wallet %s resides outside data directory %s"), strWalletFile, strDataDir));
-#endif
+
     // Make sure only a single BTCU process is using the data directory.
     boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
     FILE* file = fopen(pathLockFile.string().c_str(), "a"); // empty lock file; created if it doesn't exist.

@@ -661,12 +661,8 @@ int main(int argc, char* argv[])
     // Check if the wallet exists or need to be created
     std::string strWalletFile = GetArg("-wallet", "wallet.dat");
     std::string strDataDir = GetDataDir().string();
-    // Wallet file must be a plain filename without a directory
-    if (strWalletFile != boost::filesystem::basename(strWalletFile) + boost::filesystem::extension(strWalletFile)){
-        throw std::runtime_error(strprintf(_("Wallet %s resides outside data directory %s"), strWalletFile, strDataDir));
-    }
 
-    boost::filesystem::path pathBootstrap = GetDataDir() / strWalletFile;
+    boost::filesystem::path pathBootstrap = strWalletFile;
     if (!boost::filesystem::exists(pathBootstrap)) {
         // wallet doesn't exist, popup tutorial screen.
         ret = app.createTutorialScreen();
